@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import json
 import os
 import sys
@@ -6,7 +8,13 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from analysis import cross_check, generate_sbom, main, scan_imports
+from impactprism.analysis import (
+    _declared_dependencies,
+    cross_check,
+    generate_sbom,
+    main,
+    scan_imports,
+)
 
 
 def write_file(root, relpath, content):
@@ -88,6 +96,28 @@ def _make_no_source_repo(tmp_path):
     )
 
 
+def _make_peer_optional_repo(tmp_path):
+    repo = make_repo(
+        tmp_path,
+        "peeroptional",
+        deps={"react": "18.2.0"},
+        dev_deps={"eslint": "^8.0.0"},
+        files={
+            "src/index.js": (
+                "import React from 'react';\n"
+                "import eslint from 'eslint';\n"
+                "import ReactDOM from 'react-dom';\n"
+                "import fsevents from 'fsevents';\n"
+            ),
+        },
+    )
+    package_json = json.loads((repo / "package.json").read_text(encoding="utf-8"))
+    package_json["peerDependencies"] = {"react-dom": "^18.2.0"}
+    package_json["optionalDependencies"] = {"fsevents": "^2.3.2"}
+    write_file(repo, "package.json", json.dumps(package_json, indent=2))
+    return repo, package_json
+
+
 def _component(sbom, name):
     return next(c for c in sbom["components"] if c["name"] == name)
 
@@ -103,15 +133,15 @@ def test_generate_sbom_structure(tmp_path):
     )
     sbom = generate_sbom(str(repo))
     assert sbom["bomFormat"] == "CycloneDX"
-    assert sbom["specVersion"] == "1.5"
+    assert sbom["specVersion"] == "1.6"
     assert sbom["version"] == 1
     assert sbom["metadata"]["component"]["type"] == "application"
     assert sbom["metadata"]["component"]["name"] == "app"
     assert sbom["metadata"]["component"]["version"] == "1.0.0"
-    assert sbom["metadata"]["timestamp"].endswith("Z")
-    assert sbom["metadata"]["tools"] == [
-        {"vendor": "impactprism", "name": "impactprism-analysis", "version": "0.1.0"}
-    ]
+    assert sbom["metadata"]["timestamp"].endswith("+00:00")
+    assert sbom["metadata"]["tools"][0]["vendor"] == "impactprism"
+    assert sbom["metadata"]["tools"][0]["name"] == "impactprism-cyclonedx"
+    assert sbom["metadata"]["tools"][0]["version"] == "0.1.0"
     assert isinstance(sbom["components"], list)
     names = [c["name"] for c in sbom["components"]]
     assert names == sorted(names)
@@ -119,7 +149,34 @@ def test_generate_sbom_structure(tmp_path):
     assert _component(sbom, "react")["type"] == "library"
     assert _component(sbom, "react")["version"] == "18.3.1"
     assert _component(sbom, "react")["purl"] == "pkg:npm/react@18.3.1"
-    assert _component(sbom, "@scope/hooks")["purl"] == "pkg:npm/%40scope%2Fhooks@1.4.2"
+    assert _component(sbom, "react")["scope"] == "required"
+    assert (
+        _component(sbom, "@scope/hooks")["bom-ref"]
+        == "pkg:npm/%40scope%2Fhooks@1.4.2"
+    )
+    assert _component(sbom, "@scope/hooks")["purl"] == "pkg:npm/%40scope/hooks@1.4.2"
+    assert _component(sbom, "@scope/hooks")["scope"] == "required"
+    assert _component(sbom, "eslint")["scope"] == "optional"
+
+
+def test_generate_sbom_npm_integrity_hash(tmp_path):
+    digest = hashlib.sha512(b"some-constant").digest()
+    integrity = "sha512-" + base64.b64encode(digest).decode("ascii")
+    repo = make_repo(
+        tmp_path,
+        "app",
+        deps={"react": "^18.2.0"},
+        versions={"react": "18.3.1"},
+    )
+    lockfile_path = repo / "package-lock.json"
+    lockfile = json.loads(lockfile_path.read_text(encoding="utf-8"))
+    lockfile["packages"]["node_modules/react"]["integrity"] = integrity
+    write_file(repo, "package-lock.json", json.dumps(lockfile, indent=2))
+
+    sbom = generate_sbom(str(repo))
+    assert _component(sbom, "react")["hashes"] == [
+        {"alg": "SHA-512", "content": digest.hex()}
+    ]
 
 
 def test_generate_sbom_version_from_lockfile(tmp_path):
@@ -167,6 +224,88 @@ def test_generate_sbom_shrinkwrap_fallback(tmp_path):
     )
     sbom = generate_sbom(str(repo))
     assert _component(sbom, "react")["version"] == "18.3.1"
+
+
+def test_generate_sbom_yarn_berry_lockfile(tmp_path):
+    repo = make_repo(
+        tmp_path,
+        "yarn-app",
+        deps={"react": "^18.2.0", "@scope/pkg": "^1.0.0"},
+        files={
+            "src/App.jsx": "import React from 'react';\nimport { hooks } from '@scope/pkg';\n",
+            "yarn.lock": (
+                "__metadata:\n"
+                "  version: 6\n"
+                "  cacheKey: 8\n"
+                "\n"
+                '"react@npm:^18.2.0":\n'
+                "  version: 18.3.1\n"
+                '  resolution: "react@npm:18.3.1"\n'
+                "\n"
+                '"@scope/pkg@npm:^1.0.0":\n'
+                "  version: 1.2.3\n"
+                '  resolution: "@scope/pkg@npm:1.2.3"\n'
+            ),
+        },
+    )
+    sbom = generate_sbom(str(repo))
+    assert _component(sbom, "react")["version"] == "18.3.1"
+    assert _component(sbom, "@scope/pkg")["version"] == "1.2.3"
+    assert _component(sbom, "react")["purl"] == "pkg:npm/react@18.3.1"
+    assert _component(sbom, "react")["scope"] == "required"
+    assert (
+        _component(sbom, "@scope/pkg")["purl"]
+        == "pkg:npm/%40scope/pkg@1.2.3"
+    )
+
+
+def test_generate_sbom_pnpm_lockfile(tmp_path):
+    repo = make_repo(
+        tmp_path,
+        "pnpm-app",
+        deps={"react": "^18.2.0", "lodash": "^4.17.0"},
+        files={
+            "src/App.jsx": "import React from 'react';\nimport _ from 'lodash';\n",
+            "pnpm-lock.yaml": (
+                "lockfileVersion: '9.0'\n"
+                "packages:\n"
+                "  /react@18.3.1:\n"
+                "    resolution: {integrity: sha512-example}\n"
+                "  /lodash@4.17.21:\n"
+                "    resolution: {integrity: sha512-example}\n"
+                "snapshots:\n"
+                "  react@18.3.1:\n"
+                "    dependencies: {}\n"
+                "  lodash@4.17.21:\n"
+                "    dependencies: {}\n"
+            ),
+        },
+    )
+    sbom = generate_sbom(str(repo))
+    assert _component(sbom, "react")["version"] == "18.3.1"
+    assert _component(sbom, "lodash")["version"] == "4.17.21"
+
+
+def test_generate_sbom_npm_lockfile_wins_over_yarn(tmp_path):
+    repo = make_repo(
+        tmp_path,
+        "priority-app",
+        deps={"react": "^18.2.0"},
+        versions={"react": "19.0.0"},
+        files={
+            "src/App.jsx": "import React from 'react';\n",
+            "yarn.lock": (
+                "__metadata:\n"
+                "  version: 6\n"
+                "\n"
+                '"react@npm:^18.2.0":\n'
+                "  version: 18.3.1\n"
+                '  resolution: "react@npm:18.3.1"\n'
+            ),
+        },
+    )
+    sbom = generate_sbom(str(repo))
+    assert _component(sbom, "react")["version"] == "19.0.0"
 
 
 def test_generate_sbom_missing_package_json(tmp_path):
@@ -334,7 +473,7 @@ def test_main_sbom_flag_writes_sbom(tmp_path):
     assert sbom_path.is_file()
     sbom = json.loads(sbom_path.read_text(encoding="utf-8"))
     assert sbom["bomFormat"] == "CycloneDX"
-    assert sbom["specVersion"] == "1.5"
+    assert sbom["specVersion"] == "1.6"
     assert "react" in [c["name"] for c in sbom["components"]]
     assert "lodash" in [c["name"] for c in sbom["components"]]
 
@@ -372,6 +511,8 @@ def test_main_json_flag_prints_report(tmp_path, capsys):
     assert "undeclared" in report
     assert report["drift"] == ["lodash"]
     assert report["undeclared"] == []
+    assert report["sbom"]["bomFormat"] == "CycloneDX"
+    assert report["sbom"]["specVersion"] == "1.6"
 
 
 def test_main_both_flags_writes_both_files(tmp_path):
@@ -412,3 +553,44 @@ def test_main_no_source_repo_exit_1(tmp_path):
 def test_main_missing_dir_exit_2(tmp_path):
     missing = tmp_path / "missing"
     assert main([str(missing)]) == 2
+
+
+def test_declared_dependencies_includes_peer_and_optional(tmp_path):
+    repo, package_json = _make_peer_optional_repo(tmp_path)
+    declared = _declared_dependencies(package_json)
+    assert set(declared) == {"react", "eslint", "react-dom", "fsevents"}
+
+
+def test_main_peer_and_optional_deps_no_undeclared(tmp_path, capsys):
+    repo, _package_json = _make_peer_optional_repo(tmp_path)
+    code = main([str(repo), "--json"])
+    assert code == 0
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+    assert report["undeclared"] == []
+    assert report["drift"] == []
+    components = {c["name"]: c for c in report["sbom"]["components"]}
+    assert components["react"]["scope"] == "required"
+    assert components["eslint"]["scope"] == "optional"
+    assert components["react-dom"]["scope"] == "optional"
+    assert components["fsevents"]["scope"] == "optional"
+
+
+def test_import_outside_all_groups_flagged_undeclared(tmp_path, capsys):
+    repo = make_repo(
+        tmp_path,
+        "undeclaredoutside",
+        deps={"react": "18.2.0"},
+        files={
+            "src/index.js": (
+                "import React from 'react';\n"
+                "import _ from 'lodash';\n"
+            ),
+        },
+    )
+    code = main([str(repo), "--json"])
+    assert code == 1
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+    assert report["undeclared"] == ["lodash"]
+    assert report["drift"] == []

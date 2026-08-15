@@ -4,29 +4,38 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .cra_clauses import load_cra_clauses
 
-CLAUSE_MAP = {
-    "undeclared": ["Art 13(1)(b)", "Art 14(1)", "Annex I Part II", "Annex VII"],
-    "drift": ["Art 13(1)(a)", "Annex I Part I"],
-}
+
+EVIDENCE_STATUSES = ("PASS", "FAIL", "EVIDENCE_GAP", "NOT_ASSESSED", "REVIEW_REQUIRED")
+
+_CLAUSE_MAP_DATA = load_cra_clauses()
+
+
+def _derive_clause_map():
+    return {
+        category: list(entry["clauses"])
+        for category, entry in _CLAUSE_MAP_DATA.get("categories", {}).items()
+    }
+
+
+CLAUSE_MAP = _derive_clause_map()
 RATIONALES = {
     "undeclared": (
         "Undeclared dependencies fall outside the SBOM/component transparency "
-        "required by Art 13(1)(b) and evade the vulnerability-handling "
-        "obligations of Art 14(1)/Annex VII."
+        "expected under Article 13(1)(b) and may expand the attack surface; "
+        "this warrants manual review against Article 13(1)(b), Article 14(1) "
+        "and Annex VII to determine whether any obligation applies."
     ),
     "drift": (
-        "Unnecessary installed components expand the attack surface contrary "
-        "to the secure-by-default and minimisation requirements."
+        "Unnecessary installed components may expand the attack surface and "
+        "warrants review against Article 13(1)(a) and Annex I Part I to "
+        "confirm whether secure-by-default or minimisation expectations apply."
     ),
 }
 CRA_REFERENCES = {
-    "Art 13(1)(a)": "Secure-by-default products should minimise unnecessary components and attack surface.",
-    "Art 13(1)(b)": "Products should provide transparency about included software components.",
-    "Art 14(1)": "Manufacturers must address and remediate product vulnerabilities.",
-    "Annex I Part I": "Essential cybersecurity requirements cover secure configuration and minimisation.",
-    "Annex I Part II": "The technical documentation and component information must support transparency.",
-    "Annex VII": "The vulnerability-handling process requires relevant component and vulnerability information.",
+    clause_id: clause["title"]
+    for clause_id, clause in _CLAUSE_MAP_DATA["clauses"].items()
 }
 
 
@@ -66,6 +75,12 @@ def _report_entries(report, category):
     return sorted(str(value) for value in values)
 
 
+def _classify_status(category):
+    if category in ("drift", "undeclared"):
+        return "REVIEW_REQUIRED"
+    return "NOT_ASSESSED"
+
+
 def _build_findings(report):
     findings = []
     for category in ("undeclared", "drift"):
@@ -76,6 +91,7 @@ def _build_findings(report):
                     "name": name,
                     "clauses": CLAUSE_MAP[category],
                     "rationale": RATIONALES[category],
+                    "status": _classify_status(category),
                 }
             )
     return findings
@@ -85,20 +101,29 @@ def _build_evidence(report, source_path):
     findings = _build_findings(report)
     undeclared_count = sum(1 for finding in findings if finding["category"] == "undeclared")
     drift_count = sum(1 for finding in findings if finding["category"] == "drift")
+    status_counts = {status: 0 for status in EVIDENCE_STATUSES}
+    for finding in findings:
+        status_counts[finding["status"]] += 1
     return {
         "generator": "impactprism-evidence",
         "version": "0.1.0",
         "timestamp": _utc_timestamp(),
+        "schema_version": _CLAUSE_MAP_DATA["schema_version"],
+        "map_version": _CLAUSE_MAP_DATA["map_version"],
+        "legal_source": _CLAUSE_MAP_DATA["legal_source"],
         "source_report": str(source_path),
         "package_name": _package_name(report),
         "package_version": _package_version(report),
         "clause_map": CLAUSE_MAP,
+        "statuses": list(EVIDENCE_STATUSES),
+        "overall_status": "PASS" if not findings else "REVIEW_REQUIRED",
         "findings": findings,
         "summary": {
             "total_findings": len(findings),
             "undeclared_count": undeclared_count,
             "drift_count": drift_count,
             "clean": not findings,
+            "status_counts": status_counts,
         },
     }
 
@@ -115,6 +140,10 @@ def _markdown(evidence):
         "",
         "- Generator: " + evidence["generator"],
         "- Version: " + evidence["version"],
+        "- Schema version: " + str(evidence["schema_version"]),
+        "- Map version: " + evidence["map_version"],
+        "- Legal source: " + evidence["legal_source"],
+        "- Overall status: " + evidence["overall_status"],
         "- Timestamp: " + evidence["timestamp"],
         "- Source report: " + evidence["source_report"],
         "- Package: " + evidence["package_name"] + "@" + evidence["package_version"],
@@ -123,13 +152,14 @@ def _markdown(evidence):
         "",
     ]
     if not evidence["findings"]:
-        lines.append("No findings; evidence of compliant dependency management.")
+        lines.append("No findings; evidence of compliant dependency management (PASS).")
     else:
         for finding in evidence["findings"]:
             lines.extend(
                 [
                     "### " + finding["category"] + ": " + finding["name"],
                     "",
+                    "Status: " + finding["status"],
                     "CRA clauses: " + ", ".join(finding["clauses"]),
                     "Rationale: " + finding["rationale"],
                     "",

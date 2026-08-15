@@ -5,49 +5,96 @@ name: CRA check
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   cra-check:
     runs-on: ubuntu-latest
+    outputs:
+      exit_code: ${{ steps.analyze.outputs.exit_code }}
     steps:
-      - name: Checkout
+      - name: Checkout trusted base ref
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+          path: scanner
+
+      - name: Checkout pull request head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          path: pr
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Run analyzer
+      - name: Run analyzer from trusted scanner
         id: analyze
+        working-directory: scanner
         run: |
           set +e
-          python main.py analyze "${{ github.workspace }}" --report report.json
+          python main.py analyze "${{ github.workspace }}/pr" --report report.json
           code=$?
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           exit 0
 
       - name: Generate evidence pack
         if: steps.analyze.outputs.exit_code != '2'
+        working-directory: scanner
         run: python main.py evidence report.json --markdown evidence.md --json evidence.json
 
-      - name: Post evidence summary comment
+      - name: Bound evidence size and content
         if: steps.analyze.outputs.exit_code != '2'
-        uses: actions/github-script@v7
+        working-directory: scanner
+        run: |
+          python - <<'PY'
+          import pathlib
+          p = pathlib.Path("evidence.md")
+          raw = p.read_text(encoding="utf-8")
+          bounded = "".join(ch for ch in raw if ch in "\r\n\t" or ord(ch) >= 32)[:65536]
+          p.write_text(bounded, encoding="utf-8")
+          PY
+
+      - name: Upload bounded evidence
+        if: steps.analyze.outputs.exit_code != '2'
+        uses: actions/upload-artifact@v4
         with:
-          script: |
-            const fs = require('fs');
-            const body = fs.readFileSync('evidence.md', 'utf8');
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body
-            });
+          name: cra-evidence
+          path: scanner/evidence.md
 
       - name: Fail on findings
         if: steps.analyze.outputs.exit_code != '0'
         run: |
           echo "::error::CRA dependency check failed (exit code ${{ steps.analyze.outputs.exit_code }}). Drift and/or undeclared dependencies were found; see the evidence comment on this PR for the CRA-clause evidence."
           exit 1
+
+  post-comment:
+    needs: cra-check
+    if: needs.cra-check.outputs.exit_code != '2'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Download bounded evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: cra-evidence
+          path: evidence
+
+      - name: Post evidence summary comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body = fs.readFileSync('evidence/evidence.md', 'utf8');
+            body = body.slice(0, 65536);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });

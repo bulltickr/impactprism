@@ -1,0 +1,91 @@
+# Required workflow permissions (must be set by the calling workflow): contents: read, pull-requests: read, checks: write, security-events: write.
+# Composite actions cannot declare permissions themselves.
+
+name: ImpactPrism
+description: |
+  Runs the ImpactPrism dependency-drift scan and produces CRA-grounded
+  evidence, a CycloneDX SBOM and a SARIF report.
+
+  The calling workflow must grant these permissions:
+  contents: read, pull-requests: read, checks: write, security-events: write.
+
+  The step fails only per the fail-on policy (never|finding|all). It requires
+  no hosted ImpactPrism account and no API key, works fully offline on the
+  checked-out commit, and never uploads source code - only the generated
+  reports under the output directory are uploaded.
+
+inputs:
+  repo-path:
+    description: Path to the repository to scan.
+    required: false
+    default: ${{ github.workspace }}
+  ecosystem:
+    description: "Ecosystem to scan. Valid values: auto|npm|go."
+    required: false
+    default: auto
+  fail-on:
+    description: "Exit policy. Valid values: never|finding|all."
+    required: false
+    default: finding
+  severity-threshold:
+    description: "Minimum finding severity that trips the policy. Valid values: info|low|medium|high|critical."
+    required: false
+    default: low
+  output-dir:
+    description: Directory for generated reports, relative to the workspace.
+    required: false
+    default: impactprism-reports
+  artifact-name:
+    description: Upload artifact name; an empty string disables the upload.
+    required: false
+    default: impactprism-reports
+
+outputs:
+  outcome:
+    description: Classification outcome (clean|finding|policy-failure|unsupported-ecosystem|scanner-error).
+    value: ${{ steps.run.outputs.outcome }}
+  findings-path:
+    description: Absolute path to findings.json.
+    value: ${{ steps.run.outputs.findings-path }}
+  bom-path:
+    description: Absolute path to bom.json (empty when not produced).
+    value: ${{ steps.run.outputs.bom-path }}
+  sarif-path:
+    description: Absolute path to impactprism.sarif.
+    value: ${{ steps.run.outputs.sarif-path }}
+  evidence-path:
+    description: Absolute path to evidence.json.
+    value: ${{ steps.run.outputs.evidence-path }}
+  exit-code:
+    description: Exit code produced by the scan step.
+    value: ${{ steps.run.outputs.exit-code }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install 'cyclonedx-python-lib[validation]>=11,<12'
+
+    - name: Run ImpactPrism scan
+      id: run
+      shell: bash
+      env:
+        PYTHONPATH: ${{ github.action_path }}/../src
+      run: python "${{ github.action_path }}/run.py"
+
+    - name: Upload reports
+      if: ${{ inputs.artifact-name != '' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ github.workspace }}/${{ inputs.output-dir }}
+        if-no-files-found: ignore
+        retention-days: 14

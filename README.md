@@ -1,310 +1,170 @@
 # ImpactPrism
 
+CRA-grounded dependency-integrity analysis for npm and Go: drift, undeclared, transitive and lockfile-mismatch detection with a CycloneDX SBOM and an evidence pack mapped to the EU Cyber Resilience Act.
+
 [![CI](https://github.com/bulltickr/impactprism/actions/workflows/ci.yml/badge.svg)](https://github.com/bulltickr/impactprism/actions/workflows/ci.yml)
 
-A CLI that generates a CycloneDX SBOM from a Create React App / JS-TS repo's
-package.json and lockfile, then cross-checks declared dependencies against the
-imports actually used in the source, flagging drift (declared but unused) and
-undeclared dependencies (used but not declared).
+## Quickstart
 
-## Requirements
+The fastest way to scan a repository is a one-shot command that analyzes the repo and generates the evidence pack in a single step:
 
-- Python 3.9+ — standard library only, no third-party runtime dependencies
-- `pytest` — required only to run the test suite
-
-## Usage
-
-## CLI (main.py)
-
-```text
-python main.py analyze <repo_dir> [--sbom PATH] [--report PATH] [--json]
-python main.py evidence <scan_report> [--markdown PATH] [--json PATH] [--stdout]
-python main.py clauses [path]
+```bash
+pipx run impactprism scan .
 ```
 
-- `analyze` analyzes a repository and optionally writes an SBOM or scan report.
-- `evidence` generates Markdown and JSON evidence from a scan report.
-- `clauses` loads, validates, and prints the CRA clause map.
+From a brand-new shell to a rendered evidence pack in three commands:
 
-Each command mirrors the corresponding module's standalone usage and exit codes: `analyze` returns 0 for clean, 1 for findings, or 2 for an error; `evidence` returns 0 for success or 2 for an error; and `clauses` returns 0 for success or 2 for an error.
-
-```
-python analysis.py <repo_dir> [--sbom PATH] [--report PATH] [--json]
+```bash
+pipx run impactprism scan .
+open evidence.md            # rendered Markdown evidence pack
 ```
 
-| Option                    | Description                                                           |
-|---------------------------|-----------------------------------------------------------------------|
-| `<repo_dir>` (positional) | Path to the repo to analyze; must contain a `package.json`            |
-| `--sbom <path>`           | Write the CycloneDX 1.5 SBOM JSON to this path (default: not written) |
-| `--report <path>`         | Write the report JSON to this path (default: not written)             |
-| `--json`                  | Print the report JSON to stdout instead of the human summary          |
+`scan` produces, in the current directory:
 
-With no flags, only the human-readable summary goes to stdout — nothing is
-written into the repo dir.
+| File            | Contents |
+|-----------------|----------|
+| `evidence.md`   | Human-readable evidence pack: each finding annotated with its CRA clause mapping and rationale |
+| `evidence.json` | Machine-readable evidence pack (same findings, JSON) |
+| `bom.json`      | CycloneDX SBOM — pass `--sbom bom.json` to write it |
+| `report.json`   | Raw scan report — pass `--report report.json` to write it |
 
-## Exit codes
+`pip install impactprism` (or `uv tool run impactprism`) installs the same `impactprism` CLI.
 
-| Code | Meaning                                                        |
-|------|----------------------------------------------------------------|
-| 0    | Clean — no drift and no undeclared dependencies                |
-| 1    | Findings — drift and/or undeclared dependencies present        |
-| 2    | Invalid repo path, missing `package.json`, or analysis error   |
+## What it detects
 
-## Human summary
+ImpactPrism cross-checks what your manifest declares, what your lockfile pins, and what your source actually imports. Six finding types cover the gap every manifest-only SBOM tool misses.
 
-With `--json` absent, stdout shows the repository, the package, the declared
-dependency count, the imported package count, the drift list, and the
-undeclared list:
-
-```
-Repository: /path/to/repo
-Package: my-app@1.0.0
-Declared dependencies: 3
-Imported packages: 2
-Drift (declared but unused): 1
-  react
-Undeclared dependencies: 1
-  lodash
-```
-
-Each finding list is capped at 50 entries; beyond that, a `... and N more` line
-is appended.
-
-## Report JSON
-
-Written by `--report <path>`, or printed to stdout by `--json`:
-
-| Key               | Contents                                             |
-|-------------------|------------------------------------------------------|
-| `repo`            | Absolute path of the analyzed repo                   |
-| `package_name`    | `name` from package.json (fallback `"unknown"`)      |
-| `package_version` | `version` from package.json (fallback `"0.0.0"`)     |
-| `declared`        | Sorted names from `dependencies` + `devDependencies` |
-| `imported`        | Sorted bare package names found in source            |
-| `drift`           | Sorted names declared but never imported             |
-| `undeclared`      | Sorted names imported but not declared               |
-
-All name lists are sorted.
-
-## SBOM
-
-Written by `--sbom <path>` as CycloneDX 1.5 JSON:
-
-- `bomFormat` `"CycloneDX"`, `specVersion` `"1.5"`, `version` 1
-- `metadata.timestamp` — current time in UTC, `Z` suffix
-- `metadata.tools` — impactprism-analysis 0.1.0
-- `metadata.component` — the app itself
-- `components` — one `type: "library"` entry per declared dependency
-  (`dependencies` + `devDependencies`), each with a purl of
-  `pkg:npm/<name>@<version>`, the name percent-encoded (`@` -> `%40`,
-  `/` -> `%2F`)
-
-Version resolution order:
-
-1. `package-lock.json` — `packages["node_modules/<name>"]`, then
-   `packages["<name>"]`, then `dependencies["<name>"]`
-2. `npm-shrinkwrap.json` — same lookups
-3. Declared version range from `package.json`
-4. `0.0.0`
-
-## Drift vs undeclared
-
-- **Drift** — declared in `package.json` but never imported in source.
-- **Undeclared** — imported in source but absent from `package.json`.
-
-Example: `package.json` declares only `react` (`"react": "^18.2.0"`), and a
-source file imports `lodash`:
+Given this manifest and import:
 
 ```json
-{ "dependencies": { "react": "^18.2.0" } }
-```
-
-```js
-import _ from 'lodash';
-```
-
-- `react` -> drift (declared but unused)
-- `lodash` -> undeclared (used but not declared)
-
-## Scan scope
-
-- Scans `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs`, `.cjs` files
-- Recognizes ES module imports (default, named, namespace, bare), dynamic
-  `import()`, and CommonJS `require()`
-- Skips `node_modules`, `build`, `dist`, `.git`, `.cache`, `coverage`, `public`,
-  and dot-directories
-- Ignores relative and absolute specifiers (`./x`, `../x`, `/x`), `node:`
-  specifiers, and Node built-ins (`fs`, `path`, ...) — built-ins are NOT
-  counted as imports
-- Subpaths are reduced to the package root (`lodash/map` -> `lodash`)
-- Scoped packages are kept as `@scope/pkg`
-
-## Samples and demo
-
-Canonical sample outputs live under `docs/samples/`, generated from the demo
-sources in `demo/`:
-
-| File | Description |
-|------|-------------|
-| [docs/samples/evidence-sample.md](docs/samples/evidence-sample.md) | CRA evidence pack for a repo with findings — overall status `REVIEW_REQUIRED` |
-| [docs/samples/sample-bom.json](docs/samples/sample-bom.json) | CycloneDX 1.5 SBOM |
-| [docs/samples/sample-sarif.json](docs/samples/sample-sarif.json) | SARIF 2.1.0 report |
-| [docs/samples/clean-evidence.md](docs/samples/clean-evidence.md) | CRA evidence pack for a clean repo — overall status `PASS` |
-
-The demo sources are reproducible fixtures:
-
-- [demo/npm-app](demo/npm-app) — repo with findings (drift and/or undeclared dependencies)
-- [demo/clean-app](demo/clean-app) — clean repo (no findings)
-
-Regenerate the samples from the demo sources with the documented CLI:
-
-```
-python main.py analyze demo/npm-app --sbom docs/samples/sample-bom.json --report report.json
-python main.py evidence report.json --markdown docs/samples/evidence-sample.md
-python main.py analyze demo/clean-app --report clean-report.json
-python main.py evidence clean-report.json --markdown docs/samples/clean-evidence.md
-```
-
-## Evidence pack
-
-`evidence.py` turns a scan report JSON (as produced by
-`python analysis.py <repo_dir> --report report.json`) into a clause-grounded
-evidence pack, in both Markdown and JSON, annotating each finding with CRA
-article IDs.
-
-### Usage
-
-```
-python evidence.py <scan_report.json> [--markdown PATH] [--json PATH] [--stdout]
-```
-
-| Option                      | Description                                                       |
-|-----------------------------|-------------------------------------------------------------------|
-| `<scan_report>` (positional) | Input report JSON to convert; must exist, else exit code 2      |
-| `--markdown <path>`         | Write the Markdown evidence pack to this path (default: `evidence.md`) |
-| `--json <path>`             | Write the JSON evidence pack to this path (default: `evidence.json`)   |
-| `--stdout`                  | Print the JSON evidence to stdout, skipping the JSON file         |
-
-### Exit codes
-
-| Code | Meaning                            |
-|------|------------------------------------|
-| 0    | Success                            |
-| 2    | Missing or invalid input report    |
-
-### CRA clause mapping
-
-| Category     | CRA clauses                                              |
-|--------------|----------------------------------------------------------|
-| `undeclared` | Art 13(1)(b), Art 14(1), Annex I Part II, Annex VII      |
-| `drift`      | Art 13(1)(a), Annex I Part I                             |
-
-### Output JSON
-
-Written by `--json <path>`, or printed to stdout by `--stdout`:
-
-```json
+// package.json
 {
-  "generator": "impactprism-evidence",
-  "version": "0.1.0",
-  "timestamp": "2026-08-15T12:00:00Z",
-  "source_report": "report.json",
-  "package_name": "my-app",
-  "package_version": "1.0.0",
-  "clause_map": { "undeclared": ["Art 13(1)(b)", "Art 14(1)", "Annex I Part II", "Annex VII"], "drift": ["Art 13(1)(a)", "Annex I Part I"] },
-  "findings": [
-    {
-      "category": "undeclared",
-      "name": "lodash",
-      "clauses": ["Art 13(1)(b)", "Art 14(1)", "Annex I Part II", "Annex VII"],
-      "rationale": "Undeclared dependencies fall outside the SBOM/component transparency required by Art 13(1)(b) and evade the vulnerability-handling obligations of Art 14(1)/Annex VII."
-    }
-  ],
-  "summary": { "total_findings": 1, "undeclared_count": 1, "drift_count": 0, "clean": false }
+  "dependencies": { "react": "^18.2.0" },
+  "devDependencies": { "jest": "^29.0.0" }
 }
 ```
 
-### Output Markdown
+```js
+// src/index.js
+import _ from 'lodash';
+import axios from 'axios';
+```
 
-Written by `--markdown <path>`:
+| Finding type | One-line definition | In this example |
+|--------------|---------------------|-----------------|
+| `UNDECLARED_DIRECT_USE` | Imported in source but neither declared in `package.json` nor present in the lockfile. | `lodash` |
+| `DECLARED_UNUSED_CANDIDATE` (drift) | Declared in `package.json` but never imported anywhere in the scanned source. | `react` |
+| `DIRECT_DEPENDENCY_USED_TRANSITIVELY` | Imported directly in source but only resolvable through the lockfile — not declared. | `axios` (when present in the lockfile only) |
+| `SCOPE_MISMATCH` | A dependency used outside its declared scope, e.g. a `devDependency` imported in production code, or a production dependency imported only in tests. | `jest` imported in production code |
+| `MISSING_LOCKFILE` | A manifest declares at least one dependency but no effective lockfile (`package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock`, `pnpm-lock.yaml`) exists; emitted once per manifest. | `package.json` without a lockfile |
+| `LOCKFILE_MANIFEST_MISMATCH` | The manifest and lockfile disagree: a declared dependency with no locked version, a locked version outside the declared range, or a lockfile-only package that is neither declared nor imported. | `react` pinned to a version outside `^18.2.0` |
 
-- H1 title: `ImpactPrism Evidence Pack`
-- A metadata block (generator, version, timestamp, source report, package)
-- One `## Findings` subsection per finding, each with its category, name,
-  clauses, and rationale
-- A `## CRA references` table listing the mapped article IDs
+Two further findings are emitted but are not part of the core six: `UNRESOLVED_IMPORT` (an import that resolves to no existing file or module) and `SCANNER_ERROR` (a manifest that cannot be parsed, so a clean scan cannot be trusted).
 
-A clean report yields `clean: true`, `findings: []`, and a "No findings" line
-in the markdown.
+## Demo and screenshots
 
-## CRA CI check
+Ready-made fixture apps with planted findings live in [demo/README.md](demo/README.md): `demo/npm-app` demonstrates drift and an undeclared dependency, `demo/clean-app` demonstrates a clean pass.
 
-The workflow in `.github/workflows/cra-check.yml` runs on every pull request.
-It checks out the PR branch, runs `python main.py analyze . --report report.json`
-(exit 1 means drift and/or undeclared dependencies—critical findings that map
-to CRA clauses), then runs
-`python main.py evidence report.json --markdown evidence.md --json evidence.json`.
-The generated Markdown evidence pack is posted as a PR comment using the default
-`GITHUB_TOKEN` with `pull-requests: write`, and the check fails when the analyze
-exit code is non-zero (1 = critical findings, 2 = error).
+- [impactprism-scan-terminal.png](docs/screenshots/impactprism-scan-terminal.png) — `impactprism scan` terminal output with findings
+- [evidence-pack-markdown.png](docs/screenshots/evidence-pack-markdown.png) — rendered Markdown evidence pack
+- [github-action-pr-comment.png](docs/screenshots/github-action-pr-comment.png) — the GitHub Action posting an evidence summary as a PR comment
+- [sample-sbom-snippet.png](docs/screenshots/sample-sbom-snippet.png) — a sample CycloneDX SBOM snippet
 
-| Exit code | Result |
-|-----------|--------|
-| 0 | Green — clean |
-| 1 | Red — critical findings (drift and/or undeclared dependencies) |
-| 2 | Red — error |
+## GitHub Action
 
-On fork PRs, the token is read-only until a maintainer approves the workflow, so
-the comment may be skipped but the gate still fails.
+Add ImpactPrism to your pull requests in four lines:
 
-## Missing lockfile policy
+```yaml
+- name: ImpactPrism scan
+  uses: bulltickr/impactprism@v0.2.0
+  with:
+    repo-path: ${{ github.workspace }}
+    fail-on: finding
+```
 
-An npm manifest that declares at least one dependency must have an effective
-lockfile. `MISSING_LOCKFILE` fires once per manifest when none of
-`package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock`, or `pnpm-lock.yaml`
-exists for the manifest directory or an ancestor workspace root — one finding
-per manifest, not per dependency:
+The composite action is fully offline (no account, no API key), produces `findings.json`, `bom.json`, `impactprism.sarif`, `evidence.json`/`evidence.md` and `summary.md`, uploads a SARIF report to code scanning, and exits per the `fail-on` policy (`never` | `finding` | `all`). See [action/README.md](action/README.md) for inputs, outputs and required workflow permissions.
 
-| Field      | Value                |
-|------------|----------------------|
-| finding    | `MISSING_LOCKFILE`   |
-| severity   | MEDIUM               |
-| confidence | HIGH                 |
-| status     | OPEN                 |
-| ecosystem  | npm                  |
+## Go support
 
-A lockfile that exists but cannot be parsed is NOT treated as missing: each
-declared dependency then produces a `LOCKFILE_MANIFEST_MISMATCH` finding, and
-`MISSING_LOCKFILE` is never also emitted for that manifest.
+The ecosystem is auto-detected from the presence of `package.json` (npm) or `go.mod` (Go); the GitHub Action can force it via its `ecosystem: npm|go` input.
 
-Without a lockfile the resolved dependency tree is unreproducible and
-vulnerability tracking is impossible, undermining the obligations of CRA
-Art 14(1) and Annex VII — the finding's clause mapping.
+- Manifest sources: `go.mod` (module, `require`, `replace`), `go.work` (workspace member modules and their `replace` rules), `go.sum` (checksums), and `vendor/modules.txt` for vendored builds.
+- A package-level import graph is aggregated to the module level; each module is classified by observed use (`used`/`direct`).
+- Go findings: `UNDECLARED_DIRECT_USE` (imported but not declared in `go.mod`), `DECLARED_UNUSED_CANDIDATE` (direct dependency never imported), `DIRECT_DEPENDENCY_USED_TRANSITIVELY` (imported directly but only declared indirect), `LOCKFILE_MANIFEST_MISMATCH` (declared module with no `go.sum` entry) and `UNRESOLVED_IMPORT` (import resolves to no declared module).
+- Standard-library and main-module imports are excluded from findings.
 
-The action gate treats the finding by severity threshold:
+## Evidence pack
 
-| `severity-threshold` | Outcome          | Exit code |
-|----------------------|------------------|-----------|
-| `low` (default)      | `policy-failure` | 1         |
-| `high`               | `finding`        | 0         |
+`impactprism evidence <scan_report.json>` (or the `--evidence` flag on `scan`) turns the scan report into a CRA clause-grounded evidence pack in Markdown and JSON. Each finding carries its mapped clauses, a rationale, and a status (`REVIEW_REQUIRED` for drift/undeclared, otherwise `NOT_ASSESSED`); a clean report is `PASS`. See [docs/samples/evidence-sample.md](docs/samples/evidence-sample.md) for a canonical rendered example.
 
-Note: this section documents the intended policy; the implementation had not
-landed in the working tree when it was written — re-verify once it does.
+| Evidence category | CRA clauses |
+|-------------------|-------------|
+| `undeclared` | Art 13(1)(b), Art 14(1), Annex I Part II, Annex VII |
+| `drift` | Art 13(1)(a), Annex I Part I |
 
-## Tests
+The clause map is the single source of truth in [src/impactprism/cra_clauses.yaml](src/impactprism/cra_clauses.yaml) (schema v2, `map_version 1.0.0`, legal source "Regulation (EU) 2024/2847 — Cyber Resilience Act"). `impactprism clauses` loads and validates it.
+
+## Output formats
+
+| Output | Format | Contents |
+|--------|--------|----------|
+| `findings.json` | JSON | Raw scan report produced by the GitHub Action |
+| `bom.json` | CycloneDX 1.6 | SBOM with per-component hashes, scope, and `impactprism:direct`/`transitive`/`scope` properties plus a dependency graph |
+| `impactprism.sarif` | SARIF 2.1.0 | Findings as code-scanning results with file/line locations |
+| `evidence.json` / `evidence.md` | JSON / Markdown | Evidence pack with per-finding CRA clause mapping and rationale |
+| `summary.md` | Markdown | Human-readable action outcome summary (also appended to the job step summary) |
+| `--json` stdout | JSON | The scan report printed to stdout, including the `sbom` key |
+
+## ImpactPrism vs. the alternatives
+
+ImpactPrism is not a vulnerability scanner. Trivy and Dependency-Check tell you a declared component has a known CVE; ImpactPrism tells you there is a component in your code that nobody declared — the failure mode manifest-only tools cannot see.
+
+| Dimension | ImpactPrism | CycloneDX CLI | Syft | Trivy | OWASP Dependency-Check |
+|-----------|-------------|---------------|------|-------|-------------------------|
+| SBOM generation | CycloneDX (npm, Go) | CycloneDX (native, ~25 ecosystems) | SPDX + CycloneDX | CycloneDX + SPDX | CycloneDX (SPDX limited) |
+| Drift/undeclared detection | Yes — core feature | No | No | No | No |
+| CRA clause mapping | Yes — Art 13(1)(a/b), Art 14(1), Annex I, Annex VII | No (raw SBOM) | No | No | No |
+| Evidence pack | Yes — Markdown + JSON | No | No | No | No |
+| Needs vulnerability DB | No | No | No | Yes (OSV/GHSA/trivy-db) | Yes (NVD) |
+| Offline | Yes | Yes | Yes | Yes (with DB mirroring caveat) | Yes |
+
+## Exit codes
+
+| Command | 0 | 1 | 2 |
+|---------|---|---|---|
+| `scan` / `analyze` | Clean — no drift, undeclared or scope findings | Findings present | Error (bad path, missing manifest/lockfile, scanner error) |
+| `evidence` / `clauses` | Success | — | Error (missing/invalid input, invalid clause map) |
+
+## CLI reference
 
 ```
+impactprism scan <repo> [--exclude PAT] [--sbom PATH] [--report PATH] [--evidence PATH] [--json]
+impactprism analyze <repo_dir> [--exclude PAT] [--sbom PATH] [--report PATH] [--json]
+impactprism evidence <scan_report> [--markdown PATH] [--json PATH] [--stdout]
+impactprism clauses [path]
+```
+
+| Subcommand | Arguments | Flags |
+|------------|-----------|-------|
+| `scan` | `<repo>` — repository to scan | `--exclude PAT` (repeatable), `--sbom PATH`, `--report PATH`, `--evidence PATH`, `--json` |
+| `analyze` | `<repo_dir>` — repository to analyze | `--exclude PAT` (repeatable), `--sbom PATH`, `--report PATH`, `--json` |
+| `evidence` | `<scan_report>` — report JSON | `--markdown PATH` (default `evidence.md`), `--json PATH` (default `evidence.json`), `--stdout` |
+| `clauses` | `[path]` — optional clause-map YAML | — |
+
+`--exclude` skips directories by name (defaults: `tests`, `fixtures`, `demo`, `node_modules`, `build`, `dist`, `.git`, `.cache`, `coverage`, `public`). `impactprism scan` runs analyze + evidence in one shot; `python -m impactprism` is equivalent.
+
+## Tests and development
+
+```bash
+pip install -e .[test]
 python -m pytest tests -q
 ```
 
-Run from the repo root.
+CI runs on every push and pull request on a Python 3.9 / 3.11 / 3.12 matrix: `pip install -e .[test]`, `python -m pytest -q`, `python -m build`, and an `impactprism scan .` exit-0 self-check.
 
-CI runs on every push and pull request, executing on a Python 3.9/3.11/3.12
-matrix: `pip install -e .[test]`, `pytest -q`, `python -m build`, and an
-`impactprism scan .` exit-0 self-check.
+## License, security, contributing, feedback
 
-## License
-
-Released under the [MIT License](LICENSE).
-
-Copyright (c) 2026 ImpactPrism contributors.
+- **License** — [MIT](LICENSE), Copyright (c) 2026 ImpactPrism contributors.
+- **Security** — report vulnerabilities privately via the [GitHub issues](https://github.com/bulltickr/impactprism/issues) tracker; the scanner itself is offline and never sends source code anywhere.
+- **Contributing** — issues and pull requests welcome; run the full test suite before opening a PR.
+- **Feedback** — found a dependency your SBOM tool can't see? [Open an issue](https://github.com/bulltickr/impactprism/issues) or join the discussion. ImpactPrism is free and MIT — stars, issues and PRs are the funnel.

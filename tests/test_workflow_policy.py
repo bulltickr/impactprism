@@ -1,0 +1,118 @@
+import os
+import re
+
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+WORKFLOW = os.path.join(ROOT, ".github", "workflows", "cra-check.yml")
+
+
+def _step_blocks(raw):
+    headers = list(re.finditer(r"(?m)^ {6}- name: ", raw))
+    return [
+        raw[match.start() : next_match.start() if next_match else len(raw)]
+        for match, next_match in zip(headers, headers[1:] + [None])
+    ]
+
+
+def _job_block(raw, job_name):
+    header = re.search(rf"(?m)^  {re.escape(job_name)}:\s*$", raw)
+    assert header is not None, f"job {job_name!r} was not found"
+    following = re.search(r"(?m)^  \S.*$", raw[header.end() :])
+    end = header.end() + following.start() if following else len(raw)
+    return raw[header.start() : end]
+
+
+def _permissions_block(raw):
+    header = re.search(r"(?m)^permissions:\s*$", raw)
+    assert header is not None, "file-level permissions block was not found"
+    following = re.search(r"(?m)^\S.*$", raw[header.end() :])
+    end = header.end() + following.start() if following else len(raw)
+    return raw[header.start() : end]
+
+
+def _workflow_text():
+    return open(WORKFLOW, encoding="utf-8").read()
+
+
+def test_every_checkout_disables_persisted_credentials():
+    raw = _workflow_text()
+    checkout_blocks = [
+        block for block in _step_blocks(raw) if "uses: actions/checkout@v4" in block
+    ]
+    assert checkout_blocks, "workflow must contain at least one checkout step"
+    assert all(
+        "persist-credentials: false" in block for block in checkout_blocks
+    ), "every checkout step must set persist-credentials: false"
+    assert "persist-credentials: true" not in raw, (
+        "workflow must not enable persisted checkout credentials"
+    )
+
+
+def test_checkout_refs_trusted_base_sha():
+    raw = _workflow_text()
+    assert any(
+        "github.event.pull_request.base.sha" in block for block in _step_blocks(raw)
+    ), "a checkout step must use the trusted pull request base SHA"
+
+
+def test_scanner_runs_from_trusted_base_with_read_only_token():
+    raw = _workflow_text()
+    analyze = next(
+        (
+            block
+            for block in _step_blocks(raw)
+            if "python main.py analyze" in block
+        ),
+        None,
+    )
+    assert analyze is not None, "analyze step was not found"
+    assert "working-directory: scanner" in analyze, (
+        "analyze step must run from the trusted scanner checkout"
+    )
+    assert '"${{ github.workspace }}/pr"' in analyze, (
+        "analyze step must scan the pull request checkout"
+    )
+    job = _job_block(raw, "cra-check")
+    assert "pull-requests: write" not in job, (
+        "scanner job must not have pull-requests write permission"
+    )
+    permissions = _permissions_block(raw)
+    assert "contents: read" in permissions, (
+        "file-level permissions must grant contents read access"
+    )
+    assert "pull-requests: write" not in permissions, (
+        "file-level permissions must not grant pull-requests write access"
+    )
+
+
+def test_evidence_is_bounded():
+    raw = _workflow_text()
+    steps = _step_blocks(raw)
+    upload_index = next(
+        (
+            index
+            for index, block in enumerate(steps)
+            if "actions/upload-artifact@" in block
+        ),
+        None,
+    )
+    assert upload_index is not None, "workflow must contain an evidence upload step"
+    assert any(
+        "[:65536]" in block and "ord(" in block
+        for block in steps[:upload_index]
+    ), "evidence must be bounded and filtered before upload"
+    comment = next(
+        (
+            block
+            for block in steps
+            if "uses: actions/github-script@v7" in block
+        ),
+        None,
+    )
+    assert comment is not None, "workflow must contain a github-script comment step"
+    assert ".slice(0, 65536)" in comment, (
+        "posted comment content must be limited to 65536 characters"
+    )
+    assert raw.count("65536") >= 2, (
+        "workflow must apply the evidence size bound in at least two places"
+    )

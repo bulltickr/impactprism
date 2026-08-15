@@ -6,8 +6,8 @@
 - Map version: 1.0.0
 - Legal source: Regulation (EU) 2024/2847 - Cyber Resilience Act
 - Overall status: REVIEW_REQUIRED
-- Timestamp: 2026-08-15T21:10:08.203708Z
-- Source report: docs/samples/sample-report.json
+- Timestamp: 2026-08-15T21:26:48.377321Z
+- Source report: C:\Users\quint\Desktop\OPS\products\impactprism\report.json
 - Package: impactprism-demo@1.0.0
 
 ## Findings

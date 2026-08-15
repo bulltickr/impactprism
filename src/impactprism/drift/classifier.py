@@ -1,0 +1,958 @@
+"""Dependency-drift classification for npm and Go repositories.
+
+Combines manifest, lockfile and source-import evidence to emit ``Finding``
+objects describing dependency drift: undeclared direct use, direct
+dependencies used only transitively, scope mismatches, declared-unused
+candidates, manifest/lockfile disagreement and unresolved imports. Malformed
+input never raises; whatever could be parsed is classified.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from .. import go_imports, go_manifest as go_manifest_module
+from .. import imports, manifest as manifest_module
+from .models import Confidence, Finding, FindingType, Severity, Status
+
+__all__ = [
+    "DriftReport",
+    "analyze_repo",
+    "classify_drift",
+    "classify_npm",
+    "classify_go",
+]
+
+_NODE_BUILTINS = {
+    "assert",
+    "async_hooks",
+    "buffer",
+    "child_process",
+    "cluster",
+    "console",
+    "constants",
+    "crypto",
+    "dgram",
+    "diagnostics_channel",
+    "dns",
+    "domain",
+    "events",
+    "fs",
+    "http",
+    "http2",
+    "https",
+    "inspector",
+    "module",
+    "net",
+    "os",
+    "path",
+    "perf_hooks",
+    "process",
+    "punycode",
+    "querystring",
+    "readline",
+    "repl",
+    "stream",
+    "string_decoder",
+    "sys",
+    "timers",
+    "timers/promises",
+    "tls",
+    "trace_events",
+    "tty",
+    "url",
+    "util",
+    "util/types",
+    "v8",
+    "vm",
+    "wasi",
+    "worker_threads",
+    "zlib",
+}
+
+_NPM_SUFFIXES = (".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs")
+_LOCKFILE_NAMES = ("package-lock.json", "npm-shrinkwrap.json", "yarn.lock", "pnpm-lock.yaml")
+_TEST_SEGMENTS = {"test", "tests", "__tests__", "__mocks__", "spec"}
+
+
+class DriftReport:
+    """A collection of drift findings for one repository."""
+
+    def __init__(self, findings):
+        self.findings = list(findings)
+
+    def by_type(self) -> dict:
+        """Return findings grouped by type, keys ordered by ``FindingType``."""
+        grouped = {}
+        for finding_type in FindingType:
+            grouped[finding_type] = [
+                finding
+                for finding in self.findings
+                if finding.finding_type == finding_type
+            ]
+        return grouped
+
+    def as_dicts(self) -> list:
+        """Return the findings as a list of dictionaries."""
+        return [finding.as_dict() for finding in self.findings]
+
+    def __len__(self) -> int:
+        return len(self.findings)
+
+    def __iter__(self):
+        return iter(self.findings)
+
+
+def analyze_repo(
+    repo_dir: str,
+    ecosystem: str = "auto",
+    commit_sha: str | None = None,
+) -> DriftReport:
+    """Classify dependency drift for a whole repository.
+
+    The ecosystem is auto-detected from ``package.json`` (npm) or ``go.mod``
+    (go) unless given explicitly; a missing ecosystem raises ``ValueError``.
+    ``commit_sha`` is stamped onto every finding.
+    """
+    repo = Path(repo_dir)
+    if ecosystem == "auto":
+        if (repo / "package.json").is_file():
+            ecosystem = "npm"
+        elif (repo / "go.mod").is_file():
+            ecosystem = "go"
+        else:
+            raise ValueError("unsupported or missing ecosystem")
+
+    if ecosystem == "npm":
+        try:
+            manifests = manifest_module.parse_manifests(repo_dir)
+        except Exception as exc:
+            return DriftReport(
+                [_finding_for_manifest_parse_error(repo_dir, "npm", exc, commit_sha=commit_sha)]
+            )
+        try:
+            imported = imports.scan_imports(repo_dir)
+        except Exception:
+            imported = {}
+        findings = _classify_npm_manifests(
+            manifests, imported, repo_dir=repo_dir, commit_sha=commit_sha
+        )
+    elif ecosystem == "go":
+        try:
+            graph = go_imports.build_import_graph(repo_dir)
+        except Exception as exc:
+            return DriftReport(
+                [_finding_for_manifest_parse_error(repo_dir, "go", exc, commit_sha=commit_sha)]
+            )
+        try:
+            go_sum = go_manifest_module.parse_go_sum(repo_dir)
+        except Exception:
+            go_sum = []
+        findings = classify_go(
+            graph,
+            repo_dir=repo_dir,
+            go_sum=go_sum,
+            commit_sha=commit_sha,
+        )
+    else:
+        raise ValueError(f"unsupported ecosystem: {ecosystem!r}")
+
+    for finding in findings:
+        finding.commit_sha = commit_sha
+    return DriftReport(sorted(findings, key=_sort_key))
+
+
+def _finding_for_manifest_parse_error(repo_dir, ecosystem, exc, *, commit_sha=None):
+    repo = Path(repo_dir)
+    if ecosystem == "npm":
+        manifest = repo / "package.json"
+    else:
+        manifest = repo / "go.mod"
+    manifest_str = str(manifest) if manifest.is_file() else str(repo)
+    return Finding(
+        finding_type=FindingType.SCANNER_ERROR,
+        severity=Severity.CRITICAL,
+        confidence=Confidence.HIGH,
+        status=Status.OPEN,
+        ecosystem=ecosystem,
+        package=None,
+        file=None,
+        line=None,
+        column=None,
+        lockfile=None,
+        scope=None,
+        commit_sha=commit_sha,
+        manifest=manifest_str,
+        explanation=(
+            f"Manifest for {ecosystem} repository at {repo_dir!r} failed to parse: "
+            f"{exc}. Findings would be unreliable, so this is reported as a scanner error."
+        ),
+    )
+
+
+def _classify_npm_manifests(manifests, imported, *, repo_dir, commit_sha):
+    repo = Path(repo_dir)
+    partitions = {str(manifest.package_path): (manifest, {}) for manifest in manifests}
+    for path, records in imported.items():
+        owner = manifest_module._manifest_for_path(manifests, path)
+        key = str(owner.package_path)
+        partitions[key][1][path] = records
+
+    findings = []
+    for manifest, partition_imports in partitions.values():
+        lockfile_parse_error = False
+        try:
+            lockfile = manifest_module._lockfile_for_manifest(repo, manifest)
+        except manifest_module.LockfileParseError as exc:
+            lockfile_parse_error = True
+            findings.extend(
+                _findings_for_unparseable_lockfile(manifest, exc, commit_sha=commit_sha)
+            )
+            lockfile = None
+        except Exception:
+            lockfile = None
+        if (
+            lockfile is None
+            and not lockfile_parse_error
+            and getattr(manifest, "dependencies", [])
+        ):
+            findings.append(_finding_for_missing_lockfile(manifest, commit_sha=commit_sha))
+        findings.extend(
+            classify_npm(
+                manifest,
+                partition_imports,
+                repo_dir=repo_dir,
+                lockfile=lockfile,
+                commit_sha=commit_sha,
+            )
+        )
+
+    return _postprocess_npm_findings(
+        findings,
+        declared_anywhere=_declared_packages(manifests),
+        imported_anywhere=_imported_packages(imported),
+    )
+
+
+def _findings_for_unparseable_lockfile(manifest, exc, *, commit_sha=None):
+    package_path = getattr(manifest, "package_path", None)
+    manifest_str = str(Path(package_path).resolve()) if package_path is not None else None
+    lockfile_path = getattr(exc, "lockfile_path", None)
+    lockfile_str = str(lockfile_path) if lockfile_path is not None else None
+    cause = getattr(exc, "cause", None)
+    cause_text = str(cause) if cause is not None else str(exc)
+    findings = []
+    for dependency in getattr(manifest, "dependencies", []) or []:
+        findings.append(
+            Finding(
+                finding_type=FindingType.LOCKFILE_MANIFEST_MISMATCH,
+                severity=Severity.MEDIUM,
+                confidence=Confidence.HIGH,
+                status=Status.OPEN,
+                ecosystem="npm",
+                package=dependency.name,
+                manifest=manifest_str,
+                lockfile=lockfile_str,
+                commit_sha=commit_sha,
+                scope=getattr(dependency, "kind", "dependencies"),
+                explanation=(
+                    f"Lockfile {lockfile_str!r} failed to parse ({cause_text}); "
+                    f"declared dependency {dependency.name!r} cannot be verified "
+                    "against a lockfile."
+                ),
+            )
+        )
+    return findings
+
+
+def _finding_for_missing_lockfile(manifest, *, commit_sha=None):
+    package_path = getattr(manifest, "package_path", None)
+    manifest_str = str(Path(package_path).resolve()) if package_path is not None else None
+    return Finding(
+        finding_type=FindingType.MISSING_LOCKFILE,
+        severity=Severity.MEDIUM,
+        confidence=Confidence.HIGH,
+        status=Status.OPEN,
+        ecosystem="npm",
+        package=None,
+        manifest=manifest_str,
+        lockfile=None,
+        commit_sha=commit_sha,
+        scope="dependencies",
+        explanation=(
+            f"Manifest {manifest_str} declares dependencies but no recognized lockfile "
+            "(package-lock.json, npm-shrinkwrap.json, yarn.lock, pnpm-lock.yaml) was found, "
+            "so declared and used dependencies cannot be verified for reproducibility."
+        ),
+    )
+
+
+def _declared_packages(manifests):
+    declared = set()
+    for manifest in manifests:
+        declared.update(manifest.dependency_names())
+    return declared
+
+
+def _imported_packages(imported):
+    packages = set()
+    for records in imported.values():
+        for record in records:
+            specifier = getattr(record, "specifier", None)
+            if not isinstance(specifier, str) or not specifier:
+                continue
+            if _is_node_builtin(specifier) or _is_relative(specifier):
+                continue
+            package = _extract_package(specifier)
+            if package is not None:
+                packages.add(package)
+    return packages
+
+
+def _postprocess_npm_findings(findings, *, declared_anywhere, imported_anywhere):
+    deduplicated = []
+    seen = set()
+    for finding in findings:
+        if finding.finding_id in seen:
+            continue
+        seen.add(finding.finding_id)
+        deduplicated.append(finding)
+
+    filtered = []
+    for finding in deduplicated:
+        if (
+            finding.finding_type == FindingType.LOCKFILE_MANIFEST_MISMATCH
+            and finding.severity == Severity.LOW
+            and finding.package is not None
+            and (finding.package in declared_anywhere or finding.package in imported_anywhere)
+        ):
+            continue
+        filtered.append(finding)
+    return filtered
+
+
+def classify_drift(
+    declared,
+    imported,
+    *,
+    ecosystem: str,
+    repo_dir: str | None = None,
+    lockfile=None,
+    commit_sha: str | None = None,
+) -> list:
+    """Dispatch drift classification to the ecosystem-specific classifier."""
+    if ecosystem == "npm":
+        findings = classify_npm(
+            declared,
+            imported,
+            repo_dir=repo_dir,
+            lockfile=lockfile,
+            commit_sha=commit_sha,
+        )
+    elif ecosystem == "go":
+        go_sum = None
+        if repo_dir is not None:
+            try:
+                go_sum = go_manifest_module.parse_go_sum(repo_dir)
+            except Exception:
+                go_sum = None
+        findings = classify_go(
+            imported,
+            repo_dir=repo_dir,
+            go_manifest=None,
+            go_sum=go_sum,
+            commit_sha=commit_sha,
+        )
+    else:
+        raise ValueError(f"unsupported ecosystem: {ecosystem!r}")
+    return sorted(findings, key=_sort_key)
+
+
+def classify_npm(
+    manifest,
+    imports_by_file,
+    *,
+    repo_dir: str | None = None,
+    lockfile=None,
+    commit_sha: str | None = None,
+) -> list:
+    """Classify npm dependency drift.
+
+    ``manifest`` is a ``manifest.Manifest``, ``imports_by_file`` maps source
+    paths to lists of ``ImportRecord``, and ``lockfile`` is a
+    ``manifest.Lockfile`` or ``None``.
+    """
+    findings = []
+
+    declared_names = set(manifest.dependency_names())
+    lockfile_resolved = lockfile.resolved_versions if lockfile is not None else {}
+    if not isinstance(lockfile_resolved, dict):
+        lockfile_resolved = {}
+
+    repo = Path(repo_dir).resolve() if repo_dir is not None else None
+    manifest_path = None
+    package_path = getattr(manifest, "package_path", None)
+    if package_path is not None:
+        manifest_path = Path(package_path).resolve()
+    elif repo is not None:
+        manifest_path = repo / "package.json"
+    lockfile_path = _find_lockfile(repo) if repo is not None else None
+
+    bare_sites = {}
+    relative_sites = {}
+
+    for path in sorted(imports_by_file.keys(), key=lambda item: str(item)):
+        records = imports_by_file[path]
+        if not records:
+            continue
+        file_path = Path(path).resolve()
+        source = _read_source(file_path)
+        is_test = _is_test_path(file_path)
+        for record in records:
+            if record is None:
+                continue
+            specifier = getattr(record, "specifier", None)
+            if not isinstance(specifier, str) or not specifier:
+                continue
+            start = getattr(record, "start", 0)
+            if not isinstance(start, int):
+                start = 0
+            line, column = _line_column(source, start)
+            if _is_relative(specifier):
+                if not _resolves_relative(repo, file_path, specifier):
+                    relative_sites.setdefault(
+                        specifier, (specifier, str(file_path), line, column)
+                    )
+                continue
+            if _is_node_builtin(specifier):
+                continue
+            package = _extract_package(specifier)
+            if package is None:
+                continue
+            bare_sites.setdefault(package, []).append(
+                (specifier, str(file_path), line, column, is_test)
+            )
+
+    for package in sorted(bare_sites):
+        sites = bare_sites[package]
+        first = min(sites, key=lambda site: (site[1], site[2], site[3]))
+        specifier, file_str, line, column, _ = first
+        if package in declared_names:
+            continue
+        if package in lockfile_resolved:
+            findings.append(
+                Finding(
+                    finding_type=FindingType.DIRECT_DEPENDENCY_USED_TRANSITIVELY,
+                    severity=Severity.MEDIUM,
+                    confidence=Confidence.HIGH,
+                    status=Status.OPEN,
+                    ecosystem="npm",
+                    package=package,
+                    file=file_str,
+                    line=line,
+                    column=column,
+                    commit_sha=commit_sha,
+                    scope="dependencies",
+                    explanation=(
+                        f"Package {package!r} (from import {specifier!r}) is present in "
+                        "the lockfile but not declared in package.json."
+                    ),
+                )
+            )
+        else:
+            findings.append(
+                Finding(
+                    finding_type=FindingType.UNDECLARED_DIRECT_USE,
+                    severity=Severity.HIGH,
+                    confidence=Confidence.HIGH,
+                    status=Status.OPEN,
+                    ecosystem="npm",
+                    package=package,
+                    file=file_str,
+                    line=line,
+                    column=column,
+                    commit_sha=commit_sha,
+                    scope="dependencies",
+                    explanation=(
+                        f"Package {package!r} (from import {specifier!r}) is neither "
+                        "declared in package.json nor present in the lockfile."
+                    ),
+                )
+            )
+
+    dependencies = getattr(manifest, "dependencies", []) or []
+    by_kind = {}
+    for dependency in dependencies:
+        by_kind.setdefault(getattr(dependency, "kind", "dependencies"), []).append(dependency)
+
+    for dependency in by_kind.get("devDependencies", []):
+        package = dependency.name
+        sites = bare_sites.get(package)
+        if not sites:
+            continue
+        non_test = [site for site in sites if not site[4]]
+        if not non_test:
+            continue
+        first = min(non_test, key=lambda site: (site[1], site[2], site[3]))
+        findings.append(
+            Finding(
+                finding_type=FindingType.SCOPE_MISMATCH,
+                severity=Severity.LOW,
+                confidence=Confidence.MEDIUM,
+                status=Status.OPEN,
+                ecosystem="npm",
+                package=package,
+                file=first[1],
+                line=first[2],
+                column=first[3],
+                commit_sha=commit_sha,
+                scope=dependency.kind,
+                explanation=(
+                    f"Dev-only dependency {package!r} is imported in non-test code "
+                    f"({first[1]})."
+                ),
+            )
+        )
+
+    for dependency in by_kind.get("dependencies", []):
+        package = dependency.name
+        sites = bare_sites.get(package)
+        if not sites:
+            continue
+        if not all(site[4] for site in sites):
+            continue
+        first = min(sites, key=lambda site: (site[1], site[2], site[3]))
+        findings.append(
+            Finding(
+                finding_type=FindingType.SCOPE_MISMATCH,
+                severity=Severity.LOW,
+                confidence=Confidence.MEDIUM,
+                status=Status.OPEN,
+                ecosystem="npm",
+                package=package,
+                file=first[1],
+                line=first[2],
+                column=first[3],
+                commit_sha=commit_sha,
+                scope=dependency.kind,
+                explanation=(
+                    f"Production dependency {package!r} is imported only in test code "
+                    f"({first[1]})."
+                ),
+            )
+        )
+
+    for dependency in dependencies:
+        package = dependency.name
+        if package in bare_sites:
+            continue
+        findings.append(
+            Finding(
+                finding_type=FindingType.DECLARED_UNUSED_CANDIDATE,
+                severity=Severity.LOW,
+                confidence=Confidence.MEDIUM,
+                status=Status.ADVISORY,
+                ecosystem="npm",
+                package=package,
+                commit_sha=commit_sha,
+                scope=dependency.kind,
+                explanation=(
+                    f"Declared dependency {package!r} is never imported by any "
+                    "scanned file."
+                ),
+            )
+        )
+
+    if lockfile is not None:
+        for dependency in dependencies:
+            if dependency.locked_version is not None:
+                continue
+            findings.append(
+                Finding(
+                    finding_type=FindingType.LOCKFILE_MANIFEST_MISMATCH,
+                    severity=Severity.MEDIUM,
+                    confidence=Confidence.HIGH,
+                    status=Status.OPEN,
+                    ecosystem="npm",
+                    package=dependency.name,
+                    manifest=str(manifest_path) if manifest_path is not None else None,
+                    lockfile=str(lockfile_path) if lockfile_path is not None else None,
+                    commit_sha=commit_sha,
+                    scope=dependency.kind,
+                    explanation=(
+                        f"Declared dependency {dependency.name!r} has no locked "
+                        "version in the lockfile."
+                    ),
+                )
+            )
+        for package in sorted(lockfile_resolved):
+            if package in declared_names or package in bare_sites:
+                continue
+            findings.append(
+                Finding(
+                    finding_type=FindingType.LOCKFILE_MANIFEST_MISMATCH,
+                    severity=Severity.LOW,
+                    confidence=Confidence.MEDIUM,
+                    status=Status.OPEN,
+                    ecosystem="npm",
+                    package=package,
+                    commit_sha=commit_sha,
+                    scope="dependencies",
+                    explanation=(
+                        f"Lockfile package {package!r} is neither declared in "
+                        "package.json nor imported anywhere."
+                    ),
+                )
+            )
+
+    for specifier in sorted(relative_sites):
+        _, file_str, line, column = relative_sites[specifier]
+        findings.append(
+            Finding(
+                finding_type=FindingType.UNRESOLVED_IMPORT,
+                severity=Severity.HIGH,
+                confidence=Confidence.MEDIUM,
+                status=Status.OPEN,
+                ecosystem="npm",
+                package=specifier,
+                file=file_str,
+                line=line,
+                column=column,
+                commit_sha=commit_sha,
+                scope="dependencies",
+                explanation=(
+                    f"Relative import {specifier!r} does not resolve to an existing "
+                    "file."
+                ),
+            )
+        )
+
+    return findings
+
+
+def classify_go(
+    graph,
+    *,
+    repo_dir: str | None = None,
+    go_manifest=None,
+    go_sum=None,
+    commit_sha: str | None = None,
+) -> list:
+    """Classify Go dependency drift.
+
+    ``graph`` is a ``go_imports.GoImportGraph``; declared dependencies and
+    replaces are taken from the workspace-aware ``graph.manifest`` (a
+    ``go_mod.GoManifest``), which merges go.work member modules rather than
+    reading the root go.mod alone. ``go_manifest`` is a deprecated legacy
+    fallback used only when ``graph.manifest`` has no modules; ``go_sum``
+    supplies the parsed ``go.sum`` entries. Scope is always ``None``.
+    """
+    findings = []
+
+    repo = Path(repo_dir).resolve() if repo_dir is not None else None
+    graph_manifest = getattr(graph, "manifest", None)
+    main_module = getattr(graph_manifest, "main_module", None)
+
+    go_mod_path = None
+    if go_manifest is not None and getattr(go_manifest, "go_mod_path", None) is not None:
+        go_mod_path = Path(go_manifest.go_mod_path).resolve()
+    if go_mod_path is None and getattr(graph_manifest, "repo_dir", None) is not None:
+        go_mod_path = Path(graph_manifest.repo_dir) / "go.mod"
+    if go_mod_path is None and repo is not None:
+        go_mod_path = repo / "go.mod"
+
+    declared_deps = []
+    declared_names = set()
+    if getattr(graph_manifest, "modules", None) is None and go_manifest is not None:
+        for dependency in getattr(go_manifest, "dependencies", []) or []:
+            module = getattr(dependency, "module", None)
+            if not module:
+                continue
+            direct = not bool(getattr(dependency, "indirect", False))
+            declared_deps.append((module, direct))
+            declared_names.add(module)
+    else:
+        for entry in getattr(graph_manifest, "modules", []) or []:
+            module = getattr(entry, "module_path", None)
+            if not module:
+                continue
+            if main_module and module == main_module:
+                continue
+            source = getattr(entry, "source", None)
+            if source not in (None, "go.mod", "go.work"):
+                continue
+            direct = bool(getattr(entry, "direct", False))
+            declared_deps.append((module, direct))
+            declared_names.add(module)
+
+    target_for = {}
+    replacement_targets = set()
+    if getattr(graph_manifest, "modules", None) is None and go_manifest is not None:
+        for rule in getattr(go_manifest, "replaces", []) or []:
+            old = getattr(rule, "old", None)
+            new = getattr(rule, "new", None)
+            if not old or not new:
+                continue
+            if getattr(rule, "local", False) or new.startswith(".") or Path(new).is_absolute():
+                continue
+            target_for[old] = new
+            replacement_targets.add(new)
+        for dependency in getattr(go_manifest, "dependencies", []) or []:
+            module = getattr(dependency, "module", None)
+            replacement = getattr(dependency, "replacement", None)
+            if not module or not replacement:
+                continue
+            if getattr(dependency, "replacement_local", False):
+                continue
+            target = replacement.split()[0]
+            if target.startswith(".") or Path(target).is_absolute():
+                continue
+            target_for[module] = target
+            replacement_targets.add(target)
+    else:
+        for entry in getattr(graph_manifest, "modules", []) or []:
+            module = getattr(entry, "module_path", None)
+            if not module:
+                continue
+            if main_module and module == main_module:
+                continue
+            source = getattr(entry, "source", None)
+            if source not in (None, "go.mod", "go.work"):
+                continue
+            replaced_by = getattr(entry, "replaced_by", None)
+            if replaced_by is None:
+                continue
+            new_path = getattr(replaced_by, "new_path", None)
+            if new_path is None or getattr(replaced_by, "local_dir", None) is not None:
+                continue
+            target_for[module] = new_path
+            replacement_targets.add(new_path)
+
+    declared_names.update(replacement_targets)
+
+    if go_sum is None and repo is not None:
+        try:
+            go_sum = go_manifest_module.parse_go_sum(repo_dir)
+        except Exception:
+            go_sum = []
+    go_sum_entries = go_sum or []
+    go_sum_modules = {entry.module for entry in go_sum_entries if getattr(entry, "module", None)}
+
+    go_sum_path = None
+    if repo is not None:
+        go_sum_path = repo / "go.sum"
+    if go_sum_path is None and getattr(graph_manifest, "repo_dir", None) is not None:
+        go_sum_path = Path(graph_manifest.repo_dir) / "go.sum"
+
+    module_usage = getattr(graph, "module_usage", {}) or {}
+
+    for module_path in sorted(module_usage):
+        usage = module_usage[module_path]
+        if not usage.used or usage.direct:
+            continue
+        findings.append(
+            Finding(
+                finding_type=FindingType.DIRECT_DEPENDENCY_USED_TRANSITIVELY,
+                severity=Severity.MEDIUM,
+                confidence=Confidence.HIGH,
+                status=Status.OPEN,
+                ecosystem="go",
+                package=module_path,
+                file=_first_import_file(usage),
+                commit_sha=commit_sha,
+                scope=None,
+                explanation=(
+                    f"Module {module_path!r} is imported directly but only declared "
+                    "as an indirect dependency in go.mod."
+                ),
+            )
+        )
+
+    for module_path in sorted(module_usage):
+        usage = module_usage[module_path]
+        if not usage.used:
+            continue
+        if module_path in declared_names:
+            continue
+        if main_module and module_path == main_module:
+            continue
+        findings.append(
+            Finding(
+                finding_type=FindingType.UNDECLARED_DIRECT_USE,
+                severity=Severity.HIGH,
+                confidence=Confidence.HIGH,
+                status=Status.OPEN,
+                ecosystem="go",
+                package=module_path,
+                file=_first_import_file(usage),
+                commit_sha=commit_sha,
+                scope=None,
+                explanation=f"Module {module_path!r} is imported but not declared in go.mod.",
+            )
+        )
+
+    for module, direct in declared_deps:
+        if not direct:
+            continue
+        usage = module_usage.get(target_for.get(module, module))
+        if usage is not None and usage.used:
+            continue
+        findings.append(
+            Finding(
+                finding_type=FindingType.DECLARED_UNUSED_CANDIDATE,
+                severity=Severity.LOW,
+                confidence=Confidence.MEDIUM,
+                status=Status.ADVISORY,
+                ecosystem="go",
+                package=module,
+                commit_sha=commit_sha,
+                scope=None,
+                explanation=f"Declared dependency {module!r} is never imported.",
+            )
+        )
+
+    if go_sum_entries:
+        for module, _direct in declared_deps:
+            if target_for.get(module, module) in go_sum_modules:
+                continue
+            findings.append(
+                Finding(
+                    finding_type=FindingType.LOCKFILE_MANIFEST_MISMATCH,
+                    severity=Severity.MEDIUM,
+                    confidence=Confidence.HIGH,
+                    status=Status.OPEN,
+                    ecosystem="go",
+                    package=module,
+                    manifest=str(go_mod_path.resolve()) if go_mod_path is not None else None,
+                    lockfile=str(go_sum_path.resolve()) if go_sum_path is not None else None,
+                    commit_sha=commit_sha,
+                    scope=None,
+                    explanation=f"Declared module {module!r} has no go.sum entry.",
+                )
+            )
+
+    for import_path in getattr(graph, "unresolved", []) or []:
+        edge = None
+        for candidate in getattr(graph, "package_edges", []) or []:
+            if candidate.resolved is None and getattr(candidate, "import_path", None) == import_path:
+                edge = candidate
+                break
+        file_str = None
+        if edge is not None and getattr(edge, "package_dir", None) is not None:
+            file_str = str(Path(edge.package_dir).resolve())
+        findings.append(
+            Finding(
+                finding_type=FindingType.UNRESOLVED_IMPORT,
+                severity=Severity.HIGH,
+                confidence=Confidence.MEDIUM,
+                status=Status.OPEN,
+                ecosystem="go",
+                package=import_path,
+                file=file_str,
+                commit_sha=commit_sha,
+                scope=None,
+                explanation=(
+                    f"Go import {import_path!r} cannot be resolved to a declared "
+                    "module."
+                ),
+            )
+        )
+
+    return findings
+
+
+def _first_import_file(usage):
+    files = getattr(usage, "importing_files", None)
+    if not files:
+        return None
+    first = files[0]
+    return str(Path(first).resolve())
+
+
+def _sort_key(finding):
+    return (
+        finding.finding_type.value,
+        finding.package or "",
+        finding.file or "",
+        finding.line if finding.line is not None else -1,
+        finding.column if finding.column is not None else -1,
+    )
+
+
+def _read_source(path: Path) -> str:
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as handle:
+            return handle.read()
+    except OSError:
+        return ""
+
+
+def _line_column(source: str, start: int) -> tuple:
+    prefix = source[:start]
+    line = prefix.count("\n") + 1
+    column = start - prefix.rfind("\n")
+    return line, column
+
+
+def _find_lockfile(repo: Path):
+    for name in _LOCKFILE_NAMES:
+        candidate = repo / name
+        if candidate.is_file():
+            return candidate.resolve()
+    return None
+
+
+def _is_node_builtin(specifier: str) -> bool:
+    return specifier.startswith("node:") or specifier in _NODE_BUILTINS
+
+
+def _is_relative(specifier: str) -> bool:
+    return specifier.startswith("./") or specifier.startswith("../") or specifier.startswith("/")
+
+
+def _extract_package(specifier: str):
+    if specifier.startswith("@"):
+        parts = specifier.split("/")
+        if len(parts) < 2:
+            return None
+        return "/".join(parts[:2])
+    return specifier.split("/", 1)[0]
+
+
+def _is_test_path(path: Path) -> bool:
+    if any(part in _TEST_SEGMENTS for part in path.parts):
+        return True
+    name = path.name
+    return ".test." in name or ".spec." in name
+
+
+def _resolves_relative(repo, importing_file: Path, specifier: str) -> bool:
+    base = importing_file.parent
+    root = repo.resolve() if repo is not None else base.resolve()
+    try:
+        target = (base / specifier).resolve()
+    except OSError:
+        return False
+    if repo is not None and not _is_within(target, root):
+        return False
+    candidates = [target]
+    if target.is_dir():
+        for suffix in _NPM_SUFFIXES:
+            candidates.append(target / ("index" + suffix))
+    else:
+        for suffix in _NPM_SUFFIXES:
+            candidates.append(Path(str(target) + suffix))
+    for candidate in candidates:
+        if repo is not None and not _is_within(candidate, root):
+            continue
+        if candidate.is_file():
+            return True
+    return False
+
+
+def _is_within(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+        return True
+    except ValueError:
+        return False

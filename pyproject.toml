@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "impactprism"
+version = "0.1.0"
+description = "CRA-grounded JavaScript dependency analysis with CycloneDX SBOM output"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {file = "LICENSE"}
+keywords = ["sbom", "cyclonedx", "supply-chain", "dependency-analysis", "javascript", "security"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Environment :: Console",
+    "Topic :: Software Development",
+]
+dependencies = ["cyclonedx-python-lib[validation]>=11,<12", "PyYAML>=6.0"]
+
+[project.scripts]
+impactprism = "impactprism.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/bulltickr/impactprism"
+Repository = "https://github.com/bulltickr/impactprism"
+Issues = "https://github.com/bulltickr/impactprism/issues"
+Documentation = "https://github.com/bulltickr/impactprism#readme"
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+impactprism = ["cra_clauses.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

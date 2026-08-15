@@ -1,0 +1,117 @@
+# CRA clause-to-evidence mapping, versioned schema.
+# Regulation (EU) 2024/2847 - Cyber Resilience Act.
+#
+# Each clause lists the detectors that can produce engineering evidence,
+# the concrete evidence_requirements those detectors would satisfy, and the
+# limitations of what the engineering checks can prove.
+schema_version: 2
+map_version: "1.0.0"
+legal_source: "Regulation (EU) 2024/2847 - Cyber Resilience Act"
+description: "Versioned clause-to-evidence mapping for the EU Cyber Resilience Act (Regulation (EU) 2024/2847), grounding engineering evidence in CRA articles."
+
+# Maps evidence categories to the CRA clauses they trigger (single source of truth for evidence.py).
+categories:
+  undeclared:
+    clauses:
+      - "Art 13(1)(b)"
+      - "Art 14(1)"
+      - "Annex I Part II"
+      - "Annex VII"
+  drift:
+    clauses:
+      - "Art 13(1)(a)"
+      - "Annex I Part I"
+
+clauses:
+  "Art 13(1)(a)":
+    id: "Art 13(1)(a)"
+    legal_reference: "Article 13(1)(a), Regulation (EU) 2024/2847"
+    title: "Secure by default"
+    applicability: "Products with digital elements; the default configuration must minimise unnecessary components and shipped credentials."
+    detectors:
+      - "dependency_drift"
+      - "default_credentials"
+    evidence_requirements:
+      - "Declared but unused dependencies are removed to minimise the attack surface."
+      - "No default or initial credentials are shipped; users must set their own credentials."
+    limitations:
+      - "Static analysis cannot prove a dependency is unused at runtime; removal decisions require manual review."
+      - "Static inspection cannot prove that credentials are never accepted by the running product."
+    status: "ACTIVE"
+  "Art 13(1)(b)":
+    id: "Art 13(1)(b)"
+    legal_reference: "Article 13(1)(b), Regulation (EU) 2024/2847"
+    title: "Component transparency"
+    applicability: "Products with digital elements; manufacturers must provide transparency about included software components."
+    detectors:
+      - "sbom_coverage"
+      - "undeclared_dependency"
+    evidence_requirements:
+      - "An SBOM is produced that lists every included component with its pinned version."
+      - "Every package imported in source is declared so the SBOM stays complete."
+    limitations:
+      - "The SBOM is only as accurate as the declared manifests; build-time composition may differ from what is declared."
+      - "Static analysis cannot prove that all runtime-resolved packages are captured in the SBOM."
+    status: "ACTIVE"
+  "Art 14(1)":
+    id: "Art 14(1)"
+    legal_reference: "Article 14(1), Regulation (EU) 2024/2847"
+    title: "Vulnerability handling and remediation"
+    applicability: "Products with digital elements; manufacturers must handle and remediate vulnerabilities effectively and promptly."
+    detectors:
+      - "vuln_scan"
+      - "remediation_tracking"
+    evidence_requirements:
+      - "Pinned dependency versions are scanned for known vulnerabilities."
+      - "Every reported vulnerability is remediated and the outcome is documented."
+    limitations:
+      - "Scan results only reflect the vulnerability databases used at scan time and may miss newer advisories."
+      - "Static scanning cannot prove that a vulnerability is reachable or exploitable in this product."
+    status: "ACTIVE"
+  "Annex I Part I":
+    id: "Annex I Part I"
+    legal_reference: "Annex I Part I, Regulation (EU) 2024/2847"
+    title: "Essential requirements - secure configuration and minimisation"
+    applicability: "Products with digital elements; essential cybersecurity requirements cover secure configuration and minimisation."
+    detectors:
+      - "dependency_drift"
+      - "default_credentials"
+    evidence_requirements:
+      - "Unnecessary components are removed to keep the configuration minimal and secure by default."
+      - "Configuration ships secure by default without weak or preset credentials."
+    limitations:
+      - "Static configuration review cannot prove that minimal configuration is preserved across all product builds."
+      - "Static checks cannot detect credentials introduced at runtime or through environment configuration."
+    status: "ACTIVE"
+  "Annex I Part II":
+    id: "Annex I Part II"
+    legal_reference: "Annex I Part II, Regulation (EU) 2024/2847"
+    title: "Essential requirements - vulnerability handling documentation"
+    applicability: "Products with digital elements; technical documentation must support transparency and component information."
+    detectors:
+      - "sbom_coverage"
+      - "undeclared_dependency"
+    evidence_requirements:
+      - "Technical documentation describes all included components and their versions."
+      - "Component lists cover all imported packages so documentation stays accurate."
+    limitations:
+      - "Documentation can only reflect the source state examined; generated artifacts may diverge from documentation."
+      - "Static analysis cannot confirm that documentation is kept in sync with future releases."
+    status: "ACTIVE"
+  "Annex VII":
+    id: "Annex VII"
+    legal_reference: "Annex VII, Regulation (EU) 2024/2847"
+    title: "Documented vulnerability-handling process"
+    applicability: "Manufacturers of products with digital elements; the vulnerability-handling process must be documented and followed."
+    detectors:
+      - "vuln_scan"
+      - "remediation_tracking"
+      - "security_advisories"
+    evidence_requirements:
+      - "The vulnerability-handling process includes continuous scanning of components."
+      - "The process documents the handling and remediation of each finding."
+      - "Fixed vulnerabilities are disclosed through security advisories."
+    limitations:
+      - "Static evidence shows the process exists on paper but cannot prove its operational effectiveness."
+      - "Advisory coverage cannot be proven complete for components not listed in the SBOM."
+    status: "ACTIVE"

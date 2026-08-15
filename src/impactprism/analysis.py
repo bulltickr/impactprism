@@ -1,10 +1,12 @@
 import argparse
 import json
-import os
-import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+from .sbom.cyclonedx_builder import build_cyclonedx_sbom
+from .imports import scan_imports as _ast_scan_imports
+from .manifest import LockfileParseError, parse_lockfile
 
 
 SOURCE_EXTENSIONS = {".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"}
@@ -17,11 +19,6 @@ BUILTIN_MODULES = {
     "readline/promises", "repl", "constants", "domain", "inspector", "punycode",
     "async_hooks", "v8", "wasi", "test", "node:test",
 }
-IMPORT_PATTERN = re.compile(
-    r"\bimport\s+(?:(?:[\s\S]*?)\sfrom\s+)?['\"]([^'\"]+)['\"]"
-)
-DYNAMIC_IMPORT_PATTERN = re.compile(r"\bimport\s*\(\s*['\"]([^'\"]+)['\"]\s*\)")
-REQUIRE_PATTERN = re.compile(r"\brequire\s*\(\s*['\"]([^'\"]+)['\"]\s*\)")
 
 
 def _load_json(path):
@@ -44,7 +41,12 @@ def _package_version(package_json):
 
 def _declared_dependencies(package_json):
     declared = {}
-    for group_name in ("dependencies", "devDependencies"):
+    for group_name in (
+        "dependencies",
+        "devDependencies",
+        "peerDependencies",
+        "optionalDependencies",
+    ):
         group = package_json.get(group_name, {})
         if isinstance(group, dict):
             declared.update(
@@ -57,6 +59,11 @@ def _declared_dependencies(package_json):
 def _lockfile_version(lockfile, name):
     if not isinstance(lockfile, dict):
         return None
+    resolved_versions = lockfile.get("_resolved_versions")
+    if isinstance(resolved_versions, dict):
+        version = resolved_versions.get(name)
+        if version is not None:
+            return str(version)
     packages = lockfile.get("packages")
     if isinstance(packages, dict):
         entry = packages.get("node_modules/" + name)
@@ -93,52 +100,86 @@ def _encode_purl_name(name):
     return "".join(encoded)
 
 
+def _dependency_groups(package_json):
+    for group_name in (
+        "dependencies",
+        "devDependencies",
+        "peerDependencies",
+        "optionalDependencies",
+    ):
+        group = package_json.get(group_name)
+        if not isinstance(group, dict):
+            continue
+        for name, version in group.items():
+            yield group_name, str(name), "" if version is None else str(version)
+
+
+def _lockfile_integrity(lockfile, name):
+    if not isinstance(lockfile, dict):
+        return []
+    packages = lockfile.get("packages")
+    if not isinstance(packages, dict):
+        return []
+    entry = packages.get("node_modules/" + name)
+    if not isinstance(entry, dict):
+        return []
+    integrity = entry.get("integrity")
+    if not isinstance(integrity, str) or not integrity:
+        return []
+    content = integrity[len("sha512-"):] if integrity.startswith("sha512-") else integrity
+    return [{"alg": "SHA-512", "content": content}]
+
+
+def _normalized_components(package_json, lockfile):
+    components = []
+    seen = set()
+    for group_name, name, declared_version in _dependency_groups(package_json):
+        if name in seen:
+            continue
+        seen.add(name)
+        version = _resolved_version(name, declared_version, lockfile)
+        purl = "pkg:npm/" + _encode_purl_name(name) + "@" + version
+        components.append(
+            {
+                "name": name,
+                "version": version,
+                "purl": purl,
+                "scope": "required" if group_name == "dependencies" else "optional",
+                "direct": True,
+                "transitive": False,
+                "hashes": _lockfile_integrity(lockfile, name),
+                "ecosystem": "npm",
+            }
+        )
+    return components
+
+
 def generate_sbom(repo_dir: str) -> dict:
     repo_path = Path(repo_dir).resolve()
     package_json = _load_json(repo_path / "package.json")
-    declared = _declared_dependencies(package_json)
     lockfile = None
     for lockfile_name in ("package-lock.json", "npm-shrinkwrap.json"):
         lockfile_path = repo_path / lockfile_name
         if lockfile_path.is_file():
             lockfile = _load_json(lockfile_path)
             break
+    if lockfile is None:
+        try:
+            parsed = parse_lockfile(repo_path)
+        except LockfileParseError:
+            parsed = None
+        if parsed is not None and parsed.kind != "npm":
+            lockfile = {"_resolved_versions": parsed.resolved_versions}
 
-    components = []
-    for name in sorted(declared):
-        version = _resolved_version(name, declared[name], lockfile)
-        purl = "pkg:npm/" + _encode_purl_name(name) + "@" + version
-        components.append(
-            {
-                "type": "library",
-                "bom-ref": purl,
-                "name": name,
-                "version": version,
-                "purl": purl,
-            }
-        )
-
-    return {
-        "bomFormat": "CycloneDX",
-        "specVersion": "1.5",
-        "version": 1,
-        "metadata": {
-            "timestamp": _utc_timestamp(),
-            "tools": [
-                {
-                    "vendor": "impactprism",
-                    "name": "impactprism-analysis",
-                    "version": "0.1.0",
-                }
-            ],
-            "component": {
-                "type": "application",
-                "name": _package_name(package_json),
-                "version": _package_version(package_json),
-            },
-        },
-        "components": components,
+    components = _normalized_components(package_json, lockfile)
+    metadata = {
+        "name": _package_name(package_json),
+        "version": _package_version(package_json),
+        "tool_name": "impactprism-cyclonedx",
+        "tool_version": "0.1.0",
+        "timestamp": _utc_timestamp(),
     }
+    return build_cyclonedx_sbom(components, metadata=metadata)
 
 
 def _normalize_name(specifier):
@@ -157,26 +198,13 @@ def _normalize_name(specifier):
     return name
 
 
-def scan_imports(repo_dir: str) -> set:
+def scan_imports(repo_dir: str, excludes=None) -> set:
     imported = set()
-    for root, directories, files in os.walk(repo_dir):
-        directories[:] = [
-            directory
-            for directory in directories
-            if directory not in SKIPPED_DIRECTORIES and not directory.startswith(".")
-        ]
-        for filename in files:
-            if filename.startswith(".") or Path(filename).suffix.lower() not in SOURCE_EXTENSIONS:
-                continue
-            try:
-                source = (Path(root) / filename).read_text(encoding="utf-8", errors="ignore")
-            except OSError:
-                continue
-            for pattern in (IMPORT_PATTERN, DYNAMIC_IMPORT_PATTERN, REQUIRE_PATTERN):
-                for match in pattern.finditer(source):
-                    name = _normalize_name(match.group(1))
-                    if name is not None:
-                        imported.add(name)
+    for records in _ast_scan_imports(repo_dir, exclude=excludes).values():
+        for record in records:
+            name = _normalize_name(record.specifier)
+            if name is not None:
+                imported.add(name)
     return imported
 
 
@@ -249,6 +277,13 @@ def main(argv=None) -> int:
     parser.add_argument("repo_dir")
     parser.add_argument("--sbom", metavar="PATH")
     parser.add_argument("--report", metavar="PATH")
+    parser.add_argument(
+        "--exclude",
+        action="append",
+        metavar="PAT",
+        default=None,
+        help="skip directories with this name (repeatable)",
+    )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
 
@@ -264,13 +299,16 @@ def main(argv=None) -> int:
     try:
         package_json = _load_json(package_path)
         declared = set(_declared_dependencies(package_json))
-        imported = scan_imports(str(repo_path))
+        excludes = set(args.exclude) if args.exclude else None
+        imported = scan_imports(str(repo_path), excludes=excludes)
         report = _report(repo_path, package_json, declared, imported)
+        sbom = generate_sbom(str(repo_path))
         if args.sbom:
-            _write_json(args.sbom, generate_sbom(str(repo_path)))
+            _write_json(args.sbom, sbom)
         if args.report:
             _write_json(args.report, report)
         if args.json:
+            report["sbom"] = sbom
             json.dump(report, sys.stdout, indent=2)
             print()
         else:

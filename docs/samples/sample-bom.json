@@ -41,7 +41,7 @@
       "type": "application",
       "version": "1.0.0"
     },
-    "timestamp": "2026-08-15T21:10:06.420465+00:00",
+    "timestamp": "2026-08-15T21:26:46.762116+00:00",
     "tools": [
       {
         "name": "impactprism-cyclonedx",
@@ -50,9 +50,9 @@
       }
     ]
   },
-  "serialNumber": "urn:uuid:6ceb5cd4-7123-4367-80a9-6e5f5b5d1160",
+  "serialNumber": "urn:uuid:be46e323-a61d-427c-b0a8-fe6a11430a7f",
   "version": 1,
-  "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
+  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
   "bomFormat": "CycloneDX",
-  "specVersion": "1.5"
+  "specVersion": "1.6"
 }
