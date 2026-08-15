@@ -1,0 +1,45 @@
+{
+  "generator": "impactprism-evidence",
+  "version": "0.1.0",
+  "timestamp": "2026-08-15T21:10:19.191897Z",
+  "schema_version": 2,
+  "map_version": "1.0.0",
+  "legal_source": "Regulation (EU) 2024/2847 - Cyber Resilience Act",
+  "source_report": "docs/samples/clean-report.json",
+  "package_name": "impactprism-clean-demo",
+  "package_version": "1.0.0",
+  "clause_map": {
+    "undeclared": [
+      "Art 13(1)(b)",
+      "Art 14(1)",
+      "Annex I Part II",
+      "Annex VII"
+    ],
+    "drift": [
+      "Art 13(1)(a)",
+      "Annex I Part I"
+    ]
+  },
+  "statuses": [
+    "PASS",
+    "FAIL",
+    "EVIDENCE_GAP",
+    "NOT_ASSESSED",
+    "REVIEW_REQUIRED"
+  ],
+  "overall_status": "PASS",
+  "findings": [],
+  "summary": {
+    "total_findings": 0,
+    "undeclared_count": 0,
+    "drift_count": 0,
+    "clean": true,
+    "status_counts": {
+      "PASS": 0,
+      "FAIL": 0,
+      "EVIDENCE_GAP": 0,
+      "NOT_ASSESSED": 0,
+      "REVIEW_REQUIRED": 0
+    }
+  }
+}

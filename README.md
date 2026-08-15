@@ -147,7 +147,7 @@ sources in `demo/`:
 | File | Description |
 |------|-------------|
 | [docs/samples/evidence-sample.md](docs/samples/evidence-sample.md) | CRA evidence pack for a repo with findings — overall status `REVIEW_REQUIRED` |
-| [docs/samples/sample-bom.json](docs/samples/sample-bom.json) | CycloneDX 1.6 SBOM |
+| [docs/samples/sample-bom.json](docs/samples/sample-bom.json) | CycloneDX 1.5 SBOM |
 | [docs/samples/sample-sarif.json](docs/samples/sample-sarif.json) | SARIF 2.1.0 report |
 | [docs/samples/clean-evidence.md](docs/samples/clean-evidence.md) | CRA evidence pack for a clean repo — overall status `PASS` |
 

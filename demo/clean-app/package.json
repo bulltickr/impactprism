@@ -1,0 +1,9 @@
+{
+  "name": "impactprism-clean-demo",
+  "version": "1.0.0",
+  "description": "Fixture app with no dependency drift for ImpactPrism clean demos",
+  "license": "MIT",
+  "dependencies": {
+    "lodash": "4.17.21"
+  }
+}

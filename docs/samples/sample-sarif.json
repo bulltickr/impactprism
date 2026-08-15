@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "ImpactPrism",
+          "rules": [
+            {
+              "id": "DECLARED_UNUSED_CANDIDATE",
+              "shortDescription": {
+                "text": "declared unused candidate"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              }
+            },
+            {
+              "id": "MISSING_LOCKFILE",
+              "shortDescription": {
+                "text": "missing lockfile"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              }
+            },
+            {
+              "id": "UNDECLARED_DIRECT_USE",
+              "shortDescription": {
+                "text": "undeclared direct use"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "DECLARED_UNUSED_CANDIDATE",
+          "level": "note",
+          "message": {
+            "text": "Declared dependency 'react' is never imported by any scanned file."
+          },
+          "properties": {
+            "outcome": "policy-failure",
+            "commit_sha": ""
+          }
+        },
+        {
+          "ruleId": "MISSING_LOCKFILE",
+          "level": "warning",
+          "message": {
+            "text": "Manifest C:\\Users\\quint\\Desktop\\OPS\\products\\impactprism\\demo\\npm-app\\package.json declares dependencies but no recognized lockfile (package-lock.json, npm-shrinkwrap.json, yarn.lock, pnpm-lock.yaml) was found, so declared and used dependencies cannot be verified for reproducibility."
+          },
+          "properties": {
+            "outcome": "policy-failure",
+            "commit_sha": ""
+          }
+        },
+        {
+          "ruleId": "UNDECLARED_DIRECT_USE",
+          "level": "error",
+          "message": {
+            "text": "Package 'missingpkg' (from import 'missingpkg') is neither declared in package.json nor present in the lockfile."
+          },
+          "properties": {
+            "outcome": "policy-failure",
+            "commit_sha": ""
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/index.js"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "properties": {
+        "outcome": "policy-failure",
+        "commit_sha": "",
+        "ecosystem": "npm"
+      }
+    }
+  ]
+}

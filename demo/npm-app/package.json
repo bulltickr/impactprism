@@ -1,0 +1,9 @@
+{
+  "name": "impactprism-demo",
+  "version": "1.0.0",
+  "description": "Fixture app with dependency drift for ImpactPrism findings demos",
+  "license": "MIT",
+  "dependencies": {
+    "react": "18.2.0"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "components": [
+    {
+      "bom-ref": "pkg:npm/react@18.2.0",
+      "name": "react",
+      "properties": [
+        {
+          "name": "impactprism:direct",
+          "value": "true"
+        },
+        {
+          "name": "impactprism:scope",
+          "value": "required"
+        },
+        {
+          "name": "impactprism:transitive",
+          "value": "false"
+        }
+      ],
+      "purl": "pkg:npm/react@18.2.0",
+      "scope": "required",
+      "type": "library",
+      "version": "18.2.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "dependsOn": [
+        "pkg:npm/react@18.2.0"
+      ],
+      "ref": "impactprism-demo@1.0.0"
+    },
+    {
+      "ref": "pkg:npm/react@18.2.0"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "bom-ref": "impactprism-demo@1.0.0",
+      "name": "impactprism-demo",
+      "type": "application",
+      "version": "1.0.0"
+    },
+    "timestamp": "2026-08-15T21:10:06.420465+00:00",
+    "tools": [
+      {
+        "name": "impactprism-cyclonedx",
+        "vendor": "impactprism",
+        "version": "0.1.0"
+      }
+    ]
+  },
+  "serialNumber": "urn:uuid:6ceb5cd4-7123-4367-80a9-6e5f5b5d1160",
+  "version": 1,
+  "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5"
+}

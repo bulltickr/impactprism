@@ -1,0 +1,17 @@
+{
+  "repo": "demo/npm-app",
+  "package_name": "impactprism-demo",
+  "package_version": "1.0.0",
+  "declared": [
+    "react"
+  ],
+  "imported": [
+    "missingpkg"
+  ],
+  "drift": [
+    "react"
+  ],
+  "undeclared": [
+    "missingpkg"
+  ]
+}

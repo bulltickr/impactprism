@@ -1,0 +1,13 @@
+{
+  "repo": "demo/clean-app",
+  "package_name": "impactprism-clean-demo",
+  "package_version": "1.0.0",
+  "declared": [
+    "lodash"
+  ],
+  "imported": [
+    "lodash"
+  ],
+  "drift": [],
+  "undeclared": []
+}
