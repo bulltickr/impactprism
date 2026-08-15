@@ -1,5 +1,7 @@
 # ImpactPrism
 
+[![CI](https://github.com/bulltickr/impactprism/actions/workflows/ci.yml/badge.svg)](https://github.com/bulltickr/impactprism/actions/workflows/ci.yml)
+
 A CLI that generates a CycloneDX SBOM from a Create React App / JS-TS repo's
 package.json and lockfile, then cross-checks declared dependencies against the
 imports actually used in the source, flagging drift (declared but unused) and
@@ -137,6 +139,32 @@ import _ from 'lodash';
 - Subpaths are reduced to the package root (`lodash/map` -> `lodash`)
 - Scoped packages are kept as `@scope/pkg`
 
+## Samples and demo
+
+Canonical sample outputs live under `docs/samples/`, generated from the demo
+sources in `demo/`:
+
+| File | Description |
+|------|-------------|
+| [docs/samples/evidence-sample.md](docs/samples/evidence-sample.md) | CRA evidence pack for a repo with findings — overall status `REVIEW_REQUIRED` |
+| [docs/samples/sample-bom.json](docs/samples/sample-bom.json) | CycloneDX 1.6 SBOM |
+| [docs/samples/sample-sarif.json](docs/samples/sample-sarif.json) | SARIF 2.1.0 report |
+| [docs/samples/clean-evidence.md](docs/samples/clean-evidence.md) | CRA evidence pack for a clean repo — overall status `PASS` |
+
+The demo sources are reproducible fixtures:
+
+- [demo/npm-app](demo/npm-app) — repo with findings (drift and/or undeclared dependencies)
+- [demo/clean-app](demo/clean-app) — clean repo (no findings)
+
+Regenerate the samples from the demo sources with the documented CLI:
+
+```
+python main.py analyze demo/npm-app --sbom docs/samples/sample-bom.json --report report.json
+python main.py evidence report.json --markdown docs/samples/evidence-sample.md
+python main.py analyze demo/clean-app --report clean-report.json
+python main.py evidence clean-report.json --markdown docs/samples/clean-evidence.md
+```
+
 ## Evidence pack
 
 `evidence.py` turns a scan report JSON (as produced by
@@ -229,6 +257,40 @@ exit code is non-zero (1 = critical findings, 2 = error).
 On fork PRs, the token is read-only until a maintainer approves the workflow, so
 the comment may be skipped but the gate still fails.
 
+## Missing lockfile policy
+
+An npm manifest that declares at least one dependency must have an effective
+lockfile. `MISSING_LOCKFILE` fires once per manifest when none of
+`package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock`, or `pnpm-lock.yaml`
+exists for the manifest directory or an ancestor workspace root — one finding
+per manifest, not per dependency:
+
+| Field      | Value                |
+|------------|----------------------|
+| finding    | `MISSING_LOCKFILE`   |
+| severity   | MEDIUM               |
+| confidence | HIGH                 |
+| status     | OPEN                 |
+| ecosystem  | npm                  |
+
+A lockfile that exists but cannot be parsed is NOT treated as missing: each
+declared dependency then produces a `LOCKFILE_MANIFEST_MISMATCH` finding, and
+`MISSING_LOCKFILE` is never also emitted for that manifest.
+
+Without a lockfile the resolved dependency tree is unreproducible and
+vulnerability tracking is impossible, undermining the obligations of CRA
+Art 14(1) and Annex VII — the finding's clause mapping.
+
+The action gate treats the finding by severity threshold:
+
+| `severity-threshold` | Outcome          | Exit code |
+|----------------------|------------------|-----------|
+| `low` (default)      | `policy-failure` | 1         |
+| `high`               | `finding`        | 0         |
+
+Note: this section documents the intended policy; the implementation had not
+landed in the working tree when it was written — re-verify once it does.
+
 ## Tests
 
 ```
@@ -236,3 +298,13 @@ python -m pytest tests -q
 ```
 
 Run from the repo root.
+
+CI runs on every push and pull request, executing on a Python 3.9/3.11/3.12
+matrix: `pip install -e .[test]`, `pytest -q`, `python -m build`, and an
+`impactprism scan .` exit-0 self-check.
+
+## License
+
+Released under the [MIT License](LICENSE).
+
+Copyright (c) 2026 ImpactPrism contributors.
