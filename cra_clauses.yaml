@@ -1,0 +1,60 @@
+# CRA clause-to-requirement mapping skeleton.
+# EU Cyber Resilience Act (Regulation (EU) 2024/2847).
+#
+# Each clause lists concrete engineering checks; every check names the
+# detector that verifies it (detectors overlap with the categories produced
+# by analysis.py / evidence.py where applicable, and with planned checks).
+schema_version: 1
+description: "Clause-to-requirement mapping for the EU Cyber Resilience Act (Regulation (EU) 2024/2847), used to ground engineering checks in CRA articles."
+
+clauses:
+  "Art 13(1)(a)":
+    id: "Art 13(1)(a)"
+    title: "Secure by default"
+    checks:
+      - detector: "dependency_drift"
+        requirement: "Declared but unused dependencies must be removed to minimise the attack surface."
+      - detector: "default_credentials"
+        requirement: "No default or initial credentials may be shipped; users must set their own."
+  "Art 13(1)(b)":
+    id: "Art 13(1)(b)"
+    title: "Component transparency"
+    checks:
+      - detector: "sbom_coverage"
+        requirement: "An SBOM listing every included component with its pinned version must be produced."
+      - detector: "undeclared_dependency"
+        requirement: "Every package imported in source must be declared to keep the SBOM complete."
+  "Art 14(1)":
+    id: "Art 14(1)"
+    title: "Vulnerability handling and remediation"
+    checks:
+      - detector: "vuln_scan"
+        requirement: "Pinned dependency versions must be scanned for known vulnerabilities."
+      - detector: "remediation_tracking"
+        requirement: "Every reported vulnerability must be remediated and the outcome documented."
+  "Annex I Part I":
+    id: "Annex I Part I"
+    title: "Essential requirements - secure configuration and minimisation"
+    checks:
+      - detector: "dependency_drift"
+        requirement: "Unnecessary components must be removed to keep the configuration minimal and secure by default."
+      - detector: "default_credentials"
+        requirement: "Configuration must ship secure by default without weak or preset credentials."
+  "Annex I Part II":
+    id: "Annex I Part II"
+    title: "Essential requirements - vulnerability handling documentation"
+    checks:
+      - detector: "sbom_coverage"
+        requirement: "Technical documentation must describe all included components and their versions."
+      - detector: "undeclared_dependency"
+        requirement: "Component lists must cover all imported packages so documentation stays accurate."
+  "Annex VII":
+    id: "Annex VII"
+    title: "Documented vulnerability-handling process"
+    checks:
+      - detector: "vuln_scan"
+        requirement: "The vulnerability-handling process must include continuous scanning of components."
+      - detector: "remediation_tracking"
+        requirement: "The process must document the handling and remediation of each finding."
+      - detector: "security_advisories"
+        requirement: "Fixed vulnerabilities must be disclosed through security advisories."
