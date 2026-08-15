@@ -160,7 +160,7 @@ pip install -e .[test]
 python -m pytest tests -q
 ```
 
-CI runs on every push and pull request on a Python 3.9 / 3.11 / 3.12 matrix: `pip install -e .[test]`, `python -m pytest -q`, `python -m build`, and an `impactprism scan .` exit-0 self-check.
+CI runs on every push and pull request on a Python 3.10 / 3.11 / 3.12 matrix: `pip install -e .[test]`, `python -m pytest -q`, `python -m build`, and an `impactprism scan .` exit-0 self-check.
 
 ## License, security, contributing, feedback
 
