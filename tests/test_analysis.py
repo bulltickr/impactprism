@@ -144,19 +144,48 @@ def test_generate_sbom_structure(tmp_path):
     assert sbom["metadata"]["tools"][0]["version"] == "0.1.0"
     assert isinstance(sbom["components"], list)
     names = [c["name"] for c in sbom["components"]]
-    assert names == sorted(names)
-    assert set(names) == {"react", "@scope/hooks", "lodash", "eslint"}
+    assert [c["purl"] for c in sbom["components"]] == sorted(
+        c["purl"] for c in sbom["components"]
+    )
+    assert set(names) == {"react", "hooks", "lodash", "eslint"}
     assert _component(sbom, "react")["type"] == "library"
     assert _component(sbom, "react")["version"] == "18.3.1"
     assert _component(sbom, "react")["purl"] == "pkg:npm/react@18.3.1"
     assert _component(sbom, "react")["scope"] == "required"
     assert (
-        _component(sbom, "@scope/hooks")["bom-ref"]
-        == "pkg:npm/%40scope%2Fhooks@1.4.2"
+        _component(sbom, "hooks")["bom-ref"]
+        == "pkg:npm/%40scope/hooks@1.4.2"
     )
-    assert _component(sbom, "@scope/hooks")["purl"] == "pkg:npm/%40scope/hooks@1.4.2"
-    assert _component(sbom, "@scope/hooks")["scope"] == "required"
+    assert _component(sbom, "hooks")["group"] == "@scope"
+    assert _component(sbom, "hooks")["purl"] == "pkg:npm/%40scope/hooks@1.4.2"
+    assert _component(sbom, "hooks")["scope"] == "required"
     assert _component(sbom, "eslint")["scope"] == "optional"
+
+
+def test_generate_sbom_fixture_contains_all_declared_components_and_root_edges(
+    sbom_fixture_repo,
+):
+    sbom = generate_sbom(str(sbom_fixture_repo))
+
+    assert {
+        (component.get("group"), component["name"], component["version"])
+        for component in sbom["components"]
+    } == {
+        ("@fixture", "core", "2.3.1"),
+        (None, "lodash", "4.17.21"),
+        (None, "tap", "18.2.0"),
+    }
+
+    root_dependency = next(
+        dependency
+        for dependency in sbom["dependencies"]
+        if dependency["ref"] == "sbom-fixture@1.0.0"
+    )
+    assert root_dependency["dependsOn"] == [
+        "pkg:npm/%40fixture/core@2.3.1",
+        "pkg:npm/lodash@4.17.21",
+        "pkg:npm/tap@18.2.0",
+    ]
 
 
 def test_generate_sbom_npm_integrity_hash(tmp_path):
@@ -250,11 +279,11 @@ def test_generate_sbom_yarn_berry_lockfile(tmp_path):
     )
     sbom = generate_sbom(str(repo))
     assert _component(sbom, "react")["version"] == "18.3.1"
-    assert _component(sbom, "@scope/pkg")["version"] == "1.2.3"
+    assert _component(sbom, "pkg")["version"] == "1.2.3"
     assert _component(sbom, "react")["purl"] == "pkg:npm/react@18.3.1"
     assert _component(sbom, "react")["scope"] == "required"
     assert (
-        _component(sbom, "@scope/pkg")["purl"]
+        _component(sbom, "pkg")["purl"]
         == "pkg:npm/%40scope/pkg@1.2.3"
     )
 

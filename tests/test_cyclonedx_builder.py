@@ -120,18 +120,21 @@ def test_valid_hash_is_emitted_and_invalid_hashes_are_dropped():
                 "name": "valid",
                 "version": "1.0.0",
                 "purl": valid_purl,
+                "direct": True,
                 "hashes": [{"alg": "SHA-256", "content": "a" * 64}],
             },
             {
                 "name": "invalid",
                 "version": "1.0.0",
                 "purl": invalid_purl,
+                "direct": True,
                 "hashes": [{"alg": "SHA-256", "content": "z" * 64}],
             },
             {
                 "name": "unknown",
                 "version": "1.0.0",
                 "purl": unknown_purl,
+                "direct": True,
                 "hashes": [{"alg": "MD5", "content": "a" * 32}],
             },
         ],
@@ -156,6 +159,7 @@ def test_base64_integrity_is_converted_to_hex_hash():
                 "name": "react",
                 "version": "18.3.1",
                 "purl": purl,
+                "direct": True,
                 "hashes": [{"alg": "SHA-512", "content": b64}],
             }
         ],
@@ -176,6 +180,7 @@ def test_malformed_base64_hash_is_dropped():
                 "name": "bad",
                 "version": "1.0.0",
                 "purl": purl,
+                "direct": True,
                 "hashes": [{"alg": "SHA-512", "content": "!!!notbase64!!!"}],
             }
         ],
@@ -233,7 +238,12 @@ def test_components_without_valid_purls_are_skipped():
             {"name": "non-string", "version": "1.0.0", "purl": 42},
             {"name": "not-a-purl", "version": "1.0.0", "purl": "not-a-purl"},
             {"name": "http", "version": "1.0.0", "purl": "http://x"},
-            {"name": "valid", "version": "1.0.0", "purl": valid_purl},
+            {
+                "name": "valid",
+                "version": "1.0.0",
+                "purl": valid_purl,
+                "direct": True,
+            },
         ],
         metadata={"name": "app", "version": "1.0.0"},
     )
@@ -251,6 +261,21 @@ def test_empty_components_produces_only_root_dependency():
     assert_valid_sbom(sbom)
     assert sbom.get("components", []) == []
     assert sbom["dependencies"] == [{"ref": root_ref}]
+
+
+def test_components_without_direct_dependency_raise_clear_graph_error():
+    with pytest.raises(ValueError, match="at least one component must be marked direct"):
+        build_cyclonedx_sbom(
+            [
+                {
+                    "name": "transitive",
+                    "version": "1.0.0",
+                    "purl": "pkg:pypi/transitive@1.0.0",
+                    "direct": False,
+                }
+            ],
+            metadata={"name": "app", "version": "1.0.0"},
+        )
 
 
 def test_missing_timestamp_defaults_to_current_utc_time():

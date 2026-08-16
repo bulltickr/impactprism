@@ -111,6 +111,13 @@ def _encode_purl_name(name):
     return "".join(encoded)
 
 
+def _encode_npm_purl_name(name):
+    if name.startswith("@") and "/" in name:
+        scope, package_name = name.split("/", 1)
+        return _encode_purl_name(scope) + "/" + _encode_purl_name(package_name)
+    return _encode_purl_name(name)
+
+
 def _dependency_groups(package_json):
     for group_name in (
         "dependencies",
@@ -149,7 +156,7 @@ def _normalized_components(package_json, lockfile):
             continue
         seen.add(name)
         version = _resolved_version(name, declared_version, lockfile)
-        purl = "pkg:npm/" + _encode_purl_name(name) + "@" + version
+        purl = "pkg:npm/" + _encode_npm_purl_name(name) + "@" + version
         components.append(
             {
                 "name": name,

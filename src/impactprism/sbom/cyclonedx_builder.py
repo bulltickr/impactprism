@@ -111,7 +111,8 @@ def build_cyclonedx_sbom(
         scope = item.get("scope")
         component = Component(
             type=ComponentType.LIBRARY,
-            name=item["name"],
+            group=package_url.namespace,
+            name=package_url.name,
             version=item["version"],
             bom_ref=purl,
             purl=package_url,
@@ -148,6 +149,12 @@ def build_cyclonedx_sbom(
         )
         if item.get("direct") is True:
             direct_refs.append(Dependency(ref=component_ref))
+
+    if bom_components and not direct_refs:
+        raise ValueError(
+            "Cannot build a complete dependency graph: at least one component "
+            "must be marked direct"
+        )
 
     dependencies.append(Dependency(ref=root_ref, dependencies=direct_refs))
     bom = Bom(
