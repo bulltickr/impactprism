@@ -43,7 +43,6 @@ jobs:
     env:
       SMOKE_WORKSPACE: ${{ github.workspace }}
       SMOKE_DIST: /tmp/impactprism-smoke-dist
-      SMOKE_WHEEL: /tmp/impactprism-smoke-dist/impactprism-built.whl
       SMOKE_VENV: /tmp/impactprism-smoke-venv
       SMOKE_FIXTURE: ${{ github.workspace }}/demo/clean-app
     steps:
@@ -71,7 +70,7 @@ jobs:
           set -- "$SMOKE_DIST"/impactprism-*.whl
           test "$#" -eq 1
           test -f "$1"
-          cp "$1" "$SMOKE_WHEEL"
+          printf 'SMOKE_WHEEL=%s\n' "$1" >> "$GITHUB_ENV"
 
       - name: Install wheel in temporary venv
         run: |
