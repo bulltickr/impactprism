@@ -44,6 +44,7 @@ jobs:
       SMOKE_WORKSPACE: ${{ github.workspace }}
       SMOKE_DIST: /tmp/impactprism-smoke-dist
       SMOKE_VENV: /tmp/impactprism-smoke-venv
+      SMOKE_PYTHON: /tmp/impactprism-smoke-venv/bin/python
       SMOKE_FIXTURE: ${{ github.workspace }}/demo/clean-app
     steps:
       - name: Checkout
@@ -75,15 +76,15 @@ jobs:
       - name: Install wheel in temporary venv
         run: |
           python -m venv --clear "$SMOKE_VENV"
-          test -x "$SMOKE_VENV/bin/python"
-          "$SMOKE_VENV/bin/python" -m pip install --upgrade pip
+          test -x "$SMOKE_PYTHON"
+          "$SMOKE_PYTHON" -m pip install --upgrade pip
           case "$SMOKE_WHEEL" in
             /*) ;;
             *) echo "Expected an absolute wheel path: $SMOKE_WHEEL" >&2; exit 1 ;;
           esac
           test -f "$SMOKE_WHEEL"
-          "$SMOKE_VENV/bin/python" -m pip install --no-cache-dir "$SMOKE_WHEEL"
-          "$SMOKE_VENV/bin/python" -m pip check
+          "$SMOKE_PYTHON" -m pip install --no-cache-dir "$SMOKE_WHEEL"
+          "$SMOKE_PYTHON" -m pip check
 
       - name: Smoke-test clean-app fixture
         working-directory: ${{ env.SMOKE_FIXTURE }}
