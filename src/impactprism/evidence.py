@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import sys
 from datetime import datetime, timezone
@@ -41,15 +42,15 @@ CRA_REFERENCES = {
 
 def _load_json(path):
     try:
-        with path.open(encoding="utf-8") as handle:
-            value = json.load(handle)
+        source_bytes = path.read_bytes()
+        value = json.loads(source_bytes.decode("utf-8"))
     except OSError as error:
         raise ValueError("unable to read scan report: " + str(error))
     except json.JSONDecodeError as error:
         raise ValueError("invalid JSON in scan report: " + str(error))
     if not isinstance(value, dict):
         raise ValueError("scan report must contain a JSON object")
-    return value
+    return value, hashlib.sha256(source_bytes).hexdigest()
 
 
 def _utc_timestamp():
@@ -97,7 +98,7 @@ def _build_findings(report):
     return findings
 
 
-def _build_evidence(report, source_path):
+def _build_evidence(report, source_path, source_report_sha256):
     findings = _build_findings(report)
     undeclared_count = sum(1 for finding in findings if finding["category"] == "undeclared")
     drift_count = sum(1 for finding in findings if finding["category"] == "drift")
@@ -112,6 +113,7 @@ def _build_evidence(report, source_path):
         "map_version": _CLAUSE_MAP_DATA["map_version"],
         "legal_source": _CLAUSE_MAP_DATA["legal_source"],
         "source_report": str(source_path),
+        "source_report_sha256": source_report_sha256,
         "package_name": _package_name(report),
         "package_version": _package_version(report),
         "clause_map": CLAUSE_MAP,
@@ -146,6 +148,7 @@ def _markdown(evidence):
         "- Overall status: " + evidence["overall_status"],
         "- Timestamp: " + evidence["timestamp"],
         "- Source report: " + evidence["source_report"],
+        "- Source report SHA-256: " + evidence["source_report_sha256"],
         "- Package: " + evidence["package_name"] + "@" + evidence["package_version"],
         "",
         "## Findings",
@@ -198,8 +201,8 @@ def main(argv=None) -> int:
         return 2
 
     try:
-        report = _load_json(source_path)
-        evidence = _build_evidence(report, source_path)
+        report, source_report_sha256 = _load_json(source_path)
+        evidence = _build_evidence(report, source_path, source_report_sha256)
         markdown = _markdown(evidence)
         if args.stdout:
             _write_markdown(args.markdown, evidence)

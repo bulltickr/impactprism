@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import sys
@@ -73,6 +74,70 @@ def test_main_defaults_write_evidence_files(tmp_path, monkeypatch):
     assert by_name["lodash"]["clauses"] == UNDECLARED_CLAUSES
     assert by_name["react"]["category"] == "drift"
     assert by_name["react"]["clauses"] == DRIFT_CLAUSES
+
+
+def test_source_report_sha256_is_stable_for_identical_input(tmp_path, monkeypatch):
+    report_path = make_report(tmp_path)
+    identical_path = tmp_path / "identical-report.json"
+    identical_path.write_bytes(report_path.read_bytes())
+    monkeypatch.chdir(tmp_path)
+
+    first_json = tmp_path / "first.json"
+    first_markdown = tmp_path / "first.md"
+    second_json = tmp_path / "second.json"
+    second_markdown = tmp_path / "second.md"
+    assert main(
+        [
+            str(report_path),
+            "--json",
+            str(first_json),
+            "--markdown",
+            str(first_markdown),
+        ]
+    ) == 0
+    assert main(
+        [
+            str(identical_path),
+            "--json",
+            str(second_json),
+            "--markdown",
+            str(second_markdown),
+        ]
+    ) == 0
+
+    expected = hashlib.sha256(report_path.read_bytes()).hexdigest()
+    first = json.loads(first_json.read_text(encoding="utf-8"))
+    second = json.loads(second_json.read_text(encoding="utf-8"))
+    assert first["source_report_sha256"] == expected
+    assert second["source_report_sha256"] == expected
+    assert first["source_report_sha256"] == second["source_report_sha256"]
+    assert "- Source report SHA-256: " + expected in first_markdown.read_text(
+        encoding="utf-8"
+    )
+
+
+def test_source_report_sha256_changes_when_report_content_changes(tmp_path, monkeypatch):
+    report_path = make_report(tmp_path)
+    changed_path = tmp_path / "changed-report.json"
+    changed_report = json.loads(report_path.read_text(encoding="utf-8"))
+    changed_report["package_version"] = "1.0.1"
+    changed_path.write_text(json.dumps(changed_report, indent=2), encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    original_json = tmp_path / "original.json"
+    changed_json = tmp_path / "changed.json"
+    assert main([str(report_path), "--json", str(original_json)]) == 0
+    assert main([str(changed_path), "--json", str(changed_json)]) == 0
+
+    original = json.loads(original_json.read_text(encoding="utf-8"))
+    changed = json.loads(changed_json.read_text(encoding="utf-8"))
+    assert original["source_report_sha256"] == hashlib.sha256(
+        report_path.read_bytes()
+    ).hexdigest()
+    assert changed["source_report_sha256"] == hashlib.sha256(
+        changed_path.read_bytes()
+    ).hexdigest()
+    assert original["source_report_sha256"] != changed["source_report_sha256"]
 
 
 def test_evidence_metadata_and_statuses(tmp_path, monkeypatch):
