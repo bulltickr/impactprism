@@ -154,10 +154,11 @@ def test_remediate_go_proposes_pr(go_fixture_repo):
 
 def test_remediate_dry_run_mutates_nothing(npm_fixture_repo):
     finding = _finding(npm_fixture_repo, "npm", "missingpkg")
-    package_json = npm_fixture_repo / "package.json"
-    package_lock = npm_fixture_repo / "package-lock.json"
-    before_package = package_json.read_bytes()
-    before_lockfile = package_lock.read_bytes()
+    before_files = {
+        path.relative_to(npm_fixture_repo).as_posix(): path.read_bytes()
+        for path in npm_fixture_repo.rglob("*")
+        if path.is_file()
+    }
 
     remediate(
         finding.as_dict(),
@@ -168,8 +169,12 @@ def test_remediate_dry_run_mutates_nothing(npm_fixture_repo):
         dry_run=True,
     )
 
-    assert package_json.read_bytes() == before_package
-    assert package_lock.read_bytes() == before_lockfile
+    after_files = {
+        path.relative_to(npm_fixture_repo).as_posix(): path.read_bytes()
+        for path in npm_fixture_repo.rglob("*")
+        if path.is_file()
+    }
+    assert after_files == before_files
 
 
 def test_remediate_unknown_finding_type_raises(npm_fixture_repo):
