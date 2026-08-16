@@ -45,6 +45,7 @@ jobs:
       SMOKE_DIST: /tmp/impactprism-smoke-dist
       SMOKE_VENV: /tmp/impactprism-smoke-venv
       SMOKE_PYTHON: /tmp/impactprism-smoke-venv/bin/python
+      SMOKE_CLI: /tmp/impactprism-smoke-venv/bin/impactprism
       SMOKE_FIXTURE: ${{ github.workspace }}/demo/clean-app
     steps:
       - name: Checkout
@@ -57,7 +58,7 @@ jobs:
 
       - name: Validate absolute smoke paths
         run: |
-          for smoke_path in "$SMOKE_WORKSPACE" "$SMOKE_DIST" "$SMOKE_VENV" "$SMOKE_FIXTURE"; do
+          for smoke_path in "$SMOKE_WORKSPACE" "$SMOKE_DIST" "$SMOKE_VENV" "$SMOKE_PYTHON" "$SMOKE_CLI" "$SMOKE_FIXTURE"; do
             case "$smoke_path" in
               /*) ;;
               *) echo "Expected an absolute smoke path: $smoke_path" >&2; exit 1 ;;
@@ -85,14 +86,15 @@ jobs:
           test -f "$SMOKE_WHEEL"
           "$SMOKE_PYTHON" -m pip install --no-cache-dir "$SMOKE_WHEEL"
           "$SMOKE_PYTHON" -m pip check
+          test -x "$SMOKE_CLI"
 
       - name: Smoke-test clean-app fixture
         working-directory: ${{ env.SMOKE_FIXTURE }}
         run: |
           test -d "$SMOKE_FIXTURE"
-          test -x "$SMOKE_VENV/bin/impactprism"
+          test -x "$SMOKE_CLI"
           source "$SMOKE_VENV/bin/activate"
-          test "$(command -v impactprism)" = "$SMOKE_VENV/bin/impactprism"
+          test "$(command -v impactprism)" = "$SMOKE_CLI"
           set +e
           impactprism scan .
           status=$?
