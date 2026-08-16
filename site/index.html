@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ImpactPrism — CRA-grounded dependency-integrity analysis</title>
-  <meta name="description" content="ImpactPrism cross-checks what your manifest declares, what your lockfile pins, and what your source actually imports — with a CycloneDX SBOM and an evidence pack mapped to the EU Cyber Resilience Act.">
+  <title>ImpactPrism — offline dependency-integrity analysis</title>
+  <meta name="description" content="ImpactPrism performs offline dependency-integrity analysis and release-evidence preflight for selected npm, Python, and Go supply-chain controls.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b1220'/%3E%3Cpath d='M16 4 28 10v12L16 28 4 22V10z' fill='none' stroke='%2356d364' stroke-width='2'/%3E%3Cpath d='M16 10 22 13v6l-6 3-6-3v-6z' fill='%2356d364' opacity='0.85'/%3E%3C/svg%3E">
   <style>
     :root {
@@ -412,7 +412,7 @@
           <path d="M16 4 28 10v12L16 28 4 22V10z" fill="none" stroke="#56d364" stroke-width="2"/>
           <path d="M16 10 22 13v6l-6 3-6-3v-6z" fill="#56d364" opacity="0.85"/>
         </svg>
-        impactprism<span class="tag">— the gap in every SBOM tool</span>
+        impactprism<span class="tag">— dependency-integrity preflight</span>
       </a>
       <a class="nav-link" href="https://github.com/bulltickr/impactprism" target="_blank" rel="noopener">GitHub ↗</a>
     </div>
@@ -420,14 +420,14 @@
 
   <header class="hero" id="top">
     <div class="container">
-      <div class="badge"><span class="dot"></span> fully offline · npm &amp; Go · MIT</div>
-      <h1>CRA-grounded dependency-integrity analysis for npm and Go — <span class="hl">drift, undeclared, transitive</span> and lockfile-mismatch detection with a CycloneDX SBOM.</h1>
+      <div class="badge"><span class="dot"></span> fully offline · npm · Python · Go · MIT</div>
+      <h1>Offline dependency-integrity analysis and release-evidence preflight for selected npm, Python, and Go supply-chain controls — <span class="hl">drift, undeclared, transitive</span> and lockfile-mismatch checks with a CycloneDX SBOM.</h1>
 
       <div class="hero-cta">
         <div class="bar"><i></i><i></i><i></i><span class="title">scan — one shot</span></div>
         <pre class="code"><span class="prompt">$</span> pipx run impactprism scan <span class="arg">.</span></pre>
       </div>
-      <p class="hero-sub">from shell to evidence pack in one command</p>
+      <p class="hero-sub">from shell to a review-oriented preflight pack in one command</p>
     </div>
   </header>
 
@@ -436,13 +436,13 @@
       <div class="container grid-3">
         <div class="card">
           <div class="icon">⌬</div>
-          <h3>Sees what manifests miss</h3>
-          <p>Cross-checks what your manifest declares, what your lockfile pins, and what your source actually imports — six finding types, not just a component list.</p>
+          <h3>Checks selected controls</h3>
+          <p>Compares supported manifests, lockfiles, and source imports for drift, undeclared use, transitive use, scope, and lockfile mismatches. Coverage varies by ecosystem and available files.</p>
         </div>
         <div class="card">
           <div class="icon">▣</div>
-          <h3>Evidence you can hand over</h3>
-          <p>Every finding mapped to its EU Cyber Resilience Act clause with a rationale, as Markdown and JSON. Clean scans are <em>PASS</em> — proof, not promises.</p>
+          <h3>Evidence for review</h3>
+          <p>Produces Markdown and JSON with observed inputs, findings, statuses, rationale, and configured reference mappings. Findings require review, and evidence may be incomplete.</p>
         </div>
         <div class="card">
           <div class="icon">⇄</div>
@@ -501,7 +501,7 @@
               <text x="334" y="264" fill="#f0b429">status: REVIEW_REQUIRED</text>
 
               <text x="18" y="292" fill="#4ea3ff">→</text>
-              <text x="34" y="292" fill="#8ea0bd">4 findings mapped to CRA clauses (Art 13(1)(a), Art 13(1)(b), Art 14(1), Annex I)</text>
+              <text x="34" y="292" fill="#8ea0bd">4 findings flagged for human review within supported checks</text>
 
               <text x="18" y="318" fill="#8ea0bd">exit</text>
               <text x="52" y="318" fill="#56d364">1</text>
@@ -516,14 +516,13 @@
       <div class="container">
         <div class="sec-head">
           <div class="kicker">// the gap</div>
-          <h2>The gap in every SBOM tool</h2>
+          <h2>From inventory to preflight</h2>
         </div>
         <p class="argument">
-          Typical SBOM tools inventory <strong>what you declared</strong>. But the dangerous failure mode is
-          <strong>what you never declared</strong> — a component your source imports that lives nowhere in your manifest
-          or lockfile, or a declared component that silently drifted out of your build. Trivy and Dependency-Check tell
-          you a declared component has a known CVE; ImpactPrism tells you there is a component in your code that
-          <strong>nobody declared</strong>.
+          Many SBOM tools inventory <strong>what you declared</strong>. A manifest-only inventory can miss
+          <strong>what you never declared</strong> — a component your source imports that is absent from the supported
+          manifest or lockfile, or a declared component that is not observed in the scanned source. ImpactPrism
+          performs bounded dependency-integrity checks so reviewers can investigate those mismatches before release.
         </p>
         <table>
           <thead>
@@ -547,12 +546,12 @@
             <tr>
               <td class="row-head">Evidence trail</td>
               <td><span class="no">No</span></td>
-              <td><span class="yes">Yes</span> — CRA clause map + rationale, Markdown &amp; JSON</td>
+              <td><span class="yes">Yes</span> — review-oriented findings, statuses, rationale, Markdown &amp; JSON</td>
             </tr>
             <tr>
               <td class="row-head">Actionable findings</td>
               <td><span class="dim">CVEs on declared deps</span></td>
-              <td>Drift, undeclared, transitive, scope &amp; lockfile mismatch — each mapped to CRA clauses</td>
+              <td>Selected drift, undeclared, transitive, scope &amp; lockfile checks</td>
             </tr>
           </tbody>
         </table>
@@ -575,7 +574,7 @@
       <div class="container">
         <div class="sec-head">
           <div class="kicker">// evidence</div>
-          <h2>Proof, not promises</h2>
+          <h2>Review the preflight</h2>
         </div>
         <pre class="json"><span class="k">"overall_status"</span>: <span class="s">"REVIEW_REQUIRED"</span>,
 <span class="k">"findings"</span>: [
@@ -593,7 +592,8 @@
   }
 ],
 <span class="k">"summary"</span>: { <span class="k">"total_findings"</span>: <span class="n">2</span>, <span class="k">"clean"</span>: <span class="n">false</span> }</pre>
-        <p class="caption">evidence.json — every finding carries its mapped CRA clauses and rationale</p>
+        <p class="caption">evidence.json — findings and reference mappings for human review</p>
+        <p class="caption">Findings require review. Evidence may be incomplete, and scope is unassessed outside supported checks. ImpactPrism is not legal advice, certification, an audit opinion, or a compliance determination.</p>
       </div>
     </section>
 
@@ -608,7 +608,7 @@
 
     <section class="feedback">
       <div class="container">
-        <h2>Found a dependency your SBOM tool can't see?</h2>
+        <h2>Need to review a dependency-integrity finding?</h2>
         <p class="intro">Open an issue or star the repo — feedback is what drives the roadmap.</p>
         <div class="feedback-links">
           <a class="fbtn" href="https://github.com/bulltickr/impactprism/issues" target="_blank" rel="noopener">

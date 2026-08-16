@@ -1,6 +1,6 @@
 # ImpactPrism
 
-CRA-grounded dependency-integrity analysis for npm and Go: drift, undeclared, transitive and lockfile-mismatch detection with a CycloneDX SBOM and an evidence pack mapped to the EU Cyber Resilience Act.
+Offline dependency-integrity analysis and release-evidence preflight for selected npm, Python, and Go supply-chain controls. ImpactPrism compares supported manifests, lockfiles, and source imports, then produces a CycloneDX SBOM and review-oriented evidence outputs.
 
 [![CI](https://github.com/bulltickr/impactprism/actions/workflows/ci.yml/badge.svg)](https://github.com/bulltickr/impactprism/actions/workflows/ci.yml)
 
@@ -16,15 +16,15 @@ From a brand-new shell to a rendered evidence pack in three commands:
 
 ```bash
 pipx run impactprism scan .
-open evidence.md            # rendered Markdown evidence pack
+open evidence.md            # rendered Markdown preflight report
 ```
 
 `scan` produces, in the current directory:
 
 | File            | Contents |
 |-----------------|----------|
-| `evidence.md`   | Human-readable evidence pack: each finding annotated with its CRA clause mapping and rationale |
-| `evidence.json` | Machine-readable evidence pack (same findings, JSON) |
+| `evidence.md`   | Human-readable release-evidence preflight: findings, statuses, observed inputs, and rationale |
+| `evidence.json` | Machine-readable release-evidence preflight (same findings, JSON) |
 | `bom.json`      | CycloneDX SBOM — pass `--sbom bom.json` to write it |
 | `report.json`   | Raw scan report — pass `--report report.json` to write it |
 
@@ -32,7 +32,7 @@ open evidence.md            # rendered Markdown evidence pack
 
 ## What it detects
 
-ImpactPrism cross-checks what your manifest declares, what your lockfile pins, and what your source actually imports. Six finding types cover the gap every manifest-only SBOM tool misses.
+ImpactPrism cross-checks what supported manifests declare, what lockfiles pin, and what scanned source imports. Depending on the ecosystem and available files, selected checks cover drift, undeclared use, transitive use, scope mismatches, missing lockfiles, and manifest/lockfile mismatches. Findings and coverage depend on the inputs and scanner rules; they are not a complete assessment of a repository.
 
 Given this manifest and import:
 
@@ -82,27 +82,29 @@ Add ImpactPrism to your pull requests in four lines:
     fail-on: finding
 ```
 
-The composite action is fully offline (no account, no API key), produces `findings.json`, `bom.json`, `impactprism.sarif`, `evidence.json`/`evidence.md` and `summary.md`, uploads a SARIF report to code scanning, and exits per the `fail-on` policy (`never` | `finding` | `all`). See [action/README.md](action/README.md) for inputs, outputs and required workflow permissions.
+The composite action is fully offline (no account, no API key), produces `findings.json`, `bom.json`, `impactprism.sarif`, `evidence.json`/`evidence.md` and `summary.md`, uploads a SARIF report to code scanning, and exits per the `fail-on` policy (`never` | `finding` | `all`). The current action inputs are scoped to npm and Go; the CLI also supports selected Python checks. See [action/README.md](action/README.md) for inputs, outputs and required workflow permissions.
 
-## Go support
+## Supported ecosystems
 
-The ecosystem is auto-detected from the presence of `package.json` (npm) or `go.mod` (Go); the GitHub Action can force it via its `ecosystem: npm|go` input.
+The CLI auto-detects supported project inputs. npm uses `package.json` and supported lockfiles; Python uses supported `pyproject.toml`, `Pipfile`, or `requirements.txt` inputs and lockfiles; Go uses `go.mod`, `go.work`, `go.sum`, and vendored module metadata. The GitHub Action can force `npm` or `go` via its `ecosystem` input.
+
+- Python checks cover supported manifest/lockfile and import comparisons; coverage varies by packaging format and repository structure.
 
 - Manifest sources: `go.mod` (module, `require`, `replace`), `go.work` (workspace member modules and their `replace` rules), `go.sum` (checksums), and `vendor/modules.txt` for vendored builds.
 - A package-level import graph is aggregated to the module level; each module is classified by observed use (`used`/`direct`).
 - Go findings: `UNDECLARED_DIRECT_USE` (imported but not declared in `go.mod`), `DECLARED_UNUSED_CANDIDATE` (direct dependency never imported), `DIRECT_DEPENDENCY_USED_TRANSITIVELY` (imported directly but only declared indirect), `LOCKFILE_MANIFEST_MISMATCH` (declared module with no `go.sum` entry) and `UNRESOLVED_IMPORT` (import resolves to no declared module).
 - Standard-library and main-module imports are excluded from findings.
 
-## Evidence pack
+## Release-evidence preflight
 
-`impactprism evidence <scan_report.json>` (or the `--evidence` flag on `scan`) turns the scan report into a CRA clause-grounded evidence pack in Markdown and JSON. Each finding carries its mapped clauses, a rationale, and a status (`REVIEW_REQUIRED` for drift/undeclared, otherwise `NOT_ASSESSED`); a clean report is `PASS`. See [docs/samples/evidence-sample.md](docs/samples/evidence-sample.md) for a canonical rendered example.
+`impactprism evidence <scan_report.json>` (or the `--evidence` flag on `scan`) turns the scan report into a release-evidence preflight in Markdown and JSON. It records the available inputs, findings, rationale, statuses, and configured reference mappings. `REVIEW_REQUIRED` means a person must examine the finding; `NOT_ASSESSED` means the relevant question was not established by the supported checks. A clean report means no supported check produced a finding in the scanned inputs; it does not establish that evidence is complete or that a project is compliant. See [docs/samples/evidence-sample.md](docs/samples/evidence-sample.md) for a rendered example.
 
-| Evidence category | CRA clauses |
+| Evidence category | Reference mappings |
 |-------------------|-------------|
 | `undeclared` | Art 13(1)(b), Art 14(1), Annex I Part II, Annex VII |
 | `drift` | Art 13(1)(a), Annex I Part I |
 
-The clause map is the single source of truth in [src/impactprism/cra_clauses.yaml](src/impactprism/cra_clauses.yaml) (schema v2, `map_version 1.0.0`, legal source "Regulation (EU) 2024/2847 — Cyber Resilience Act"). `impactprism clauses` loads and validates it.
+The repository's optional reference map is stored in [src/impactprism/cra_clauses.yaml](src/impactprism/cra_clauses.yaml) (schema v2, `map_version 1.0.0`). It provides contextual references for the preflight output; it does not determine legal applicability or compliance.
 
 ## Output formats
 
@@ -111,7 +113,7 @@ The clause map is the single source of truth in [src/impactprism/cra_clauses.yam
 | `findings.json` | JSON | Raw scan report produced by the GitHub Action |
 | `bom.json` | CycloneDX 1.6 | SBOM with per-component hashes, scope, and `impactprism:direct`/`transitive`/`scope` properties plus a dependency graph |
 | `impactprism.sarif` | SARIF 2.1.0 | Findings as code-scanning results with file/line locations |
-| `evidence.json` / `evidence.md` | JSON / Markdown | Evidence pack with per-finding CRA clause mapping and rationale |
+| `evidence.json` / `evidence.md` | JSON / Markdown | Review-oriented preflight with findings, statuses, rationale, and configured reference mappings |
 | `summary.md` | Markdown | Human-readable action outcome summary (also appended to the job step summary) |
 | `--json` stdout | JSON | The scan report printed to stdout, including the `sbom` key |
 
@@ -121,10 +123,10 @@ ImpactPrism is not a vulnerability scanner. Trivy and Dependency-Check tell you 
 
 | Dimension | ImpactPrism | CycloneDX CLI | Syft | Trivy | OWASP Dependency-Check |
 |-----------|-------------|---------------|------|-------|-------------------------|
-| SBOM generation | CycloneDX (npm, Go) | CycloneDX (native, ~25 ecosystems) | SPDX + CycloneDX | CycloneDX + SPDX | CycloneDX (SPDX limited) |
+| SBOM generation | CycloneDX (npm, Python, Go) | CycloneDX (native, ~25 ecosystems) | SPDX + CycloneDX | CycloneDX + SPDX | CycloneDX (SPDX limited) |
 | Drift/undeclared detection | Yes — core feature | No | No | No | No |
-| CRA clause mapping | Yes — Art 13(1)(a/b), Art 14(1), Annex I, Annex VII | No (raw SBOM) | No | No | No |
-| Evidence pack | Yes — Markdown + JSON | No | No | No | No |
+| Reference mappings | Optional contextual references in the preflight | No (raw SBOM) | No | No | No |
+| Evidence preflight | Yes — Markdown + JSON for human review | No | No | No | No |
 | Needs vulnerability DB | No | No | No | Yes (OSV/GHSA/trivy-db) | Yes (NVD) |
 | Offline | Yes | Yes | Yes | Yes (with DB mirroring caveat) | Yes |
 
@@ -152,6 +154,10 @@ impactprism clauses [path]
 | `clauses` | `[path]` — optional clause-map YAML | — |
 
 `--exclude` skips directories by name (defaults: `tests`, `fixtures`, `demo`, `node_modules`, `build`, `dist`, `.git`, `.cache`, `coverage`, `public`). `impactprism scan` runs analyze + evidence in one shot; `python -m impactprism` is equivalent.
+
+## Scope and limitations
+
+ImpactPrism is an offline analysis and release-evidence preflight tool for selected npm, Python, and Go supply-chain controls. Findings require review. Evidence may be incomplete, and scope is unassessed outside the supported checks and the files available to the scan. The tool is not legal advice, certification, an audit opinion, or a compliance determination.
 
 ## Tests and development
 
