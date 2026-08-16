@@ -43,7 +43,7 @@ jobs:
     env:
       SMOKE_WORKSPACE: ${{ github.workspace }}
       SMOKE_DIST: /tmp/impactprism-smoke-dist
-      SMOKE_WHEEL: /tmp/impactprism-smoke-dist/impactprism-0.1.0-py3-none-any.whl
+      SMOKE_WHEEL: /tmp/impactprism-smoke-dist/impactprism-smoke.whl
       SMOKE_VENV: /tmp/impactprism-smoke-venv
       SMOKE_FIXTURE: ${{ github.workspace }}/demo/clean-app
     steps:
@@ -66,7 +66,7 @@ jobs:
           "$SMOKE_VENV/bin/python" -m pip install --upgrade pip
           smoke_wheel="$(find "$SMOKE_DIST" -maxdepth 1 -type f -name 'impactprism-*.whl' -print -quit)"
           test -n "$smoke_wheel"
-          mv "$smoke_wheel" "$SMOKE_WHEEL"
+          cp "$smoke_wheel" "$SMOKE_WHEEL"
           test -f "$SMOKE_WHEEL"
           "$SMOKE_VENV/bin/python" -m pip install "$SMOKE_WHEEL"
 
