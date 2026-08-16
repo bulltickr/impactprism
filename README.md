@@ -30,6 +30,21 @@ open evidence.md            # rendered Markdown preflight report
 
 `pip install impactprism` (or `uv tool run impactprism`) installs the same `impactprism` CLI.
 
+## What this checks / What it does not
+
+ImpactPrism compares supported manifests, lockfiles, and source imports. Its code emits these finding types:
+
+- `UNDECLARED_DIRECT_USE` — source imports a dependency that is not declared.
+- `DECLARED_UNUSED_CANDIDATE` — a declared dependency is not observed in scanned source.
+- `DIRECT_DEPENDENCY_USED_TRANSITIVELY` — source uses a dependency available only transitively.
+- `LOCKFILE_MANIFEST_MISMATCH` — the manifest and lockfile disagree.
+- `MISSING_LOCKFILE` — a dependency manifest has no recognized lockfile.
+- `SCOPE_MISMATCH` — a dependency is used outside its declared scope.
+- `UNRESOLVED_IMPORT` — a scanned import cannot be resolved.
+- `SCANNER_ERROR` — a manifest could not be parsed, so the scan cannot be trusted.
+
+It is not a vulnerability scanner: it does not identify known CVEs or certify that dependencies are safe. A clean result is limited to the supported checks and inputs; ImpactPrism makes no certification claim and is not an audit or compliance determination.
+
 ## What it detects
 
 ImpactPrism cross-checks what supported manifests declare, what lockfiles pin, and what scanned source imports. Depending on the ecosystem and available files, selected checks cover drift, undeclared use, transitive use, scope mismatches, missing lockfiles, and manifest/lockfile mismatches. Findings and coverage depend on the inputs and scanner rules; they are not a complete assessment of a repository.
