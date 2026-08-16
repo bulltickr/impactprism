@@ -90,6 +90,7 @@ jobs:
           test -d "$SMOKE_FIXTURE"
           test -x "$SMOKE_VENV/bin/impactprism"
           source "$SMOKE_VENV/bin/activate"
+          test "$(command -v impactprism)" = "$SMOKE_VENV/bin/impactprism"
           set +e
           impactprism scan .
           status=$?
