@@ -66,7 +66,8 @@ jobs:
       - name: Smoke-test clean-app fixture
         working-directory: ${{ env.SMOKE_FIXTURE }}
         run: |
-          if "$SMOKE_VENV/bin/impactprism" scan .; then
+          source "$SMOKE_VENV/bin/activate"
+          if impactprism scan .; then
             status=0
           else
             status=$?
