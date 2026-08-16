@@ -37,6 +37,7 @@ jobs:
         run: impactprism scan .
 
   smoke:
+    name: Final wheel smoke test
     needs: test
     runs-on: ubuntu-latest
     env:
@@ -66,6 +67,7 @@ jobs:
           smoke_wheel="$(find "$SMOKE_DIST" -maxdepth 1 -type f -name 'impactprism-*.whl' -print -quit)"
           test -n "$smoke_wheel"
           mv "$smoke_wheel" "$SMOKE_WHEEL"
+          test -f "$SMOKE_WHEEL"
           "$SMOKE_VENV/bin/python" -m pip install "$SMOKE_WHEEL"
 
       - name: Smoke-test clean-app fixture
