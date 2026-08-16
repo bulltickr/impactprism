@@ -135,7 +135,12 @@ def test_main_clean_report(tmp_path, monkeypatch):
     assert evidence["summary"]["status_counts"] == {
         status: 0 for status in EVIDENCE_STATUSES
     }
-    assert "No findings" in (tmp_path / "evidence.md").read_text(encoding="utf-8")
+    markdown = (tmp_path / "evidence.md").read_text(encoding="utf-8")
+    assert (
+        "No supported dependency findings were detected; this is not a compliance determination."
+        in markdown
+    )
+    assert "evidence of compliant dependency management (PASS)" not in markdown
 
 
 def test_main_missing_report_exit_2(tmp_path):

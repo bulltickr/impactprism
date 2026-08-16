@@ -152,7 +152,9 @@ def _markdown(evidence):
         "",
     ]
     if not evidence["findings"]:
-        lines.append("No findings; evidence of compliant dependency management (PASS).")
+        lines.append(
+            "No supported dependency findings were detected; this is not a compliance determination."
+        )
     else:
         for finding in evidence["findings"]:
             lines.extend(
