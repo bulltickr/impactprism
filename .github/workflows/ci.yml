@@ -40,6 +40,7 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     env:
+      SMOKE_WORKSPACE: ${{ github.workspace }}
       SMOKE_DIST: /tmp/impactprism-smoke-dist
       SMOKE_VENV: /tmp/impactprism-smoke-venv
       SMOKE_FIXTURE: ${{ github.workspace }}/demo/clean-app
@@ -55,7 +56,7 @@ jobs:
       - name: Build wheel
         run: |
           python -m pip install --upgrade pip build
-          python -m build --wheel --outdir "$SMOKE_DIST" "${{ github.workspace }}"
+          python -m build --wheel --outdir "$SMOKE_DIST" "$SMOKE_WORKSPACE"
 
       - name: Install wheel in temporary venv
         run: |
