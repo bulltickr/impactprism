@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "impactprism"
 version = "0.1.0"
-description = "CRA-grounded JavaScript dependency analysis with CycloneDX SBOM output"
+description = "Offline dependency-integrity analysis with CycloneDX SBOM output for npm, Python, and Go"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
