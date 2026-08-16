@@ -15,6 +15,9 @@ __all__ = [
     "LockfileParseError",
     "parse_manifest",
     "parse_lockfile",
+    "parse_python_manifest",
+    "parse_python_lockfile",
+    "parse_python_manifests",
     "discover_workspaces",
     "parse_manifests",
     "manifest_for_file",
@@ -80,6 +83,10 @@ _YARN_DESCRIPTOR = re.compile(r"^(.+?)@([a-z0-9]+):")
 def parse_manifest(repo_dir: str | os.PathLike[str]) -> Manifest:
     repo_path = Path(repo_dir)
     package_path = repo_path / "package.json"
+    if not package_path.is_file() and _is_python_repo(repo_path):
+        from .python_manifest import parse_python_manifest
+
+        return parse_python_manifest(repo_path)
     package_data = _read_package_json(package_path)
     try:
         lockfile = parse_lockfile(repo_path)
@@ -140,6 +147,10 @@ def parse_lockfile(repo_dir: str | os.PathLike[str]) -> Lockfile | None:
         if kind == "yarn":
             return Lockfile(kind=kind, resolved_versions=_parse_yarn_lockfile(lockfile_path))
         return Lockfile(kind=kind, resolved_versions=_parse_pnpm_lockfile(lockfile_path))
+    if _is_python_repo(repo_path):
+        from .python_manifest import parse_python_lockfile
+
+        return parse_python_lockfile(repo_path)
     return None
 
 
@@ -186,6 +197,10 @@ def discover_workspaces(repo_dir: str | os.PathLike[str]) -> list[Path]:
 
 def parse_manifests(repo_dir: str | os.PathLike[str]) -> list[Manifest]:
     repo_path = Path(repo_dir)
+    if not (repo_path / "package.json").is_file() and _is_python_repo(repo_path):
+        from .python_manifest import parse_python_manifests
+
+        return parse_python_manifests(repo_path)
     manifests = [parse_manifest(repo_path)]
     for workspace in discover_workspaces(repo_path):
         manifests.append(_parse_workspace_manifest(repo_path, workspace))
@@ -205,6 +220,31 @@ def _parse_workspace_manifest(repo_root: Path, workspace: Path) -> Manifest:
     except LockfileParseError:
         lockfile = None
     return _manifest_from_package(package_data, package_path, lockfile)
+
+
+def _is_python_repo(repo_path: Path) -> bool:
+    return any(
+        (repo_path / name).is_file()
+        for name in ("pyproject.toml", "Pipfile", "requirements.txt")
+    )
+
+
+def parse_python_manifest(repo_dir):
+    from .python_manifest import parse_python_manifest as parser
+
+    return parser(repo_dir)
+
+
+def parse_python_lockfile(repo_dir):
+    from .python_manifest import parse_python_lockfile as parser
+
+    return parser(repo_dir)
+
+
+def parse_python_manifests(repo_dir):
+    from .python_manifest import parse_python_manifests as parser
+
+    return parser(repo_dir)
 
 
 def _manifest_for_path(manifests: list[Manifest], file_path) -> Manifest:

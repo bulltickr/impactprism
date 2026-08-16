@@ -187,6 +187,15 @@ class LockfileUpdater:
             elif self.offline:
                 env_overrides = {"GOPROXY": "off", "GOSUMDB": "off"}
             return "go", ["mod", "tidy"], None, env_overrides
+        if ecosystem == "python":
+            # Keep the command explicit and side-effect scope predictable; in
+            # dry-run/simulate mode no package manager is invoked.
+            args = ["-m", "pip", "install", "--no-input"]
+            if self.offline:
+                args.append("--no-index")
+            if self.registry is not None:
+                args.extend(["--index-url", self.registry])
+            return "python", args, None, None
         raise RemediationError(f"unsupported ecosystem: {ecosystem!r}")
 
     @staticmethod

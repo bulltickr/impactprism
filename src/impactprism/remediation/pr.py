@@ -49,6 +49,8 @@ def _before_after_text(plan):
 def _test_commands(ecosystem: str) -> list:
     if ecosystem == "go":
         commands = ["go test ./..."]
+    elif ecosystem == "python":
+        commands = ["python -m pytest"]
     else:
         commands = ["npm test"]
     commands.append("python -m pytest tests -q")

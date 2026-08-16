@@ -1,0 +1,10 @@
+[project]
+name = "fixture-python-app"
+version = "1.2.3"
+dependencies = [
+  "requests>=2.31",
+  "beautifulsoup4==4.12.3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==8.3.2"]

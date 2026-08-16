@@ -6,7 +6,9 @@ from pathlib import Path
 
 from .sbom.cyclonedx_builder import build_cyclonedx_sbom
 from .imports import scan_imports as _ast_scan_imports
-from .manifest import LockfileParseError, parse_lockfile
+from .manifest import LockfileParseError, parse_lockfile, parse_python_manifest
+from .python_imports import scan_imports as _python_scan_imports
+from .python_manifest import canonical_name, is_python_repo
 
 
 SOURCE_EXTENSIONS = {".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"}
@@ -18,6 +20,15 @@ BUILTIN_MODULES = {
     "process", "timers", "vm", "worker_threads", "perf_hooks", "readline",
     "readline/promises", "repl", "constants", "domain", "inspector", "punycode",
     "async_hooks", "v8", "wasi", "test", "node:test",
+}
+_PYTHON_IMPORT_TO_DIST = {
+    "bs4": "beautifulsoup4",
+    "sklearn": "scikit-learn",
+    "dateutil": "python-dateutil",
+    "yaml": "pyyaml",
+    "pil": "pillow",
+    "cv2": "opencv-python",
+    "attr": "attrs",
 }
 
 
@@ -156,6 +167,8 @@ def _normalized_components(package_json, lockfile):
 
 def generate_sbom(repo_dir: str) -> dict:
     repo_path = Path(repo_dir).resolve()
+    if not (repo_path / "package.json").is_file() and is_python_repo(repo_path):
+        return _generate_python_sbom(repo_path)
     package_json = _load_json(repo_path / "package.json")
     lockfile = None
     for lockfile_name in ("package-lock.json", "npm-shrinkwrap.json"):
@@ -182,6 +195,41 @@ def generate_sbom(repo_dir: str) -> dict:
     return build_cyclonedx_sbom(components, metadata=metadata)
 
 
+def _python_version(dependency):
+    version = dependency.locked_version or dependency.version
+    if version and version not in ("*", ""):
+        # PURLs require a concrete version; lockfiles normally provide it.
+        if version[0].isdigit() or version[0].lower() == "v":
+            return version
+    return "0.0.0"
+
+
+def _generate_python_sbom(repo_path: Path) -> dict:
+    manifest = parse_python_manifest(repo_path)
+    components = []
+    for dependency in manifest.dependencies:
+        version = _python_version(dependency)
+        components.append(
+            {
+                "name": dependency.name,
+                "version": version,
+                "purl": "pkg:pypi/" + _encode_purl_name(canonical_name(dependency.name)) + "@" + version,
+                "scope": "optional" if dependency.kind != "dependencies" else "required",
+                "direct": True,
+                "transitive": False,
+                "ecosystem": "python",
+            }
+        )
+    metadata = {
+        "name": manifest.name or "unknown",
+        "version": manifest.version or "0.0.0",
+        "tool_name": "impactprism-cyclonedx",
+        "tool_version": "0.1.0",
+        "timestamp": _utc_timestamp(),
+    }
+    return build_cyclonedx_sbom(components, metadata=metadata)
+
+
 def _normalize_name(specifier):
     specifier = str(specifier).strip()
     if not specifier or specifier.startswith(("./", "../", "/", "node:")):
@@ -198,7 +246,21 @@ def _normalize_name(specifier):
     return name
 
 
-def scan_imports(repo_dir: str, excludes=None) -> set:
+def scan_imports(repo_dir: str, excludes=None, ecosystem="npm") -> set:
+    if ecosystem == "python":
+        imported = set()
+        for records in _python_scan_imports(repo_dir, exclude=excludes).values():
+            for record in records:
+                specifier = getattr(record, "specifier", "")
+                if specifier.startswith("."):
+                    continue
+                name = canonical_name(specifier.split(".", 1)[0])
+                if name in getattr(sys, "stdlib_module_names", set()):
+                    continue
+                name = _PYTHON_IMPORT_TO_DIST.get(name, name)
+                if name:
+                    imported.add(name)
+        return imported
     imported = set()
     for records in _ast_scan_imports(repo_dir, exclude=excludes).values():
         for record in records:
@@ -292,11 +354,37 @@ def main(argv=None) -> int:
         print("error: repository directory not found: " + str(repo_path), file=sys.stderr)
         return 2
     package_path = repo_path / "package.json"
-    if not package_path.is_file():
+    if not package_path.is_file() and not is_python_repo(repo_path):
         print("error: package.json not found: " + str(package_path), file=sys.stderr)
         return 2
 
     try:
+        if not package_path.is_file():
+            manifest = parse_python_manifest(repo_path)
+            declared = {canonical_name(dependency.name) for dependency in manifest.dependencies}
+            imported = scan_imports(str(repo_path), ecosystem="python")
+            report = {
+                "repo": str(repo_path),
+                "package_name": manifest.name or "unknown",
+                "package_version": manifest.version or "0.0.0",
+                "declared": sorted(declared),
+                "imported": sorted(imported),
+                "drift": sorted(declared - imported),
+                "undeclared": sorted(imported - declared),
+                "ecosystem": "python",
+            }
+            sbom = generate_sbom(str(repo_path))
+            if args.sbom:
+                _write_json(args.sbom, sbom)
+            if args.report:
+                _write_json(args.report, report)
+            if args.json:
+                report["sbom"] = sbom
+                json.dump(report, sys.stdout, indent=2)
+                print()
+            else:
+                _print_summary(report)
+            return 1 if report["drift"] or report["undeclared"] else 0
         package_json = _load_json(package_path)
         declared = set(_declared_dependencies(package_json))
         excludes = set(args.exclude) if args.exclude else None

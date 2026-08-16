@@ -4,6 +4,7 @@ from pathlib import Path
 
 from ..go_manifest import parse_go_manifest, parse_go_sum
 from ..manifest import parse_lockfile, parse_manifest
+from ..python_manifest import canonical_name, is_python_repo
 from .models import DependencyGraph
 
 __all__ = ["dependency_map", "render_dependency_graph", "diff_graph"]
@@ -19,6 +20,8 @@ def _resolve_ecosystem(repo_dir: str, ecosystem: str) -> str:
         return "npm"
     if (repo / "go.mod").is_file():
         return "go"
+    if is_python_repo(repo):
+        return "python"
     raise ValueError("unsupported or missing ecosystem")
 
 
@@ -46,6 +49,18 @@ def dependency_map(repo_dir: str, *, ecosystem: str = "auto") -> dict:
             mapping[dependency.module] = dependency.version
         for entry in parse_go_sum(repo_dir):
             mapping.setdefault(entry.module, entry.version)
+        return mapping
+    if resolved == "python":
+        manifest = parse_manifest(repo_dir)
+        lockfile = parse_lockfile(repo_dir)
+        locked = lockfile.resolved_versions if lockfile is not None else {}
+        locked = {canonical_name(name): version for name, version in (locked or {}).items()}
+        for dependency in manifest.dependencies:
+            mapping[canonical_name(dependency.name)] = dependency.locked_version or locked.get(
+                canonical_name(dependency.name), dependency.version
+            )
+        for name, version in sorted(locked.items()):
+            mapping.setdefault(name, version)
         return mapping
     raise ValueError(f"unsupported ecosystem: {resolved!r}")
 

@@ -4,6 +4,7 @@ from pathlib import Path
 
 from .. import go_manifest as go_manifest_module
 from .. import manifest as manifest_module
+from ..python_manifest import is_python_repo, parse_python_manifest
 from ..drift import analyze_repo
 from . import patcher, pr
 from .lockfile import LockfileUpdater
@@ -19,6 +20,8 @@ def _detect_ecosystem(repo_dir: str) -> str:
         return "npm"
     if (repo / "go.mod").is_file():
         return "go"
+    if is_python_repo(repo):
+        return "python"
     raise RemediationError("unsupported or missing ecosystem")
 
 
@@ -27,6 +30,8 @@ def _parse_manifest(repo_dir: str, ecosystem: str):
         return go_manifest_module.parse_go_manifest(repo_dir)
     if ecosystem == "npm":
         return manifest_module.parse_manifest(repo_dir)
+    if ecosystem == "python":
+        return parse_python_manifest(repo_dir)
     raise RemediationError(f"unsupported ecosystem: {ecosystem!r}")
 
 

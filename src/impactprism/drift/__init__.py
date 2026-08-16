@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
-from .classifier import DriftReport, analyze_repo, classify_drift, classify_go, classify_npm
+from .classifier import (
+    DriftReport,
+    analyze_repo,
+    classify_drift,
+    classify_go,
+    classify_npm,
+    classify_python,
+)
 from .models import Confidence, Finding, FindingType, Severity, Status
 
 __all__ = [
@@ -16,4 +23,5 @@ __all__ = [
     "classify_drift",
     "classify_npm",
     "classify_go",
+    "classify_python",
 ]

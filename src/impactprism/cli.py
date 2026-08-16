@@ -12,6 +12,7 @@ from .analysis import generate_sbom, main as analysis_main
 from .drift import FindingType, analyze_repo
 from .evidence import main as evidence_main
 from .cra_clauses import main as cra_clauses_main
+from .python_manifest import is_python_repo
 
 
 DEFAULT_SCAN_EXCLUDES = {
@@ -44,6 +45,8 @@ def _detect_ecosystem(repo_path):
         return "npm"
     if (repo_path / "go.mod").is_file():
         return "go"
+    if is_python_repo(repo_path):
+        return "python"
     return None
 
 
@@ -151,7 +154,7 @@ def _run_scan(args):
     ecosystem = _detect_ecosystem(repo_path)
     if ecosystem is None:
         print(
-            "error: no package.json or go.mod found in " + str(repo_path),
+            "error: no supported ecosystem manifest found in " + str(repo_path),
             file=sys.stderr,
         )
         return 2
@@ -164,7 +167,7 @@ def _run_scan(args):
             os.close(fd)
             temp_report = report_path
 
-        if ecosystem == "npm":
+        if ecosystem in ("npm", "python"):
             analyze_argv = [args.repo]
             for name in excludes:
                 analyze_argv.extend(["--exclude", name])

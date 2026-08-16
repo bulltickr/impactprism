@@ -1,4 +1,4 @@
-"""Dependency-drift classification for npm and Go repositories.
+"""Dependency-drift classification for npm, Go, and Python repositories.
 
 Combines manifest, lockfile and source-import evidence to emit ``Finding``
 objects describing dependency drift: undeclared direct use, direct
@@ -11,7 +11,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .. import go_imports, go_manifest as go_manifest_module
+from .. import go_imports, go_manifest as go_manifest_module, python_imports
+from ..python_manifest import canonical_name, is_python_repo
 from .. import imports, manifest as manifest_module
 from .models import Confidence, Finding, FindingType, Severity, Status
 
@@ -21,6 +22,7 @@ __all__ = [
     "classify_drift",
     "classify_npm",
     "classify_go",
+    "classify_python",
 ]
 
 _NODE_BUILTINS = {
@@ -73,6 +75,15 @@ _NODE_BUILTINS = {
 _NPM_SUFFIXES = (".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs")
 _LOCKFILE_NAMES = ("package-lock.json", "npm-shrinkwrap.json", "yarn.lock", "pnpm-lock.yaml")
 _TEST_SEGMENTS = {"test", "tests", "__tests__", "__mocks__", "spec"}
+_PYTHON_IMPORT_ALIASES = {
+    "beautifulsoup4": {"bs4"},
+    "scikit-learn": {"sklearn"},
+    "python-dateutil": {"dateutil"},
+    "pyyaml": {"yaml"},
+    "pillow": {"pil"},
+    "opencv-python": {"cv2"},
+    "attrs": {"attr"},
+}
 
 
 class DriftReport:
@@ -110,7 +121,8 @@ def analyze_repo(
 ) -> DriftReport:
     """Classify dependency drift for a whole repository.
 
-    The ecosystem is auto-detected from ``package.json`` (npm) or ``go.mod``
+    The ecosystem is auto-detected from ``package.json`` (npm), ``go.mod``
+    (Go), or a supported Python manifest
     (go) unless given explicitly; a missing ecosystem raises ``ValueError``.
     ``commit_sha`` is stamped onto every finding.
     """
@@ -120,6 +132,8 @@ def analyze_repo(
             ecosystem = "npm"
         elif (repo / "go.mod").is_file():
             ecosystem = "go"
+        elif is_python_repo(repo):
+            ecosystem = "python"
         else:
             raise ValueError("unsupported or missing ecosystem")
 
@@ -154,6 +168,24 @@ def analyze_repo(
             go_sum=go_sum,
             commit_sha=commit_sha,
         )
+    elif ecosystem == "python":
+        try:
+            manifest = manifest_module.parse_python_manifest(repo_dir)
+        except Exception as exc:
+            return DriftReport(
+                [_finding_for_manifest_parse_error(repo_dir, "python", exc, commit_sha=commit_sha)]
+            )
+        try:
+            imported = python_imports.scan_imports(repo_dir)
+        except Exception:
+            imported = {}
+        try:
+            lockfile = manifest_module.parse_python_lockfile(repo_dir)
+        except manifest_module.LockfileParseError:
+            lockfile = None
+        findings = classify_python(
+            manifest, imported, repo_dir=repo_dir, lockfile=lockfile, commit_sha=commit_sha
+        )
     else:
         raise ValueError(f"unsupported ecosystem: {ecosystem!r}")
 
@@ -166,8 +198,14 @@ def _finding_for_manifest_parse_error(repo_dir, ecosystem, exc, *, commit_sha=No
     repo = Path(repo_dir)
     if ecosystem == "npm":
         manifest = repo / "package.json"
-    else:
+    elif ecosystem == "go":
         manifest = repo / "go.mod"
+    else:
+        manifest = next(
+            (repo / name for name in ("pyproject.toml", "Pipfile", "requirements.txt")
+             if (repo / name).is_file()),
+            repo,
+        )
     manifest_str = str(manifest) if manifest.is_file() else str(repo)
     return Finding(
         finding_type=FindingType.SCANNER_ERROR,
@@ -361,6 +399,14 @@ def classify_drift(
             repo_dir=repo_dir,
             go_manifest=None,
             go_sum=go_sum,
+            commit_sha=commit_sha,
+        )
+    elif ecosystem == "python":
+        findings = classify_python(
+            declared,
+            imported,
+            repo_dir=repo_dir,
+            lockfile=lockfile,
             commit_sha=commit_sha,
         )
     else:
@@ -628,6 +674,170 @@ def classify_npm(
         )
 
     return findings
+
+
+def classify_python(
+    manifest,
+    imports_by_file,
+    *,
+    repo_dir: str | None = None,
+    lockfile=None,
+    commit_sha: str | None = None,
+) -> list:
+    """Classify Python imports against PEP 621/Poetry/Pipenv requirements.
+
+    Import records carry source offsets, so every source-derived finding keeps
+    the originating file, line, column, and dynamic/static provenance in its
+    explanation. Relative imports are checked as source paths and are never
+    mistaken for third-party packages.
+    """
+    findings = []
+    repo = Path(repo_dir).resolve() if repo_dir is not None else None
+    dependencies = getattr(manifest, "dependencies", None)
+    if dependencies is None and isinstance(manifest, (set, list, tuple)):
+        dependencies = [
+            type("DependencyView", (), {
+                "name": name, "kind": "dependencies", "locked_version": None,
+            })()
+            for name in manifest
+        ]
+    dependencies = list(dependencies or [])
+    declared_by_name = {}
+    for dependency in dependencies:
+        declared_name = canonical_name(dependency.name)
+        declared_by_name[declared_name] = dependency
+        for alias in _PYTHON_IMPORT_ALIASES.get(declared_name, set()):
+            declared_by_name[alias] = dependency
+    lockfile_resolved = getattr(lockfile, "resolved_versions", {}) if lockfile is not None else {}
+    lockfile_resolved = {
+        canonical_name(name): version for name, version in (lockfile_resolved or {}).items()
+    }
+    for distribution, aliases in _PYTHON_IMPORT_ALIASES.items():
+        if distribution in lockfile_resolved:
+            for alias in aliases:
+                lockfile_resolved.setdefault(alias, lockfile_resolved[distribution])
+    manifest_path = getattr(manifest, "package_path", None)
+    manifest_path = Path(manifest_path).resolve() if manifest_path is not None else None
+    lockfile_path = _python_lockfile_path(repo) if repo is not None else None
+    package_sites = {}
+    relative_sites = {}
+    for raw_path in sorted(imports_by_file, key=lambda value: str(value)):
+        records = imports_by_file[raw_path] or []
+        file_path = Path(raw_path).resolve()
+        source = _read_source(file_path)
+        is_test = _is_test_path(file_path)
+        for record in records:
+            specifier = getattr(record, "specifier", None)
+            if not isinstance(specifier, str) or not specifier:
+                continue
+            start = getattr(record, "start", 0)
+            line, column = _line_column(source, start if isinstance(start, int) else 0)
+            if _is_relative_python(specifier):
+                if not _resolves_python_relative(repo, file_path, specifier):
+                    relative_sites.setdefault(specifier, (str(file_path), line, column))
+                continue
+            package = _python_package(specifier)
+            if package is None or _is_python_stdlib(package):
+                continue
+            package_sites.setdefault(package, []).append(
+                (str(file_path), line, column, is_test, getattr(record, "kind", "static"), specifier)
+            )
+
+    for package in sorted(package_sites):
+        sites = package_sites[package]
+        first = min(sites, key=lambda item: (item[0], item[1], item[2]))
+        file_str, line, column, _is_test, kind, specifier = first
+        dependency = declared_by_name.get(package)
+        if dependency is None:
+            if package in lockfile_resolved:
+                finding_type = FindingType.DIRECT_DEPENDENCY_USED_TRANSITIVELY
+                severity = Severity.MEDIUM
+                explanation = (
+                    f"Python package {specifier!r} is imported ({kind}) but is present "
+                    "only in the lockfile, not in the manifest."
+                )
+            else:
+                finding_type = FindingType.UNDECLARED_DIRECT_USE
+                severity = Severity.HIGH
+                explanation = (
+                    f"Python package {specifier!r} is imported ({kind}) but is neither "
+                    "declared in the manifest nor present in the lockfile."
+                )
+            findings.append(_python_finding(
+                finding_type, severity, Confidence.HIGH, package, file_str, line, column,
+                manifest_path, lockfile_path, commit_sha, "dependencies", explanation,
+            ))
+
+    for dependency in dependencies:
+        package = canonical_name(dependency.name)
+        sites = package_sites.get(package, [])
+        if not sites:
+            for alias in _PYTHON_IMPORT_ALIASES.get(package, set()):
+                sites.extend(package_sites.get(alias, []))
+        if getattr(dependency, "kind", "dependencies") == "devDependencies":
+            non_test = [site for site in sites if not site[3]]
+            if non_test:
+                first = min(non_test, key=lambda item: (item[0], item[1], item[2]))
+                findings.append(_python_finding(
+                    FindingType.SCOPE_MISMATCH, Severity.LOW, Confidence.MEDIUM, package,
+                    first[0], first[1], first[2], manifest_path, lockfile_path, commit_sha,
+                    dependency.kind, f"Development-only Python dependency {dependency.name!r} is imported by non-test code.",
+                ))
+        elif sites and all(site[3] for site in sites):
+            first = min(sites, key=lambda item: (item[0], item[1], item[2]))
+            findings.append(_python_finding(
+                FindingType.SCOPE_MISMATCH, Severity.LOW, Confidence.MEDIUM, package,
+                first[0], first[1], first[2], manifest_path, lockfile_path, commit_sha,
+                dependency.kind, f"Production Python dependency {dependency.name!r} is imported only by test code.",
+            ))
+        if not sites:
+            findings.append(_python_finding(
+                FindingType.DECLARED_UNUSED_CANDIDATE, Severity.LOW, Confidence.MEDIUM, package,
+                None, None, None, manifest_path, lockfile_path, commit_sha, dependency.kind,
+                f"Declared Python dependency {dependency.name!r} is never imported by scanned files.",
+                status=Status.ADVISORY,
+            ))
+        if lockfile is not None and getattr(dependency, "locked_version", None) is None:
+            findings.append(_python_finding(
+                FindingType.LOCKFILE_MANIFEST_MISMATCH, Severity.MEDIUM, Confidence.HIGH, package,
+                None, None, None, manifest_path, lockfile_path, commit_sha, dependency.kind,
+                f"Declared Python dependency {dependency.name!r} has no locked version.",
+            ))
+
+    for package in sorted(lockfile_resolved):
+        if package not in declared_by_name and package not in package_sites:
+            findings.append(_python_finding(
+                FindingType.LOCKFILE_MANIFEST_MISMATCH, Severity.LOW, Confidence.MEDIUM, package,
+                None, None, None, manifest_path, lockfile_path, commit_sha, "dependencies",
+                f"Lockfile Python package {package!r} is neither declared nor imported.",
+            ))
+
+    if lockfile is None and dependencies:
+        findings.append(Finding(
+            finding_type=FindingType.MISSING_LOCKFILE, severity=Severity.MEDIUM,
+            confidence=Confidence.HIGH, status=Status.OPEN, ecosystem="python",
+            manifest=str(manifest_path) if manifest_path else None, lockfile=None,
+            commit_sha=commit_sha, scope="dependencies",
+            explanation="Python dependencies are declared but no supported lockfile was found.",
+        ))
+    for specifier, (file_str, line, column) in sorted(relative_sites.items()):
+        findings.append(_python_finding(
+            FindingType.UNRESOLVED_IMPORT, Severity.HIGH, Confidence.MEDIUM, specifier,
+            file_str, line, column, manifest_path, lockfile_path, commit_sha, None,
+            f"Relative Python import {specifier!r} does not resolve to a Python source file.",
+        ))
+    return findings
+
+
+def _python_finding(finding_type, severity, confidence, package, file, line, column,
+                    manifest, lockfile, commit_sha, scope, explanation, *, status=Status.OPEN):
+    return Finding(
+        finding_type=finding_type, severity=severity, confidence=confidence,
+        status=status, ecosystem="python", package=package, file=file, line=line,
+        column=column, manifest=str(manifest) if manifest else None,
+        lockfile=str(lockfile) if lockfile else None, commit_sha=commit_sha,
+        scope=scope, explanation=explanation,
+    )
 
 
 def classify_go(
@@ -900,6 +1110,48 @@ def _find_lockfile(repo: Path):
         if candidate.is_file():
             return candidate.resolve()
     return None
+
+
+def _python_lockfile_path(repo: Path | None):
+    if repo is None:
+        return None
+    for name in ("poetry.lock", "uv.lock", "Pipfile.lock", "requirements.txt"):
+        candidate = repo / name
+        if candidate.is_file():
+            return candidate.resolve()
+    return None
+
+
+def _python_package(specifier: str):
+    if not specifier or specifier.startswith("."):
+        return None
+    return canonical_name(specifier.split(".", 1)[0])
+
+
+def _is_python_stdlib(package: str) -> bool:
+    import sys
+
+    stdlib = getattr(sys, "stdlib_module_names", set())
+    return package in {canonical_name(name) for name in stdlib}
+
+
+def _is_relative_python(specifier: str) -> bool:
+    return specifier.startswith(".")
+
+
+def _resolves_python_relative(repo, importing_file: Path, specifier: str) -> bool:
+    base = importing_file.parent
+    dots = len(specifier) - len(specifier.lstrip("."))
+    target = specifier[dots:]
+    current = base
+    for _ in range(max(0, dots - 1)):
+        current = current.parent
+    candidate = current.joinpath(*target.split(".")) if target else current
+    candidates = [candidate.with_suffix(".py"), candidate.with_suffix(".pyi"), candidate / "__init__.py"]
+    if repo is not None:
+        root = repo.resolve()
+        candidates = [path for path in candidates if _is_within(path.resolve(), root)]
+    return any(path.is_file() for path in candidates)
 
 
 def _is_node_builtin(specifier: str) -> bool:
