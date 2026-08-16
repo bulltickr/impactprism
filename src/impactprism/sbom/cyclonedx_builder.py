@@ -96,6 +96,8 @@ def build_cyclonedx_sbom(
         bom_ref=root_ref,
     )
     bom_components = []
+    component_items = []
+    emitted_refs = set()
     dependencies = []
     direct_refs = []
 
@@ -106,6 +108,8 @@ def build_cyclonedx_sbom(
         try:
             package_url = PackageURL.from_string(purl)
         except (TypeError, ValueError):
+            continue
+        if purl in emitted_refs:
             continue
 
         scope = item.get("scope")
@@ -135,15 +139,29 @@ def build_cyclonedx_sbom(
             ],
         )
         bom_components.append(component)
+        emitted_refs.add(purl)
+        component_items.append((purl, item))
+
+    dependency_orders = {}
+    for purl, item in component_items:
         component_ref = BomRef(purl)
         child_purls = item.get("depends_on")
-        child_dependencies = []
+        child_refs = []
         if isinstance(child_purls, list):
-            child_dependencies = [
-                Dependency(ref=BomRef(child))
-                for child in child_purls
-                if isinstance(child, str)
-            ]
+            seen_child_refs = set()
+            for child in child_purls:
+                if not isinstance(child, str):
+                    continue
+                if child != str(root_ref) and child not in emitted_refs:
+                    continue
+                if child in seen_child_refs:
+                    continue
+                seen_child_refs.add(child)
+                child_refs.append(child)
+            dependency_orders[purl] = child_refs
+        child_dependencies = [
+            Dependency(ref=BomRef(child)) for child in child_refs
+        ]
         dependencies.append(
             Dependency(ref=component_ref, dependencies=child_dependencies)
         )
@@ -176,4 +194,9 @@ def build_cyclonedx_sbom(
     error = validator.validate_str(output)
     if error is not None:
         raise ValueError(error)
-    return json.loads(output)
+    sbom = json.loads(output)
+    for dependency in sbom.get("dependencies", []):
+        ref = dependency.get("ref")
+        if ref in dependency_orders:
+            dependency["dependsOn"] = dependency_orders[ref]
+    return sbom

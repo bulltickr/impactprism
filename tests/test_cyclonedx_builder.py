@@ -230,6 +230,92 @@ def test_dependencies_include_component_edges_and_direct_root_edges():
     assert dependencies[root_ref]["dependsOn"] == [first_purl, third_purl]
 
 
+def test_dangling_and_duplicate_dependency_refs_are_removed_in_input_order():
+    root_ref = "app@1.0.0"
+    first_purl = "pkg:pypi/first@1.0.0"
+    second_purl = "pkg:pypi/second@2.0.0"
+    third_purl = "pkg:pypi/third@3.0.0"
+    missing_purl = "pkg:pypi/missing@9.9.9"
+    sbom = build_cyclonedx_sbom(
+        [
+            {
+                "name": "first",
+                "version": "1.0.0",
+                "purl": first_purl,
+                "direct": True,
+                "depends_on": [
+                    third_purl,
+                    missing_purl,
+                    second_purl,
+                    third_purl,
+                    root_ref,
+                ],
+            },
+            {
+                "name": "second",
+                "version": "2.0.0",
+                "purl": second_purl,
+                "direct": False,
+                "depends_on": [missing_purl, missing_purl],
+            },
+            {
+                "name": "third",
+                "version": "3.0.0",
+                "purl": third_purl,
+                "direct": True,
+            },
+        ],
+        metadata={"name": "app", "version": "1.0.0"},
+    )
+
+    assert_valid_sbom(sbom)
+    dependencies = dependencies_by_ref(sbom)
+    assert dependencies[first_purl]["dependsOn"] == [
+        third_purl,
+        second_purl,
+        root_ref,
+    ]
+    assert dependencies[second_purl]["dependsOn"] == []
+    assert all(
+        child_ref in {root_ref, first_purl, second_purl, third_purl}
+        for dependency in sbom["dependencies"]
+        for child_ref in dependency.get("dependsOn", [])
+    )
+    assert all(
+        len(dependency.get("dependsOn", []))
+        == len(set(dependency.get("dependsOn", [])))
+        for dependency in sbom["dependencies"]
+    )
+
+
+def test_duplicate_input_purls_emit_one_component_and_unique_dependency_refs():
+    purl = "pkg:pypi/duplicate@1.0.0"
+    sbom = build_cyclonedx_sbom(
+        [
+            {
+                "name": "duplicate",
+                "version": "1.0.0",
+                "purl": purl,
+                "direct": True,
+            },
+            {
+                "name": "duplicate",
+                "version": "1.0.0",
+                "purl": purl,
+                "direct": True,
+            },
+        ],
+        metadata={"name": "app", "version": "1.0.0"},
+    )
+
+    assert_valid_sbom(sbom)
+    assert len(sbom["components"]) == 1
+    assert [component["bom-ref"] for component in sbom["components"]] == [purl]
+    dependency_refs = [dependency["ref"] for dependency in sbom["dependencies"]]
+    assert len(dependency_refs) == len(set(dependency_refs))
+    assert dependency_refs.count(purl) == 1
+
+
 def test_components_without_valid_purls_are_skipped():
     valid_purl = "pkg:pypi/valid@1.0.0"
     sbom = build_cyclonedx_sbom(
