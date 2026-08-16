@@ -7,7 +7,15 @@ import pytest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-from action.run import Outcome, Policy, classify_outcome, exit_code, main, SEVERITY_ORDER
+from action.run import (
+    Outcome,
+    Policy,
+    SEVERITY_ORDER,
+    _evidence_markdown,
+    classify_outcome,
+    exit_code,
+    main,
+)
 
 
 FAIL_ON_VALUES = ("never", "finding", "all")
@@ -30,6 +38,25 @@ def test_outcome_members_and_values():
 
 def test_clean_empty_findings():
     assert classify_outcome([], policy=Policy()) is Outcome.CLEAN
+
+
+def test_clean_evidence_markdown_does_not_claim_compliance():
+    markdown = _evidence_markdown(
+        {
+            "generator": "impactprism-evidence",
+            "version": "0.1.0",
+            "timestamp": "2026-01-01T00:00:00Z",
+            "source_report": "findings.json",
+            "repo": "repo",
+            "commit_sha": "abc123",
+            "package_name": "demo",
+            "package_version": "1.0.0",
+            "findings": [],
+        }
+    )
+
+    assert "No supported dependency findings were detected; this is not a compliance determination." in markdown
+    assert "evidence of compliant dependency management" not in markdown
 
 
 @pytest.mark.parametrize("fail_on", FAIL_ON_VALUES)

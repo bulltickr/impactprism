@@ -479,7 +479,9 @@ def _evidence_markdown(evidence):
         "",
     ]
     if not evidence["findings"]:
-        lines.append("No findings; evidence of compliant dependency management.")
+        lines.append(
+            "No supported dependency findings were detected; this is not a compliance determination."
+        )
         lines.append("")
     else:
         for finding in evidence["findings"]:
