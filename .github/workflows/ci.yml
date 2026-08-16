@@ -99,6 +99,11 @@ jobs:
           "$SMOKE_PYTHON" -m pip install --no-cache-dir "$SMOKE_WHEEL"
           "$SMOKE_PYTHON" -m pip check
           test -x "$SMOKE_CLI"
+          installed_package="$("$SMOKE_PYTHON" -c 'import impactprism; print(impactprism.__file__)')"
+          case "$installed_package" in
+            "$SMOKE_VENV"/lib/python*/site-packages/impactprism/*) ;;
+            *) echo "Expected impactprism to import from the temporary venv: $installed_package" >&2; exit 1 ;;
+          esac
 
       - name: Smoke-test clean-app fixture
         working-directory: ${{ env.SMOKE_FIXTURE }}
