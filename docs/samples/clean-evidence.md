@@ -12,7 +12,7 @@
 
 ## Findings
 
-No findings; evidence of compliant dependency management (PASS).
+No supported dependency findings were detected; this is not a compliance determination.
 ## CRA references
 
 | Clause | Description |

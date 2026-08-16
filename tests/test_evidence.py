@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -206,6 +207,18 @@ def test_main_clean_report(tmp_path, monkeypatch):
         in markdown
     )
     assert "evidence of compliant dependency management (PASS)" not in markdown
+
+
+def test_clean_evidence_sample_uses_canonical_disclaimer():
+    repo_root = Path(__file__).resolve().parents[1]
+    markdown = (repo_root / "docs" / "samples" / "clean-evidence.md").read_text(
+        encoding="utf-8"
+    )
+    assert "evidence of compliant dependency management" not in markdown
+    assert (
+        "No supported dependency findings were detected; this is not a compliance determination."
+        in markdown
+    )
 
 
 def test_main_missing_report_exit_2(tmp_path):
