@@ -42,6 +42,7 @@ jobs:
     env:
       SMOKE_DIST: /tmp/impactprism-smoke-dist
       SMOKE_VENV: /tmp/impactprism-smoke-venv
+      SMOKE_FIXTURE: ${{ github.workspace }}/demo/clean-app
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -63,7 +64,7 @@ jobs:
           "$SMOKE_VENV/bin/python" -m pip install "$SMOKE_DIST"/impactprism-*.whl
 
       - name: Smoke-test clean-app fixture
-        working-directory: ${{ github.workspace }}/demo/clean-app
+        working-directory: ${{ env.SMOKE_FIXTURE }}
         run: |
           if "$SMOKE_VENV/bin/impactprism" scan .; then
             status=0
