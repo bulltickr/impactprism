@@ -75,6 +75,7 @@ jobs:
       - name: Install wheel in temporary venv
         run: |
           python -m venv --clear "$SMOKE_VENV"
+          test -x "$SMOKE_VENV/bin/python"
           "$SMOKE_VENV/bin/python" -m pip install --upgrade pip
           case "$SMOKE_WHEEL" in
             /*) ;;
