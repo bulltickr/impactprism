@@ -39,6 +39,9 @@ jobs:
   smoke:
     needs: test
     runs-on: ubuntu-latest
+    env:
+      SMOKE_DIST: /tmp/impactprism-smoke-dist
+      SMOKE_VENV: /tmp/impactprism-smoke-venv
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,18 +54,18 @@ jobs:
       - name: Build wheel
         run: |
           python -m pip install --upgrade pip build
-          python -m build --wheel --outdir /tmp/impactprism-smoke-dist "${{ github.workspace }}"
+          python -m build --wheel --outdir "$SMOKE_DIST" "${{ github.workspace }}"
 
       - name: Install wheel in temporary venv
         run: |
-          python -m venv /tmp/impactprism-smoke-venv
-          /tmp/impactprism-smoke-venv/bin/python -m pip install --upgrade pip
-          /tmp/impactprism-smoke-venv/bin/python -m pip install /tmp/impactprism-smoke-dist/impactprism-*.whl
+          python -m venv "$SMOKE_VENV"
+          "$SMOKE_VENV/bin/python" -m pip install --upgrade pip
+          "$SMOKE_VENV/bin/python" -m pip install "$SMOKE_DIST"/impactprism-*.whl
 
       - name: Smoke-test clean-app fixture
         working-directory: ${{ github.workspace }}/demo/clean-app
         run: |
-          if /tmp/impactprism-smoke-venv/bin/impactprism scan .; then
+          if "$SMOKE_VENV/bin/impactprism" scan .; then
             status=0
           else
             status=$?
