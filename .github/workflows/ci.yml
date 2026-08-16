@@ -96,7 +96,7 @@ jobs:
           source "$SMOKE_VENV/bin/activate"
           test "$(command -v impactprism)" = "$SMOKE_CLI"
           set +e
-          impactprism scan .
+          "$SMOKE_CLI" scan .
           status=$?
           set -e
           test "$status" -eq 0
