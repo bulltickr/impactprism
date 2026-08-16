@@ -71,7 +71,10 @@ jobs:
           test "$SMOKE_FIXTURE" = "$SMOKE_WORKSPACE/demo/clean-app"
 
       - name: Build wheel
+        working-directory: ${{ env.SMOKE_WORKSPACE }}
         run: |
+          test -d "$SMOKE_WORKSPACE"
+          test "$PWD" = "$SMOKE_WORKSPACE"
           python -m pip install --upgrade pip build
           python -m build --wheel --outdir "$SMOKE_DIST" "$SMOKE_WORKSPACE"
           set -- "$SMOKE_DIST"/impactprism-*.whl
