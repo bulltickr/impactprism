@@ -124,10 +124,18 @@ class VerificationResult:
             "resolved": self.resolved,
             "finding_type": self.finding_type,
             "package": self.package,
-            "scan_before": dict(self.scan_before),
-            "scan_after": dict(self.scan_after),
+            "scan_before": _serialize_scan(self.scan_before),
+            "scan_after": _serialize_scan(self.scan_after),
             "remaining": [dict(item) for item in self.remaining],
         }
+
+
+def _serialize_scan(value):
+    if isinstance(value, dict):
+        return dict(value)
+    if isinstance(value, list):
+        return [dict(item) if isinstance(item, dict) else item for item in value]
+    return value
 
 
 @dataclass(kw_only=True)

@@ -14,6 +14,7 @@ from pathlib import Path
 from .. import go_imports, go_manifest as go_manifest_module, python_imports
 from ..python_manifest import canonical_name, is_python_repo
 from .. import imports, manifest as manifest_module
+from ..npm_semver import npm_satisfies, valid_range
 from .models import Confidence, Finding, FindingType, Severity, Status
 
 __all__ = [
@@ -612,6 +613,33 @@ def classify_npm(
     if lockfile is not None:
         for dependency in dependencies:
             if dependency.locked_version is not None:
+                # A lockfile can contain a version that is present but outside
+                # the range declared in package.json.  Treat only recognizable
+                # npm ranges as comparable; protocols and aliases are handled
+                # by npm_satisfies, while malformed specs retain the existing
+                # best-effort behavior.
+                if valid_range(dependency.version) and not npm_satisfies(
+                    dependency.version, dependency.locked_version
+                ):
+                    findings.append(
+                        Finding(
+                            finding_type=FindingType.LOCKFILE_MANIFEST_MISMATCH,
+                            severity=Severity.MEDIUM,
+                            confidence=Confidence.HIGH,
+                            status=Status.OPEN,
+                            ecosystem="npm",
+                            package=dependency.name,
+                            manifest=str(manifest_path) if manifest_path is not None else None,
+                            lockfile=str(lockfile_path) if lockfile_path is not None else None,
+                            commit_sha=commit_sha,
+                            scope=dependency.kind,
+                            explanation=(
+                                f"Locked version {dependency.locked_version!r} for "
+                                f"{dependency.name!r} does not satisfy the declared "
+                                f"npm range {dependency.version!r}."
+                            ),
+                        )
+                    )
                 continue
             findings.append(
                 Finding(

@@ -54,7 +54,6 @@ def test_malformed_lockfile_must_not_disappear_from_classification(tmp_path):
     )
 
 
-@pytest.mark.xfail(strict=True, reason="the classifier does not compare locked versions with npm ranges")
 def test_locked_version_outside_npm_range_is_reported(tmp_path):
     (tmp_path / "package.json").write_text(
         json.dumps({"dependencies": {"a": "^1.0.0"}}), encoding="utf-8"

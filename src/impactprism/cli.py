@@ -13,6 +13,8 @@ from .drift import FindingType, analyze_repo
 from .evidence import main as evidence_main
 from .cra_clauses import main as cra_clauses_main
 from .python_manifest import is_python_repo
+from .remediation.models import RemediationError
+from .remediation.remediate import remediate
 
 
 DEFAULT_SCAN_EXCLUDES = {
@@ -145,6 +147,59 @@ def _run_clauses(args):
     return cra_clauses_main([args.path] if args.path is not None else [])
 
 
+def _run_remediate(args):
+    finding_path = args.finding_option or args.finding_path
+    if args.finding_option and args.finding_path:
+        print(
+            "error: provide the finding as a positional path or with --finding, not both",
+            file=sys.stderr,
+        )
+        return 2
+    if finding_path is None:
+        print("error: a finding JSON path is required", file=sys.stderr)
+        return 2
+
+    try:
+        finding = _load_json(finding_path)
+    except (OSError, ValueError, TypeError) as error:
+        print(f"error: failed to read finding JSON: {error}", file=sys.stderr)
+        return 2
+    if not isinstance(finding, dict):
+        print("error: finding JSON must contain an object", file=sys.stderr)
+        return 2
+
+    try:
+        plan = remediate(
+            finding,
+            args.repo_dir,
+            ecosystem=args.ecosystem,
+            update_lockfile=not args.no_update_lockfile,
+            verify=not args.no_verify,
+            dry_run=args.dry_run,
+            commit_sha=args.commit_sha,
+            offline=args.offline,
+            registry=args.registry,
+        )
+    except RemediationError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+
+    if args.json:
+        json.dump(plan.as_dict(), sys.stdout, indent=2)
+        print()
+    else:
+        print("Remediation plan")
+        print(f"Proposed-only: {plan.proposed_only}")
+        if plan.manifest_patch is not None:
+            print(f"Manifest patch: {plan.manifest_patch.path}")
+        if plan.lockfile_plan is not None:
+            print(f"Lockfile command: {plan.lockfile_plan.command}")
+        if plan.pr_proposal is not None:
+            print(f"PR proposal: {plan.pr_proposal.branch_name}")
+            print(plan.pr_proposal.description.body)
+    return 0
+
+
 def _run_scan(args):
     excludes = sorted(DEFAULT_SCAN_EXCLUDES | set(args.exclude or []))
     repo_path = Path(args.repo).resolve()
@@ -252,6 +307,49 @@ def main(argv=None) -> int:
     clauses = subparsers.add_parser("clauses", help="print the CRA clause map")
     clauses.add_argument("path", nargs="?", default=None)
     clauses.set_defaults(func=_run_clauses)
+
+    remediate = subparsers.add_parser(
+        "remediate", help="plan or apply a supported remediation"
+    )
+    remediate.add_argument("repo_dir")
+    remediate.add_argument(
+        "finding_path",
+        nargs="?",
+        metavar="FINDING_JSON",
+        help="path to a JSON object containing one remediation finding",
+    )
+    remediate.add_argument(
+        "--finding",
+        dest="finding_option",
+        metavar="PATH",
+        help="path to a JSON object containing one remediation finding",
+    )
+    remediate.add_argument(
+        "--ecosystem",
+        choices=("auto", "npm", "python", "go"),
+        default="auto",
+    )
+    remediate.add_argument("--no-update-lockfile", action="store_true")
+    remediate.add_argument("--no-verify", action="store_true")
+    dry_run = remediate.add_mutually_exclusive_group()
+    dry_run.add_argument(
+        "--dry-run",
+        dest="dry_run",
+        action="store_true",
+        default=True,
+        help="produce a plan without changing the repository (default)",
+    )
+    dry_run.add_argument(
+        "--apply",
+        dest="dry_run",
+        action="store_false",
+        help="apply the manifest and lockfile changes",
+    )
+    remediate.add_argument("--commit-sha")
+    remediate.add_argument("--offline", action="store_true")
+    remediate.add_argument("--registry")
+    remediate.add_argument("--json", action="store_true")
+    remediate.set_defaults(func=_run_remediate)
 
     scan = subparsers.add_parser(
         "scan", help="analyze a repository and generate an evidence pack in one shot"
