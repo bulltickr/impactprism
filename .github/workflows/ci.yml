@@ -43,7 +43,6 @@ jobs:
     env:
       SMOKE_WORKSPACE: ${{ github.workspace }}
       SMOKE_DIST: /tmp/impactprism-smoke-dist
-      SMOKE_WHEEL: /tmp/impactprism-smoke-dist/impactprism-smoke.whl
       SMOKE_VENV: /tmp/impactprism-smoke-venv
       SMOKE_FIXTURE: ${{ github.workspace }}/demo/clean-app
     steps:
@@ -57,7 +56,7 @@ jobs:
 
       - name: Validate absolute smoke paths
         run: |
-          for smoke_path in "$SMOKE_WORKSPACE" "$SMOKE_DIST" "$SMOKE_WHEEL" "$SMOKE_VENV" "$SMOKE_FIXTURE"; do
+          for smoke_path in "$SMOKE_WORKSPACE" "$SMOKE_DIST" "$SMOKE_VENV" "$SMOKE_FIXTURE"; do
             case "$smoke_path" in
               /*) ;;
               *) echo "Expected an absolute smoke path: $smoke_path" >&2; exit 1 ;;
@@ -75,9 +74,11 @@ jobs:
           "$SMOKE_VENV/bin/python" -m pip install --upgrade pip
           smoke_wheel="$(find "$SMOKE_DIST" -maxdepth 1 -type f -name 'impactprism-*.whl' -print -quit)"
           test -n "$smoke_wheel"
-          cp "$smoke_wheel" "$SMOKE_WHEEL"
-          test -f "$SMOKE_WHEEL"
-          "$SMOKE_VENV/bin/python" -m pip install "$SMOKE_WHEEL"
+          case "$smoke_wheel" in
+            /*) ;;
+            *) echo "Expected an absolute wheel path: $smoke_wheel" >&2; exit 1 ;;
+          esac
+          "$SMOKE_VENV/bin/python" -m pip install "$smoke_wheel"
 
       - name: Smoke-test clean-app fixture
         working-directory: ${{ env.SMOKE_FIXTURE }}
