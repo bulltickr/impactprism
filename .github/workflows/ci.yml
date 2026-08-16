@@ -96,6 +96,7 @@ jobs:
         working-directory: ${{ env.SMOKE_FIXTURE }}
         run: |
           test -d "$SMOKE_FIXTURE"
+          test "$PWD" = "$SMOKE_FIXTURE"
           test -f "$SMOKE_FIXTURE/package.json"
           test -f "$SMOKE_FIXTURE/package-lock.json"
           test -x "$SMOKE_CLI"
