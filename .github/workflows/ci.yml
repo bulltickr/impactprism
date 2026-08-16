@@ -81,7 +81,8 @@ jobs:
             *) echo "Expected an absolute wheel path: $SMOKE_WHEEL" >&2; exit 1 ;;
           esac
           test -f "$SMOKE_WHEEL"
-          "$SMOKE_VENV/bin/python" -m pip install "$SMOKE_WHEEL"
+          "$SMOKE_VENV/bin/python" -m pip install --no-cache-dir "$SMOKE_WHEEL"
+          "$SMOKE_VENV/bin/python" -m pip check
 
       - name: Smoke-test clean-app fixture
         working-directory: ${{ env.SMOKE_FIXTURE }}
