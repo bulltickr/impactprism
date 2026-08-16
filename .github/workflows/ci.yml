@@ -61,14 +61,15 @@ jobs:
         run: |
           python -m venv "$SMOKE_VENV"
           "$SMOKE_VENV/bin/python" -m pip install --upgrade pip
-          "$SMOKE_VENV/bin/python" -m pip install "$SMOKE_DIST"/impactprism-*.whl
+          smoke_wheel="$(find "$SMOKE_DIST" -maxdepth 1 -type f -name 'impactprism-*.whl' -print -quit)"
+          test -n "$smoke_wheel"
+          "$SMOKE_VENV/bin/python" -m pip install "$smoke_wheel"
 
       - name: Smoke-test clean-app fixture
         working-directory: ${{ env.SMOKE_FIXTURE }}
         run: |
           test -x "$SMOKE_VENV/bin/impactprism"
-          source "$SMOKE_VENV/bin/activate"
-          if impactprism scan .; then
+          if "$SMOKE_VENV/bin/impactprism" scan .; then
             status=0
           else
             status=$?
