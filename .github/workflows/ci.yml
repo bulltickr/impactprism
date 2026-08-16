@@ -68,6 +68,7 @@ jobs:
               *) echo "Expected an absolute smoke path: $smoke_path" >&2; exit 1 ;;
             esac
           done
+          test "$SMOKE_FIXTURE" = "$SMOKE_WORKSPACE/demo/clean-app"
 
       - name: Build wheel
         run: |
@@ -76,6 +77,10 @@ jobs:
           set -- "$SMOKE_DIST"/impactprism-*.whl
           test "$#" -eq 1
           test -f "$1"
+          case "$1" in
+            "$SMOKE_DIST"/*) ;;
+            *) echo "Expected the wheel under the absolute smoke dist path: $1" >&2; exit 1 ;;
+          esac
           printf 'SMOKE_WHEEL=%s\n' "$1" >> "$GITHUB_ENV"
 
       - name: Install wheel in temporary venv
