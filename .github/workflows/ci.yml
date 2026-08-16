@@ -89,9 +89,9 @@ jobs:
         run: |
           test -d "$SMOKE_FIXTURE"
           test -x "$SMOKE_VENV/bin/impactprism"
-          if "$SMOKE_VENV/bin/impactprism" scan .; then
-            status=0
-          else
-            status=$?
-          fi
+          source "$SMOKE_VENV/bin/activate"
+          set +e
+          impactprism scan .
+          status=$?
+          set -e
           test "$status" -eq 0
