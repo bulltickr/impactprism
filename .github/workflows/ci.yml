@@ -35,3 +35,36 @@ jobs:
 
       - name: Self-check with impactprism scan
         run: impactprism scan .
+
+  smoke:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --wheel --outdir /tmp/impactprism-smoke-dist "${{ github.workspace }}"
+
+      - name: Install wheel in temporary venv
+        run: |
+          python -m venv /tmp/impactprism-smoke-venv
+          /tmp/impactprism-smoke-venv/bin/python -m pip install --upgrade pip
+          /tmp/impactprism-smoke-venv/bin/python -m pip install /tmp/impactprism-smoke-dist/impactprism-*.whl
+
+      - name: Smoke-test clean-app fixture
+        working-directory: ${{ github.workspace }}/demo/clean-app
+        run: |
+          if /tmp/impactprism-smoke-venv/bin/impactprism scan .; then
+            status=0
+          else
+            status=$?
+          fi
+          test "$status" -eq 0
