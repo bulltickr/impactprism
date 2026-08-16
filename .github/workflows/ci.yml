@@ -55,6 +55,15 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Validate absolute smoke paths
+        run: |
+          for smoke_path in "$SMOKE_WORKSPACE" "$SMOKE_DIST" "$SMOKE_WHEEL" "$SMOKE_VENV" "$SMOKE_FIXTURE"; do
+            case "$smoke_path" in
+              /*) ;;
+              *) echo "Expected an absolute smoke path: $smoke_path" >&2; exit 1 ;;
+            esac
+          done
+
       - name: Build wheel
         run: |
           python -m pip install --upgrade pip build
