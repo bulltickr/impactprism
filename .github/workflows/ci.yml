@@ -114,4 +114,5 @@ jobs:
           "$SMOKE_CLI" scan .
           status=$?
           set -e
+          printf 'impactprism scan exit code: %s\n' "$status"
           test "$status" -eq 0
