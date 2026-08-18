@@ -78,6 +78,12 @@ runs:
       id: run
       shell: bash
       env:
+        INPUT_REPO_PATH: ${{ inputs.repo-path }}
+        INPUT_ECOSYSTEM: ${{ inputs.ecosystem }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_SEVERITY_THRESHOLD: ${{ inputs.severity-threshold }}
+        INPUT_OUTPUT_DIR: ${{ inputs.output-dir }}
+        INPUT_ARTIFACT_NAME: ${{ inputs.artifact-name }}
         PYTHONPATH: ${{ github.action_path }}/../src
       run: python "${{ github.action_path }}/run.py"
 

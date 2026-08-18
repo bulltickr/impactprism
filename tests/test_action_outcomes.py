@@ -215,6 +215,8 @@ def test_missing_lockfile_action_policy_thresholds(tmp_path, monkeypatch):
     missing = [f for f in data["findings"] if f["finding_type"] == "MISSING_LOCKFILE"]
     assert len(missing) == 1
     assert missing[0]["severity"].lower() == "medium"
+    summary = (workspace / "impactprism-reports" / "summary.md").read_text(encoding="utf-8")
+    assert "Uploaded as artifact:" not in summary
 
     monkeypatch.setenv("INPUT_SEVERITY_THRESHOLD", "high")
     assert main() == 0

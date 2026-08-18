@@ -532,7 +532,9 @@ def _resolve_output_dir(workspace):
 def main(argv=None) -> int:
     policy = _read_policy()
     ecosystem_input = _env("INPUT_ECOSYSTEM", "auto")
-    artifact_name = _env("INPUT_ARTIFACT_NAME", "impactprism-reports")
+    # An explicitly empty artifact name disables upload; preserve that value
+    # instead of treating it as an omitted input.
+    artifact_name = os.environ.get("INPUT_ARTIFACT_NAME", "impactprism-reports")
     repo_path = _resolve_repo_path()
     commit_sha = os.environ.get("GITHUB_SHA") or None
     workspace = Path(_env("GITHUB_WORKSPACE", ".")).resolve()
