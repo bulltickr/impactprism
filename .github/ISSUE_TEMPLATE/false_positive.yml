@@ -1,0 +1,45 @@
+name: Unexpected finding
+description: Report a suspected false positive or incorrect finding classification
+title: "false-positive: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Remove secrets and proprietary source. A small sanitized fixture is much more useful than a full repository.
+  - type: input
+    id: version
+    attributes:
+      label: ImpactPrism version or commit
+    validations:
+      required: true
+  - type: dropdown
+    id: ecosystem
+    attributes:
+      label: Ecosystem
+      options:
+        - npm
+        - Python
+        - Go
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Command
+      placeholder: impactprism scan . --json
+    validations:
+      required: true
+  - type: textarea
+    id: fixture
+    attributes:
+      label: Minimal sanitized fixture
+      description: Include relevant manifest, lockfile, and source-import shape.
+    validations:
+      required: true
+  - type: textarea
+    id: finding
+    attributes:
+      label: Finding and expected behavior
+      description: Include finding type, package, provenance, and why the classification is unexpected.
+    validations:
+      required: true

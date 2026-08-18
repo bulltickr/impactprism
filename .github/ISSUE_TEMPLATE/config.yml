@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Usage questions and design discussion
+    url: https://github.com/bulltickr/impactprism/discussions
+    about: Ask questions or discuss ideas without opening a tracked bug.
+  - name: Security vulnerability
+    url: https://github.com/bulltickr/impactprism/security/advisories/new
+    about: Report a suspected vulnerability privately.
