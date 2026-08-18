@@ -22,6 +22,20 @@ imports, then produces review-oriented artifacts.
 5. Explain parser limitations, ecosystem assumptions, and output-schema changes
    in the pull request description.
 
+## Public compatibility corpus
+
+The repository also contains a small, pinned corpus of public upstream trees
+under [benchmarks/compatibility](benchmarks/compatibility/README.md). It is a
+compatibility regression contract, not an accuracy score or repository ranking.
+Normal pull requests do not download or execute those trees. Maintainers can
+run the explicit network-bound preparation step followed by the offline runner
+when reviewing a parser or normalized-output change; the manifest requires
+detached, clean checkouts and exact archive hashes.
+
+The corpus is intentionally maintainer-triggered in GitHub Actions because it
+uses external public repositories. Do not add credentials, telemetry,
+dependency installation, or repository-code execution to the offline runner.
+
 ## Design expectations
 
 - Prefer canonical scanner and reporting services over parallel logic.

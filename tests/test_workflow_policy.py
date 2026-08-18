@@ -4,6 +4,7 @@ import re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WORKFLOW = os.path.join(ROOT, ".github", "workflows", "cra-check.yml")
+COMPATIBILITY_WORKFLOW = os.path.join(ROOT, ".github", "workflows", "compatibility.yml")
 
 
 def _step_blocks(raw):
@@ -32,6 +33,35 @@ def _permissions_block(raw):
 
 def _workflow_text():
     return open(WORKFLOW, encoding="utf-8").read()
+
+
+def _compatibility_workflow_text():
+    return open(COMPATIBILITY_WORKFLOW, encoding="utf-8").read()
+
+
+def test_compatibility_corpus_is_maintainer_triggered_and_read_only():
+    raw = _compatibility_workflow_text()
+
+    assert "workflow_dispatch:" in raw
+    assert "pull_request:" not in raw
+    assert "push:" not in raw
+    assert "contents: read" in raw
+    assert "contents: write" not in raw
+    assert "persist-credentials: false" in raw
+
+
+def test_compatibility_workflow_prepares_then_runs_the_offline_runner():
+    raw = _compatibility_workflow_text()
+    steps = _step_blocks(raw)
+    prepare_index = next(
+        index for index, block in enumerate(steps) if "compatibility/prepare.py" in block
+    )
+    run_index = next(
+        index for index, block in enumerate(steps) if "compatibility/run.py" in block
+    )
+
+    assert prepare_index < run_index
+    assert "--json" in steps[run_index]
 
 
 def test_every_checkout_disables_persisted_credentials():
