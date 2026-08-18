@@ -134,6 +134,37 @@ def test_analyze_missing_directory(tmp_path):
     assert main(["analyze", str(tmp_path / "missing")]) == 2
 
 
+def test_json_input_error_is_machine_readable(tmp_path, capsys):
+    assert main(["scan", str(tmp_path / "missing"), "--json"]) == 2
+
+    output = json.loads(capsys.readouterr().out)
+    assert output == {
+        "schema_version": 1,
+        "generator": "impactprism-cli",
+        "error": {
+            "kind": "input-error",
+            "message": "repository directory not found: "
+            + str((tmp_path / "missing").resolve()),
+        },
+        "exit_code": 2,
+    }
+
+
+def test_scan_json_preserves_manifest_scanner_error_report(tmp_path, monkeypatch, capsys):
+    repo = tmp_path / "malformed"
+    repo.mkdir()
+    write_file(repo, "package.json", "{\"name\": \n")
+    monkeypatch.chdir(tmp_path)
+
+    assert main(["scan", str(repo), "--json"]) == 2
+
+    report = json.loads(capsys.readouterr().out)
+    assert report["ecosystem"] == "npm"
+    assert report["sbom"] is None
+    assert report["counts"]["by_type"] == {"SCANNER_ERROR": 1}
+    assert report["findings"][0]["finding_type"] == "SCANNER_ERROR"
+
+
 def test_scan_clean_repo_exits_zero(tmp_path, monkeypatch, capsys):
     clean = make_repo(
         tmp_path,

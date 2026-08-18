@@ -154,6 +154,12 @@ ImpactPrism is not a vulnerability scanner. Trivy and Dependency-Check tell you 
 | `scan` / `analyze` | Clean — no supported findings or scanner diagnostics | Any supported finding is present | Error (bad path, unsupported input, or scanner error) |
 | `evidence` / `clauses` | Success | — | Error (missing/invalid input, invalid clause map) |
 
+When `scan` or `analyze` is called with `--json`, a bad path or unsupported
+input writes a machine-readable error envelope to stdout with `error.kind`
+and `exit_code: 2`. A supported repository whose manifest cannot be parsed
+instead produces the normal canonical report containing a `SCANNER_ERROR`
+finding, with exit code 2; this keeps the failure explainable to automation.
+
 ## CLI reference
 
 ```

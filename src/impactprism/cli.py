@@ -63,24 +63,44 @@ def _bucket_packages(findings, finding_type):
     )
 
 
-def _classifier_report(repo_path, excludes=None):
-    try:
-        drift_report = analyze_repo(
-            str(repo_path), ecosystem="auto", exclude=set(excludes or [])
+def _emit_cli_error(message, *, json_mode=False, kind="input-error"):
+    """Emit one stable CLI error without contaminating JSON stdout."""
+
+    if json_mode:
+        json.dump(
+            {
+                "schema_version": 1,
+                "generator": "impactprism-cli",
+                "error": {"kind": kind, "message": str(message)},
+                "exit_code": 2,
+            },
+            sys.stdout,
+            indent=2,
         )
-    except Exception as error:
-        print("error: " + str(error), file=sys.stderr)
-        return None
-    scanner_errors = [
-        finding
-        for finding in drift_report.findings
-        if finding.finding_type == FindingType.SCANNER_ERROR
-    ]
-    if scanner_errors:
-        message = scanner_errors[0].explanation or "dependency scan failed"
-        print("error: " + message, file=sys.stderr)
-        return None
-    return drift_report
+        print()
+    else:
+        print("error: " + str(message), file=sys.stderr)
+    return 2
+
+
+def _has_scanner_error(report):
+    return any(
+        finding.finding_type == FindingType.SCANNER_ERROR
+        for finding in report.findings
+    )
+
+
+def _classifier_report(repo_path, excludes=None):
+    return analyze_repo(
+        str(repo_path), ecosystem="auto", exclude=set(excludes or [])
+    )
+
+
+def _scanner_error_message(report):
+    for finding in report.findings:
+        if finding.finding_type == FindingType.SCANNER_ERROR:
+            return finding.explanation or "dependency scan failed"
+    return None
 
 
 def _go_report(repo_path, classifier, sbom=None, excludes=None):
@@ -116,12 +136,16 @@ def _go_report(repo_path, classifier, sbom=None, excludes=None):
 def _run_analyze(args):
     repo_path = Path(args.repo_dir).resolve()
     if not repo_path.is_dir():
-        print("error: repository directory not found: " + str(repo_path), file=sys.stderr)
-        return 2
+        return _emit_cli_error(
+            "repository directory not found: " + str(repo_path),
+            json_mode=args.json,
+        )
     ecosystem = _detect_ecosystem(repo_path)
     if ecosystem is None:
-        print("error: no supported ecosystem manifest found in " + str(repo_path), file=sys.stderr)
-        return 2
+        return _emit_cli_error(
+            "no supported ecosystem manifest found in " + str(repo_path),
+            json_mode=args.json,
+        )
 
     excludes = set(args.exclude or [])
     temp_report = None
@@ -133,17 +157,17 @@ def _run_analyze(args):
             delegated = [args.repo_dir, "--report", temp_report]
             for name in sorted(excludes):
                 delegated.extend(["--exclude", name])
-            with contextlib.redirect_stdout(io.StringIO()):
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+                io.StringIO()
+            ):
                 analysis_rc = analysis_main(delegated)
-            if analysis_rc == 2:
-                return 2
-            legacy_report = _load_json(temp_report)
+            if analysis_rc != 2 and Path(temp_report).is_file():
+                legacy_report = _load_json(temp_report)
 
         classifier = _classifier_report(repo_path, excludes)
-        if classifier is None:
-            return 2
-        sbom = generate_sbom(str(repo_path))
-        if ecosystem == "go":
+        scanner_error = _has_scanner_error(classifier)
+        sbom = None if scanner_error else generate_sbom(str(repo_path))
+        if ecosystem == "go" and not scanner_error:
             report = _go_report(repo_path, classifier, sbom=sbom, excludes=excludes)
         else:
             report = build_scan_report(
@@ -159,19 +183,22 @@ def _run_analyze(args):
 
         if args.report is not None:
             _write_json(args.report, report)
-        if args.sbom is not None:
+        if args.sbom is not None and sbom is not None:
             _write_json(args.sbom, sbom)
         if args.json:
             json.dump(report, sys.stdout, indent=2)
             print()
         else:
-            print("Repository: " + report["repo"])
-            print("Package: " + report["package_name"] + "@" + report["package_version"])
-            print("Findings: " + str(report["counts"]["total"]))
+            scanner_error_message = _scanner_error_message(classifier)
+            if scanner_error_message:
+                print("error: " + scanner_error_message, file=sys.stderr)
+            else:
+                print("Repository: " + report["repo"])
+                print("Package: " + report["package_name"] + "@" + report["package_version"])
+                print("Findings: " + str(report["counts"]["total"]))
         return scan_exit_code(report)
     except Exception as error:
-        print("error: " + str(error), file=sys.stderr)
-        return 2
+        return _emit_cli_error(str(error), json_mode=args.json, kind="scanner-error")
     finally:
         if temp_report is not None:
             try:
@@ -252,15 +279,16 @@ def _run_scan(args):
     excludes = sorted(DEFAULT_SCAN_EXCLUDES | set(args.exclude or []))
     repo_path = Path(args.repo).resolve()
     if not repo_path.is_dir():
-        print("error: repository directory not found: " + str(repo_path), file=sys.stderr)
-        return 2
+        return _emit_cli_error(
+            "repository directory not found: " + str(repo_path),
+            json_mode=args.json,
+        )
     ecosystem = _detect_ecosystem(repo_path)
     if ecosystem is None:
-        print(
-            "error: no supported ecosystem manifest found in " + str(repo_path),
-            file=sys.stderr,
+        return _emit_cli_error(
+            "no supported ecosystem manifest found in " + str(repo_path),
+            json_mode=args.json,
         )
-        return 2
 
     report_path = args.report
     temp_report = None
@@ -277,15 +305,18 @@ def _run_scan(args):
             if args.sbom is not None:
                 analyze_argv.extend(["--sbom", args.sbom])
             analyze_argv.extend(["--report", report_path])
-            with contextlib.redirect_stdout(io.StringIO() if args.json else sys.stdout):
+            with contextlib.redirect_stdout(
+                io.StringIO() if args.json else sys.stdout
+            ), contextlib.redirect_stderr(io.StringIO()):
                 analysis_rc = analysis_main(analyze_argv)
-            if analysis_rc == 2:
-                return 2
-            report = _load_json(report_path)
+            report = (
+                _load_json(report_path)
+                if analysis_rc != 2 and Path(report_path).is_file()
+                else {}
+            )
             classifier = _classifier_report(repo_path, excludes)
-            if classifier is None:
-                return 2
-            sbom = generate_sbom(str(repo_path))
+            scanner_error = _has_scanner_error(classifier)
+            sbom = None if scanner_error else generate_sbom(str(repo_path))
             report = build_scan_report(
                 repo=str(repo_path),
                 ecosystem=ecosystem,
@@ -296,15 +327,24 @@ def _run_scan(args):
                 imported=report.get("imported", []),
                 sbom=sbom,
             )
-            if args.sbom is not None:
+            if args.sbom is not None and sbom is not None:
                 _write_json(args.sbom, sbom)
         else:
             classifier = _classifier_report(repo_path, excludes)
-            if classifier is None:
-                return 2
-            sbom = generate_sbom(str(repo_path))
-            report = _go_report(repo_path, classifier, sbom=sbom, excludes=excludes)
-            if args.sbom is not None:
+            scanner_error = _has_scanner_error(classifier)
+            sbom = None if scanner_error else generate_sbom(str(repo_path))
+            if scanner_error:
+                report = build_scan_report(
+                    repo=str(repo_path),
+                    ecosystem=ecosystem,
+                    findings=classifier.as_dicts(),
+                    sbom=sbom,
+                )
+            else:
+                report = _go_report(
+                    repo_path, classifier, sbom=sbom, excludes=excludes
+                )
+            if args.sbom is not None and sbom is not None:
                 _write_json(args.sbom, sbom)
 
         _write_json(report_path, report)
@@ -318,11 +358,13 @@ def _run_scan(args):
         if args.json:
             json.dump(report, sys.stdout, indent=2)
             print()
+        scanner_error_message = _scanner_error_message(classifier)
+        if scanner_error_message and not args.json:
+            print("error: " + scanner_error_message, file=sys.stderr)
 
         return scan_exit_code(report)
     except Exception as error:
-        print("error: " + str(error), file=sys.stderr)
-        return 2
+        return _emit_cli_error(str(error), json_mode=args.json, kind="scanner-error")
     finally:
         if temp_report is not None:
             try:
