@@ -3,10 +3,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "publish.yml"
+ACTION_MANIFEST = ROOT / "action" / "action.yml"
 
 
 def _workflow_text() -> str:
     return WORKFLOW.read_text(encoding="utf-8")
+
+
+def test_action_manifest_keeps_ecosystem_input_nested():
+    raw = ACTION_MANIFEST.read_text(encoding="utf-8")
+
+    assert '  ecosystem:\n    description: "Ecosystem to scan. Valid values: auto|npm|python|go."' in raw
+    assert "\n  description: \"Ecosystem to scan." not in raw
 
 
 def test_publish_workflow_uses_explicit_release_and_trusted_publishing():

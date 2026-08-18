@@ -20,7 +20,7 @@ inputs:
     required: false
     default: ${{ github.workspace }}
   ecosystem:
-  description: "Ecosystem to scan. Valid values: auto|npm|python|go."
+    description: "Ecosystem to scan. Valid values: auto|npm|python|go."
     required: false
     default: auto
   fail-on:
