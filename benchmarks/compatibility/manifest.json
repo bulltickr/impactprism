@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "corpus_id": "impactprism-public-compatibility-2026-08",
+  "status": "pinned",
+  "purpose": "real-repository parser and output compatibility regression coverage",
+  "accuracy_claim": false,
+  "cases": [
+    {
+      "id": "npm-express",
+      "url": "https://github.com/expressjs/express.git",
+      "commit_sha": "a3714473feb3d2908add734d340e7755fd85e0a3",
+      "source_snapshot_sha256": "d2ca00592dbd600ee0b716225ac56a519ae3c33362433de495e9a4c8302f6e9e",
+      "license_spdx": "MIT",
+      "license_path": "LICENSE",
+      "license_evidence_url": "https://github.com/expressjs/express/blob/a3714473feb3d2908add734d340e7755fd85e0a3/LICENSE",
+      "ecosystem": "npm",
+      "scan_subpath": ".",
+      "required_paths": ["package.json", "LICENSE"],
+      "exclude": ["examples"],
+      "expected_result": "findings",
+      "expected_counts": {
+        "DECLARED_UNUSED_CANDIDATE": 13,
+        "MISSING_LOCKFILE": 1,
+        "UNDECLARED_DIRECT_USE": 1
+      },
+      "expected_digest": "36d756145bfa813445e4048c1e41cfa2ac79938271fb98b1e1bbf539396255c9"
+    },
+    {
+      "id": "npm-p-map",
+      "url": "https://github.com/sindresorhus/p-map.git",
+      "commit_sha": "bc26cf03f81292325236a1188063dac8e7a4de0f",
+      "source_snapshot_sha256": "dca5fc93afc8590a18952c091d5929dfce1f175ad5517b6312b0fe6f5ae84062",
+      "license_spdx": "MIT",
+      "license_path": "license",
+      "license_evidence_url": "https://github.com/sindresorhus/p-map/blob/bc26cf03f81292325236a1188063dac8e7a4de0f/license",
+      "ecosystem": "npm",
+      "scan_subpath": ".",
+      "required_paths": ["package.json", "license"],
+      "exclude": ["docs"],
+      "expected_result": "findings",
+      "expected_counts": {
+        "DECLARED_UNUSED_CANDIDATE": 1,
+        "MISSING_LOCKFILE": 1,
+        "SCOPE_MISMATCH": 7
+      },
+      "expected_digest": "329b6f09252d1dd570748b2e05d46196466d7f9a47acdf030323a1b3bca4f458"
+    },
+    {
+      "id": "python-requests",
+      "url": "https://github.com/psf/requests.git",
+      "commit_sha": "8f8b212de8c2129d7954c6cd373762880375620a",
+      "source_snapshot_sha256": "0ba29719196947d7e328024eb2afebbe6db55aebd92e407b88f19886d5aa9ae0",
+      "license_spdx": "Apache-2.0",
+      "license_path": "LICENSE",
+      "license_evidence_url": "https://github.com/psf/requests/blob/8f8b212de8c2129d7954c6cd373762880375620a/LICENSE",
+      "ecosystem": "python",
+      "scan_subpath": ".",
+      "required_paths": ["pyproject.toml", "LICENSE", "NOTICE"],
+      "exclude": ["docs"],
+      "expected_result": "findings",
+      "expected_counts": {
+        "DECLARED_UNUSED_CANDIDATE": 8,
+        "MISSING_LOCKFILE": 1,
+        "UNDECLARED_DIRECT_USE": 9
+      },
+      "expected_digest": "f1fdda67574e2c42942a9f8961420c7234f472dea5a0f542afe64b3c03ff9f5f"
+    },
+    {
+      "id": "python-flask",
+      "url": "https://github.com/pallets/flask.git",
+      "commit_sha": "d318b683471101618febed18996405ad26462110",
+      "source_snapshot_sha256": "e01310a86c3872ed849aaf11dc6d1612ef7e36ac5e6fb70aaa88ae588d14446f",
+      "license_spdx": "BSD-3-Clause",
+      "license_path": "LICENSE.txt",
+      "license_evidence_url": "https://github.com/pallets/flask/blob/d318b683471101618febed18996405ad26462110/LICENSE.txt",
+      "ecosystem": "python",
+      "scan_subpath": ".",
+      "required_paths": ["pyproject.toml", "uv.lock", "LICENSE.txt"],
+      "exclude": ["docs", "examples"],
+      "expected_result": "findings",
+      "expected_counts": {
+        "DECLARED_UNUSED_CANDIDATE": 17,
+        "DIRECT_DEPENDENCY_USED_TRANSITIVELY": 2,
+        "LOCKFILE_MANIFEST_MISMATCH": 55,
+        "SCOPE_MISMATCH": 2,
+        "UNDECLARED_DIRECT_USE": 11
+      },
+      "expected_digest": "5c22de0e91e20f8c358f1616987ff218ff161de36238f0f11660d7147eb815bc"
+    },
+    {
+      "id": "python-click",
+      "url": "https://github.com/pallets/click.git",
+      "commit_sha": "61b69e967e525bd502f5bf42def4d551e761fe0e",
+      "source_snapshot_sha256": "442011ce81e0e85be5d6d1d5bca94cfe21df1836bd2fe0a50aa6251283fa12de",
+      "license_spdx": "BSD-3-Clause",
+      "license_path": "LICENSE.txt",
+      "license_evidence_url": "https://github.com/pallets/click/blob/61b69e967e525bd502f5bf42def4d551e761fe0e/LICENSE.txt",
+      "ecosystem": "python",
+      "scan_subpath": ".",
+      "required_paths": ["pyproject.toml", "uv.lock", "LICENSE.txt"],
+      "exclude": ["docs", "examples"],
+      "expected_result": "findings",
+      "expected_counts": {
+        "DECLARED_UNUSED_CANDIDATE": 16,
+        "DIRECT_DEPENDENCY_USED_TRANSITIVELY": 2,
+        "LOCKFILE_MANIFEST_MISMATCH": 57,
+        "SCOPE_MISMATCH": 1,
+        "UNDECLARED_DIRECT_USE": 1
+      },
+      "expected_digest": "f76f4149e09732434306c2bcc04f9568b3d8c5ee49a9a745c47cad2957d98a9b"
+    },
+    {
+      "id": "go-cobra",
+      "url": "https://github.com/spf13/cobra.git",
+      "commit_sha": "adbc8813901bba65827259daa8e22ff94ec1f30e",
+      "source_snapshot_sha256": "bb5dd3f74d761aee2506ca3f3d361995d1bf2ed3d9b5a8cb41b2938eebed82d6",
+      "license_spdx": "Apache-2.0",
+      "license_path": "LICENSE.txt",
+      "license_evidence_url": "https://github.com/spf13/cobra/blob/adbc8813901bba65827259daa8e22ff94ec1f30e/LICENSE.txt",
+      "ecosystem": "go",
+      "scan_subpath": ".",
+      "required_paths": ["go.mod", "go.sum", "LICENSE.txt"],
+      "exclude": ["docs"],
+      "expected_result": "clean",
+      "expected_counts": {},
+      "expected_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "id": "go-logrus",
+      "url": "https://github.com/sirupsen/logrus.git",
+      "commit_sha": "134c80f81c9667a2d8c306f159d474857a20b735",
+      "source_snapshot_sha256": "ab69f7f205a51ceba136135cc2d2c0dc23133906cbf41870119e8e32ab8c821c",
+      "license_spdx": "MIT",
+      "license_path": "LICENSE",
+      "license_evidence_url": "https://github.com/sirupsen/logrus/blob/134c80f81c9667a2d8c306f159d474857a20b735/LICENSE",
+      "ecosystem": "go",
+      "scan_subpath": ".",
+      "required_paths": ["go.mod", "go.sum", "LICENSE"],
+      "exclude": ["docs"],
+      "expected_result": "clean",
+      "expected_counts": {},
+      "expected_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ]
+}
