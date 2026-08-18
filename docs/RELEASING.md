@@ -7,7 +7,10 @@ fixtures, and built artifacts are all part of the release boundary.
 ## Before tagging
 
 1. Update `CHANGELOG.md` and move the intended entries out of `Unreleased`.
-2. Update `src/impactprism/version.py` to the release version.
+2. Update `src/impactprism/version.py` to the release version. Because the
+   repository already has a historical `v0.2.0` tag, the next synchronized
+   package/Action release should use `v0.3.0` or later; do not move an existing
+   tag.
 3. Run the local checks from the repository root:
 
    ```bash
@@ -26,9 +29,11 @@ fixtures, and built artifacts are all part of the release boundary.
    git push origin main vX.Y.Z
    ```
 
-The repository's release workflow repeats the important checks whenever a
-`v*` tag is pushed. It builds artifacts for inspection; registry publishing is
-an intentional follow-up operation rather than an implicit side effect.
+The repository's release-check workflow repeats the important checks whenever
+a `v*` tag is pushed. The publish workflow runs only after an explicitly
+published GitHub Release and uses PyPI Trusted Publishing. Before enabling it,
+configure the PyPI project publisher for this repository, workflow, and
+`pypi` environment; the workflow intentionally has no long-lived package token.
 
 ## Evidence boundaries
 
@@ -37,4 +42,3 @@ benchmark. The G2 benchmark remains blocked until its separately governed
 manifest, frozen inputs, labels, and adjudication bundle exist. A release must
 not describe either fixture results or an incomplete G2 preflight as evidence
 of broad detection accuracy.
-

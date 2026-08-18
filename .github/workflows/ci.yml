@@ -57,6 +57,9 @@ jobs:
       SMOKE_PYTHON: /tmp/impactprism-smoke-venv/bin/python
       SMOKE_CLI: /tmp/impactprism-smoke-venv/bin/impactprism
       SMOKE_FIXTURE: ${{ github.workspace }}/demo/clean-app
+      SMOKE_PYTHON_FIXTURE: ${{ github.workspace }}/demo/python-clean
+      SMOKE_GO_FIXTURE: ${{ github.workspace }}/demo/go-clean
+      SMOKE_FINDING_FIXTURE: ${{ github.workspace }}/demo/npm-app
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -68,13 +71,16 @@ jobs:
 
       - name: Validate absolute smoke paths
         run: |
-          for smoke_path in "$SMOKE_WORKSPACE" "$SMOKE_DIST" "$SMOKE_VENV" "$SMOKE_PYTHON" "$SMOKE_CLI" "$SMOKE_FIXTURE"; do
+          for smoke_path in "$SMOKE_WORKSPACE" "$SMOKE_DIST" "$SMOKE_VENV" "$SMOKE_PYTHON" "$SMOKE_CLI" "$SMOKE_FIXTURE" "$SMOKE_PYTHON_FIXTURE" "$SMOKE_GO_FIXTURE" "$SMOKE_FINDING_FIXTURE"; do
             case "$smoke_path" in
               /*) ;;
               *) echo "Expected an absolute smoke path: $smoke_path" >&2; exit 1 ;;
             esac
           done
           test "$SMOKE_FIXTURE" = "$SMOKE_WORKSPACE/demo/clean-app"
+          test "$SMOKE_PYTHON_FIXTURE" = "$SMOKE_WORKSPACE/demo/python-clean"
+          test "$SMOKE_GO_FIXTURE" = "$SMOKE_WORKSPACE/demo/go-clean"
+          test "$SMOKE_FINDING_FIXTURE" = "$SMOKE_WORKSPACE/demo/npm-app"
 
       - name: Build wheel
         working-directory: ${{ env.SMOKE_WORKSPACE }}
@@ -127,3 +133,32 @@ jobs:
           set -e
           printf 'impactprism scan exit code: %s\n' "$status"
           test "$status" -eq 0
+
+      - name: Smoke-test clean Python fixture
+        working-directory: ${{ env.SMOKE_PYTHON_FIXTURE }}
+        run: |
+          test "$PWD" = "$SMOKE_PYTHON_FIXTURE"
+          test -f "$SMOKE_PYTHON_FIXTURE/pyproject.toml"
+          test -f "$SMOKE_PYTHON_FIXTURE/requirements.txt"
+          source "$SMOKE_VENV/bin/activate"
+          impactprism scan .
+
+      - name: Smoke-test clean Go fixture
+        working-directory: ${{ env.SMOKE_GO_FIXTURE }}
+        run: |
+          test "$PWD" = "$SMOKE_GO_FIXTURE"
+          test -f "$SMOKE_GO_FIXTURE/go.mod"
+          source "$SMOKE_VENV/bin/activate"
+          impactprism scan .
+
+      - name: Smoke-test finding exit behavior
+        working-directory: ${{ env.SMOKE_FINDING_FIXTURE }}
+        run: |
+          test "$PWD" = "$SMOKE_FINDING_FIXTURE"
+          source "$SMOKE_VENV/bin/activate"
+          set +e
+          impactprism scan .
+          status=$?
+          set -e
+          printf 'finding fixture exit code: %s\n' "$status"
+          test "$status" -eq 1
