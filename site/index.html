@@ -425,7 +425,7 @@
 
       <div class="hero-cta">
         <div class="bar"><i></i><i></i><i></i><span class="title">scan — one shot</span></div>
-        <pre class="code"><span class="prompt">$</span> pipx run impactprism scan <span class="arg">.</span></pre>
+        <pre class="code"><span class="prompt">$</span> impactprism scan <span class="arg">.</span></pre>
       </div>
       <p class="hero-sub">from shell to a review-oriented preflight pack in one command</p>
     </div>
@@ -447,7 +447,7 @@
         <div class="card">
           <div class="icon">⇄</div>
           <h3>Zero setup, zero exfil</h3>
-          <p>One <code>pipx</code> command, no account, no API key, no vulnerability database. The scanner is fully offline and never sends your source anywhere.</p>
+          <p>One local command, no account, no API key, no vulnerability database. The scanner is fully offline and never sends your source anywhere.</p>
         </div>
       </div>
     </section>
@@ -465,11 +465,11 @@
             <circle cx="20" cy="17" r="6" fill="#ff5f57"/>
             <circle cx="42" cy="17" r="6" fill="#febc2e"/>
             <circle cx="64" cy="17" r="6" fill="#28c840"/>
-            <text x="86" y="22" font-family="Cascadia Code, Consolas, monospace" font-size="12" fill="#8ea0bd">impactprism — pipx run impactprism scan .</text>
+            <text x="86" y="22" font-family="Cascadia Code, Consolas, monospace" font-size="12" fill="#8ea0bd">impactprism — impactprism scan .</text>
 
             <g font-family="Cascadia Code, Consolas, monospace" font-size="13.5">
               <text x="18" y="62" fill="#56d364">$</text>
-              <text x="34" y="62" fill="#e2e8f4">pipx run impactprism scan .</text>
+              <text x="34" y="62" fill="#e2e8f4">impactprism scan .</text>
 
               <text x="18" y="90" fill="#8ea0bd">resolving package.json · package-lock.json</text>
               <text x="18" y="110" fill="#8ea0bd">imports scanned: 46 files in src/</text>
@@ -508,7 +508,7 @@
             </g>
           </svg>
         </div>
-        <p class="caption">$ pipx run impactprism scan . — 4 findings, exit 1</p>
+        <p class="caption">$ impactprism scan . — 4 findings, exit 1</p>
       </div>
     </section>
 
@@ -564,9 +564,9 @@
           <div class="kicker">// install</div>
           <h2>Run it anywhere</h2>
         </div>
-        <pre class="code"><span class="prompt">$</span> pipx install impactprism</pre>
-        <pre class="code"><span class="prompt">$</span> pipx run impactprism scan <span class="arg">.</span></pre>
-        <p class="hero-sub">or: pip install impactprism · uv tool run impactprism</p>
+        <pre class="code"><span class="prompt">$</span> python -m pip install "git+https://github.com/bulltickr/impactprism.git"</pre>
+        <pre class="code"><span class="prompt">$</span> impactprism scan <span class="arg">.</span></pre>
+        <p class="hero-sub">or install a wheel from a GitHub Release</p>
       </div>
     </section>
 

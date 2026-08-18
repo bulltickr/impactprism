@@ -30,10 +30,17 @@ fixtures, and built artifacts are all part of the release boundary.
    ```
 
 The repository's release-check workflow repeats the important checks whenever
-a `v*` tag is pushed. The publish workflow runs only after an explicitly
-published GitHub Release and uses PyPI Trusted Publishing. Before enabling it,
-configure the PyPI project publisher for this repository, workflow, and
-`pypi` environment; the workflow intentionally has no long-lived package token.
+a `v*` tag is pushed. After the tag is made into an explicitly published
+GitHub Release, the release-artifacts workflow builds a wheel and source
+archive, writes `SHA256SUMS`, and uploads all three to that GitHub Release.
+The project does not publish to a package registry.
+
+## Installing a release
+
+Install the attached wheel directly from GitHub. Confirm its checksum against
+the `SHA256SUMS` file from the same release before using it in a controlled
+build. See [INSTALLING.md](INSTALLING.md) for tagged, source, and development
+install commands.
 
 ## Evidence boundaries
 

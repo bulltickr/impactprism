@@ -17,7 +17,7 @@ ImpactPrism compares declarations, lockfiles, and source imports for npm, Python
 
 It is not a vulnerability scanner. It is not a replacement for your SBOM or SCA tooling. It answers a narrower question: does the dependency inventory match reality?
 
-Primary CTA: run `pipx run impactprism scan .` on one real repository.
+Primary CTA: install from GitHub and run `impactprism scan .` on one real repository.
 
 The local demo is [demo/](../../demo/), with a sample evidence pack in [docs/samples/](../samples/).
 

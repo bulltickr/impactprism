@@ -18,14 +18,15 @@ ImpactPrism maps dependency-integrity findings to Art 13(1)(b), Art 14(1), Annex
 The command is:
 
 ```bash
-pipx run impactprism scan .
+python -m pip install "git+https://github.com/bulltickr/impactprism.git"
+impactprism scan .
 ```
 
 It is offline, requires no account or API key, and supports selected npm, Python, and Go checks. The local example is [demo/](../../demo/); the sample output is [docs/samples/evidence-sample.md](../samples/evidence-sample.md).
 
 This is an evidence aid, not a legal opinion or a claim that running one scan establishes CRA compliance. Teams still need to determine scope, applicability, review ownership, and the evidence their product and process require.
 
-Primary CTA: run `pipx run impactprism scan .` on a real repository and inspect the evidence pack.
+Primary CTA: install from GitHub, run `impactprism scan .` on a real repository, and inspect the evidence pack.
 
 Feedback: [open an issue](https://github.com/bulltickr/impactprism/issues) with what you scanned, what you expected, and what is missing.
 

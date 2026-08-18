@@ -2,7 +2,12 @@
 
 ## Unreleased
 
-No unreleased changes yet.
+### OSS operations
+
+- Established explicit GitHub Release artifacts with SHA-256 checksums.
+- Added installation, support, security, contributor, and maintainer-triage
+  guidance for an external open-source project.
+- Added CodeQL analysis and Dependabot coverage for Python and GitHub Actions.
 
 ## 0.3.0 - 2026-08-18
 
@@ -27,8 +32,6 @@ No unreleased changes yet.
   repository-relative finding signatures.
 - Added installed-wheel smoke coverage for clean and finding-producing
   projects across all three supported ecosystems.
-- Added an explicit-release PyPI workflow using Trusted Publishing and no
-  long-lived registry token.
 
 ### Compatibility notes
 

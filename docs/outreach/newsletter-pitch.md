@@ -14,7 +14,7 @@ ImpactPrism is an offline open-source tool for npm, Python, and Go that compares
 
 - Local demo: [demo/](../../demo/)
 - Sample evidence pack: [docs/samples/evidence-sample.md](../samples/evidence-sample.md)
-- Primary CTA for readers: `pipx run impactprism scan .`
+- Primary CTA for readers: install from GitHub and run `impactprism scan .`
 - Feedback loop: [open an issue](https://github.com/bulltickr/impactprism/issues)
 
 ## Outreach handling

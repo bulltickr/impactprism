@@ -19,7 +19,8 @@ These are candidate EU-cyber/OSS outlets for the ImpactPrism story. They are int
 5. Replace the local demo link in [newsletter-pitch.md](newsletter-pitch.md) with a verified public link.
 6. Record the verification date and source in the working outreach log before sending.
 
-Primary CTA for any published version: `pipx run impactprism scan .`.
+Primary CTA for any published version: install from GitHub, then run
+`impactprism scan .`.
 
 Feedback loop: [open an issue](https://github.com/bulltickr/impactprism/issues) with what you scanned, what you expected, and what is missing.
 

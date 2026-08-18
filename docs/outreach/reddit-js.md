@@ -23,12 +23,12 @@ It then writes a CycloneDX SBOM, a report, and a CRA-grounded evidence pack. The
 Try the local demo:
 
 ```bash
-pipx run impactprism scan demo/npm-app
+impactprism scan demo/npm-app
 ```
 
 The source demo is [demo/npm-app/](../../demo/npm-app/) and a sample evidence pack is [docs/samples/evidence-sample.md](../samples/evidence-sample.md). It runs offline, with no account or API key.
 
-Primary CTA: run `pipx run impactprism scan .` on a real Node repository and see whether declared equals used.
+Primary CTA: install from GitHub, then run `impactprism scan .` on a real Node repository and see whether declared equals used.
 
 Feedback: [open an issue](https://github.com/bulltickr/impactprism/issues) with what you scanned, what you expected, and what is missing.
 

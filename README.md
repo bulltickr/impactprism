@@ -6,18 +6,18 @@ Offline dependency-integrity analysis and release-evidence preflight for selecte
 
 ## Quickstart
 
-The fastest way to scan a repository is a one-shot command that analyzes the repo and generates the evidence pack in a single step:
+Install a tagged GitHub Release wheel, then scan the repository:
 
 ```bash
-pipx run impactprism scan .
-```
-
-From a brand-new shell to a rendered evidence pack in three commands:
-
-```bash
-pipx run impactprism scan .
+python -m pip install \
+  https://github.com/bulltickr/impactprism/releases/download/v0.3.0/impactprism-0.3.0-py3-none-any.whl
+impactprism scan .
 open evidence.md            # rendered Markdown preflight report
 ```
+
+For source installation and development setup, see
+[docs/INSTALLING.md](docs/INSTALLING.md). The GitHub Action requires no local
+CLI installation.
 
 `scan` produces, in the current directory:
 
@@ -28,7 +28,9 @@ open evidence.md            # rendered Markdown preflight report
 | `bom.json`      | CycloneDX SBOM — pass `--sbom bom.json` to write it |
 | `report.json`   | Raw scan report — pass `--report report.json` to write it |
 
-`pip install impactprism` (or `uv tool run impactprism`) installs the same `impactprism` CLI.
+GitHub Releases provide the official CLI wheel, source archive, and
+`SHA256SUMS`. The project’s distribution source is GitHub, while the scanner
+itself remains an offline local tool.
 
 ## What this checks / What it does not
 

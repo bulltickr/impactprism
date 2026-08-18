@@ -27,14 +27,15 @@ The wedge is the three failure modes I kept seeing around manifest-based invento
 Try it locally:
 
 ```bash
-pipx run impactprism scan .
+python -m pip install "git+https://github.com/bulltickr/impactprism.git"
+impactprism scan .
 ```
 
 The committed demo is at [demo/](../../demo/) and the sample evidence pack is [docs/samples/evidence-sample.md](../samples/evidence-sample.md). The command is offline and does not require an account or API key.
 
 ImpactPrism is early, open source, and intentionally narrow. I would especially like feedback from EU agency developers, indie SaaS founders, security engineers, and npm/Python/Go maintainers: what did the scan find that your current SBOM or dependency check did not?
 
-Primary CTA: run `pipx run impactprism scan .` on a real repository.
+Primary CTA: install from GitHub and run `impactprism scan .` on a real repository.
 
 Feedback: [open an issue](https://github.com/bulltickr/impactprism/issues) with what you scanned, what you expected, and what is missing.
 

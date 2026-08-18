@@ -17,7 +17,7 @@ The output is a CycloneDX SBOM, a machine-readable report, and a CRA-grounded ev
 The repository includes npm, Python, and Go demos; for a real Go repository, run the primary command:
 
 ```bash
-pipx run impactprism scan .
+impactprism scan .
 ```
 
 The local project materials are in [demo/](../../demo/), and the primary command works from the root of the Go repository being reviewed.
