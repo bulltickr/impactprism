@@ -1,0 +1,12 @@
+{
+  "_meta": {
+    "hash": {"sha256": "fixture"},
+    "pipfile-spec": 6,
+    "requires": {"python_version": "3.10"},
+    "sources": []
+  },
+  "default": {
+    "requests": {"hashes": [], "version": "==2.31.0"}
+  },
+  "develop": {}
+}

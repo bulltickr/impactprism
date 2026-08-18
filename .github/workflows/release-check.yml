@@ -34,6 +34,7 @@ jobs:
         run: |
           python -m pytest -q
           python benchmarks/conformance/run.py --json
+          python benchmarks/correctness/run.py --json
 
       - name: Build release artifacts
         run: python -m build

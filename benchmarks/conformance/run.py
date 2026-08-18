@@ -50,7 +50,6 @@ CASES = (
         "ecosystem": "python",
         "expected_counts": {
             "DECLARED_UNUSED_CANDIDATE": 1,
-            "SCOPE_MISMATCH": 2,
             "UNDECLARED_DIRECT_USE": 1,
             "UNRESOLVED_IMPORT": 1,
         },

@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "npm-workspace-clean",
+      "path": "tests/fixtures/correctness/npm_workspace",
+      "ecosystem": "npm",
+      "expected_counts": {}
+    },
+    {
+      "id": "python-requirements-clean",
+      "path": "tests/fixtures/correctness/python_requirements",
+      "ecosystem": "python",
+      "expected_counts": {}
+    },
+    {
+      "id": "python-pipenv-clean",
+      "path": "tests/fixtures/correctness/python_pipenv",
+      "ecosystem": "python",
+      "expected_counts": {}
+    },
+    {
+      "id": "python-uv-clean",
+      "path": "tests/fixtures/correctness/python_uv",
+      "ecosystem": "python",
+      "expected_counts": {}
+    },
+    {
+      "id": "python-poetry-findings",
+      "path": "tests/fixtures/python_repo",
+      "ecosystem": "python",
+      "expected_counts": {
+        "DECLARED_UNUSED_CANDIDATE": 1,
+        "UNDECLARED_DIRECT_USE": 1,
+        "UNRESOLVED_IMPORT": 1
+      }
+    },
+    {
+      "id": "go-vendor-clean",
+      "path": "tests/fixtures/correctness/go_vendor",
+      "ecosystem": "go",
+      "expected_counts": {}
+    },
+    {
+      "id": "go-workspace-finding",
+      "path": "tests/fixtures/remediation/go_repo",
+      "ecosystem": "go",
+      "expected_counts": {
+        "UNRESOLVED_IMPORT": 1
+      }
+    }
+  ]
+}

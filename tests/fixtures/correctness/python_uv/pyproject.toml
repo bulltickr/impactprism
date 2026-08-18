@@ -1,0 +1,4 @@
+[project]
+name = "impactprism-correctness-uv"
+version = "1.0.0"
+dependencies = ["requests==2.31.0"]

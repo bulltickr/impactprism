@@ -35,6 +35,8 @@ def test_release_workflow_verifies_before_building_and_uploading():
     assert "GITHUB_REF_TYPE: tag" in raw[metadata:tests]
     assert "GITHUB_REF_NAME: ${{ github.event.release.tag_name }}" in raw[metadata:tests]
     assert "python scripts/check_release.py" in raw[metadata:tests]
+    assert "python benchmarks/conformance/run.py --json" in raw[tests:build]
+    assert "python benchmarks/correctness/run.py --json" in raw[tests:build]
     assert metadata < tests < build < checksums < upload
 
 

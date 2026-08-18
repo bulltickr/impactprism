@@ -38,6 +38,9 @@ jobs:
       - name: Run local conformance fixtures
         run: python benchmarks/conformance/run.py --json
 
+      - name: Run governed correctness fixtures
+        run: python benchmarks/correctness/run.py --json
+
       - name: Build package
         run: python -m build
 

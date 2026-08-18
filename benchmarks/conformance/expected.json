@@ -79,34 +79,6 @@
       "status": "ADVISORY"
     },
     {
-      "finding_id": "284ea3364ef81ddf",
-      "finding_type": "SCOPE_MISMATCH",
-      "package": "beautifulsoup4",
-      "file": "src/app.py",
-      "line": 2,
-      "column": 1,
-      "manifest": "pyproject.toml",
-      "lockfile": "poetry.lock",
-      "scope": "dependencies",
-      "severity": "LOW",
-      "confidence": "MEDIUM",
-      "status": "OPEN"
-    },
-    {
-      "finding_id": "95fbe4e3411015d2",
-      "finding_type": "SCOPE_MISMATCH",
-      "package": "requests",
-      "file": "src/app.py",
-      "line": 1,
-      "column": 1,
-      "manifest": "pyproject.toml",
-      "lockfile": "poetry.lock",
-      "scope": "dependencies",
-      "severity": "LOW",
-      "confidence": "MEDIUM",
-      "status": "OPEN"
-    },
-    {
       "finding_id": "3e61016e9d0649ee",
       "finding_type": "UNDECLARED_DIRECT_USE",
       "package": "yaml",

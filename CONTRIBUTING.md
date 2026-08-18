@@ -13,6 +13,8 @@ imports, then produces review-oriented artifacts.
 
    ```text
    python -m pytest -q
+   python benchmarks/conformance/run.py --json
+   python benchmarks/correctness/run.py --json
    python -m build
    python -m impactprism scan demo/clean-app
    ```

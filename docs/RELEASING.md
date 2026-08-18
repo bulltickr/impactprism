@@ -16,6 +16,7 @@ fixtures, and built artifacts are all part of the release boundary.
    ```bash
    python -m pytest -q
    python benchmarks/conformance/run.py --json
+   python benchmarks/correctness/run.py --json
    python scripts/check_release.py
    python -m build
    ```

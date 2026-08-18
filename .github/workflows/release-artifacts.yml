@@ -44,6 +44,7 @@ jobs:
         run: |
           python -m pytest -q
           python benchmarks/conformance/run.py --json
+          python benchmarks/correctness/run.py --json
 
       - name: Build release distributions
         run: python -m build --sdist --wheel --outdir dist

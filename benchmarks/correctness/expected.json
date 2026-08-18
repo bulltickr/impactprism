@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "cases": {
+    "npm-workspace-clean": {"findings": []},
+    "python-requirements-clean": {"findings": []},
+    "python-pipenv-clean": {"findings": []},
+    "python-uv-clean": {"findings": []},
+    "python-poetry-findings": {
+      "findings": [
+        {
+          "finding_id": "6297f79522cb737a",
+          "finding_type": "DECLARED_UNUSED_CANDIDATE",
+          "package": "pytest",
+          "file": null,
+          "line": null,
+          "column": null,
+          "manifest": "pyproject.toml",
+          "lockfile": "poetry.lock",
+          "scope": "devDependencies",
+          "severity": "LOW",
+          "confidence": "MEDIUM",
+          "status": "ADVISORY"
+        },
+        {
+          "finding_id": "3e61016e9d0649ee",
+          "finding_type": "UNDECLARED_DIRECT_USE",
+          "package": "yaml",
+          "file": "src/app.py",
+          "line": 5,
+          "column": 1,
+          "manifest": "pyproject.toml",
+          "lockfile": "poetry.lock",
+          "scope": "dependencies",
+          "severity": "HIGH",
+          "confidence": "HIGH",
+          "status": "OPEN"
+        },
+        {
+          "finding_id": "cb1457d68b996cc7",
+          "finding_type": "UNRESOLVED_IMPORT",
+          "package": ".missing_module",
+          "file": "src/app.py",
+          "line": 6,
+          "column": 1,
+          "manifest": "pyproject.toml",
+          "lockfile": "poetry.lock",
+          "scope": null,
+          "severity": "HIGH",
+          "confidence": "MEDIUM",
+          "status": "OPEN"
+        }
+      ]
+    },
+    "go-vendor-clean": {"findings": []},
+    "go-workspace-finding": {
+      "findings": [
+        {
+          "finding_id": "d6fae20b4d729463",
+          "finding_type": "UNRESOLVED_IMPORT",
+          "package": "github.com/example/missingmodule",
+          "file": ".",
+          "line": null,
+          "column": null,
+          "manifest": null,
+          "lockfile": null,
+          "scope": null,
+          "severity": "HIGH",
+          "confidence": "MEDIUM",
+          "status": "OPEN"
+        }
+      ]
+    }
+  }
+}
