@@ -19,12 +19,20 @@ jobs:
 
       - name: Run local Action against clean fixture
         id: impactprism
+        continue-on-error: true
         uses: ./action
         with:
           repo-path: ${{ github.workspace }}/demo/clean-app
           ecosystem: npm
           fail-on: finding
           artifact-name: ''
+
+      - name: Inspect Action reports
+        if: always()
+        shell: bash
+        run: |
+          test -f impactprism-reports/findings.json
+          cat impactprism-reports/findings.json
 
       - name: Assert clean outcome
         env:

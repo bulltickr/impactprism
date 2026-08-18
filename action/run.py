@@ -653,6 +653,8 @@ def main(argv=None) -> int:
     print(
         "impactprism-action: outcome=" + outcome.value
         + " exit=" + str(code)
+        + " findings=" + str(len(findings))
+        + " error=" + str(error_kind)
         + " reports=" + str(output_dir)
     )
     return code
