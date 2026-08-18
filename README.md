@@ -99,7 +99,7 @@ Add ImpactPrism to your pull requests in four lines:
     fail-on: finding
 ```
 
-The composite action is fully offline (no account, no API key), produces `findings.json`, `bom.json`, `impactprism.sarif`, `evidence.json`/`evidence.md` and `summary.md`, uploads a SARIF report to code scanning, and exits per the `fail-on` policy (`never` | `finding` | `all`). The Action and CLI support selected npm, Python, and Go checks. See [action/README.md](action/README.md) for inputs, outputs and required workflow permissions.
+The composite action’s scan is offline (no hosted account or API key), produces `findings.json`, `bom.json`, `impactprism.sarif`, `evidence.json`/`evidence.md` and `summary.md`, uploads a SARIF report to code scanning, and exits per the `fail-on` policy (`never` | `finding` | `all`). Its default `managed` bootstrap may install Python dependencies from the configured package index; use `install-mode: offline` when the caller supplies the runtime and dependencies. The Action and CLI support selected npm, Python, and Go checks. See [action/README.md](action/README.md) for inputs, outputs and required workflow permissions.
 
 ## Supported ecosystems
 
@@ -190,6 +190,10 @@ python -m pytest tests -q
 ```
 
 CI runs on every push and pull request on a Python 3.10 / 3.11 / 3.12 matrix: `pip install -e .[test]`, `python -m pytest -q`, `python -m build`, and an `impactprism scan .` exit-0 self-check.
+
+The provider-neutral verification entry point is
+`python scripts/ci.py verify`; see [docs/CI_PORTABILITY.md](docs/CI_PORTABILITY.md)
+for running the same contract outside GitHub Actions.
 
 ## License, security, contributing, feedback
 

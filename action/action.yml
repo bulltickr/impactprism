@@ -1,4 +1,4 @@
-# Required workflow permissions (must be set by the calling workflow): contents: read, pull-requests: read, checks: write, security-events: write.
+# Required workflow permissions (must be set by the calling workflow): contents: read, security-events: write.
 # Composite actions cannot declare permissions themselves.
 
 name: ImpactPrism
@@ -7,11 +7,11 @@ description: |
   evidence, a CycloneDX SBOM and a SARIF report.
 
   The calling workflow must grant these permissions:
-  contents: read, pull-requests: read, checks: write, security-events: write.
+  contents: read, security-events: write.
 
   The step fails only per the fail-on policy (never|finding|all). It requires
-  no hosted ImpactPrism account and no API key, works fully offline on the
-  checked-out commit, and never uploads source code - only the generated
+  no hosted ImpactPrism account and no API key, scans the checked-out commit
+  offline, and never uploads source code - only the generated
   reports under the output directory are uploaded.
 
 inputs:
@@ -39,6 +39,14 @@ inputs:
     description: Upload artifact name; an empty string disables the upload.
     required: false
     default: impactprism-reports
+  install-mode:
+    description: "Bootstrap mode: managed installs dependencies; offline uses caller-provided Python dependencies."
+    required: false
+    default: managed
+  python-command:
+    description: Python executable used by offline mode.
+    required: false
+    default: python
 
 outputs:
   outcome:
@@ -63,16 +71,39 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Validate installation mode
+      shell: bash
+      env:
+        INSTALL_MODE: ${{ inputs.install-mode }}
+      run: |
+        case "$INSTALL_MODE" in
+          managed|offline) ;;
+          *) echo "install-mode must be managed or offline" >&2; exit 2 ;;
+        esac
+
     - name: Set up Python
-      uses: actions/setup-python@v5
+      if: ${{ inputs.install-mode == 'managed' }}
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
       with:
         python-version: '3.12'
 
     - name: Install dependencies
+      if: ${{ inputs.install-mode == 'managed' }}
       shell: bash
       run: |
         python -m pip install --upgrade pip
         python -m pip install "${{ github.action_path }}/.."
+
+    - name: Verify offline Python runtime
+      if: ${{ inputs.install-mode == 'offline' }}
+      shell: bash
+      env:
+        PYTHON_COMMAND: ${{ inputs.python-command }}
+        PYTHONPATH: ${{ github.action_path }}/../src
+      run: |
+        set -euo pipefail
+        command -v "$PYTHON_COMMAND"
+        PIP_NO_INDEX=1 "$PYTHON_COMMAND" -c 'import impactprism; import cyclonedx; import yaml'
 
     - name: Run ImpactPrism scan
       id: run
@@ -84,12 +115,15 @@ runs:
         INPUT_SEVERITY_THRESHOLD: ${{ inputs.severity-threshold }}
         INPUT_OUTPUT_DIR: ${{ inputs.output-dir }}
         INPUT_ARTIFACT_NAME: ${{ inputs.artifact-name }}
+        INPUT_INSTALL_MODE: ${{ inputs.install-mode }}
+        PYTHON_COMMAND: ${{ inputs.python-command }}
+        PIP_NO_INDEX: "1"
         PYTHONPATH: ${{ github.action_path }}/../src
-      run: python "${{ github.action_path }}/run.py"
+      run: "$PYTHON_COMMAND" "${{ github.action_path }}/run.py"
 
     - name: Upload reports
       if: ${{ inputs.artifact-name != '' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: ${{ inputs.artifact-name }}
         path: ${{ github.workspace }}/${{ inputs.output-dir }}

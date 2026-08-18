@@ -14,11 +14,10 @@ fixtures, and built artifacts are all part of the release boundary.
 3. Run the local checks from the repository root:
 
    ```bash
-   python -m pytest -q
-   python benchmarks/conformance/run.py --json
-   python benchmarks/correctness/run.py --json
+   python scripts/ci.py verify
    python scripts/check_release.py
-   python -m build
+   python scripts/ci.py build
+   python scripts/checksums.py dist
    ```
 
 4. Inspect the wheel metadata and confirm that the package version, generated
@@ -35,6 +34,18 @@ a `v*` tag is pushed. After the tag is made into an explicitly published
 GitHub Release, the release-artifacts workflow builds a wheel and source
 archive, writes `SHA256SUMS`, and uploads all three to that GitHub Release.
 The project does not publish to a package registry.
+
+The release-artifacts workflow also creates a GitHub artifact attestation for
+the built release files. When GitHub is available, verify a downloaded wheel
+with:
+
+```bash
+gh attestation verify impactprism-0.4.0-py3-none-any.whl \
+  -R bulltickr/impactprism
+```
+
+Checksums remain useful for offline transfer; the attestation adds build
+provenance when the GitHub API is reachable.
 
 ## Installing a release
 

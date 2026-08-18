@@ -6,8 +6,9 @@ dependency-drift analysis, applies the fail-on policy, and writes findings.json,
 bom.json, impactprism.sarif, evidence.json, evidence.md and summary.md into the
 configured output directory.
 
-Fully offline: no network requests, no hosted account, no API keys. Only the
-generated reports are ever uploaded; source file contents are never embedded.
+Repository analysis is offline: no hosted account or API keys are needed, and
+only generated reports are ever uploaded; source file contents are never
+embedded.
 """
 
 from __future__ import annotations

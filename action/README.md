@@ -6,8 +6,8 @@ scan on the checked-out repository and produces a CRA-grounded evidence pack:
 `impactprism.sarif` (SARIF 2.1.0 for code scanning), `evidence.json` /
 `evidence.md` (each finding annotated with its CRA clause mapping and
 rationale), and `summary.md` (the human-readable outcome summary, also
-appended to the job's step summary). The scan is fully offline — it makes no
-network requests, requires no hosted ImpactPrism account and no API key, and
+appended to the job's step summary). The scan itself is offline — it makes no
+source-analysis network requests, requires no hosted ImpactPrism account and no API key, and
 operates only on the checked-out commit. Only the generated reports under the
 output directory are ever uploaded; source file contents are never embedded
 in the reports or uploaded.
@@ -15,8 +15,8 @@ in the reports or uploaded.
 ## Usage
 
 The calling workflow must set the required permissions (see below) and
-check out the repository before invoking the action. The action sets up its
-own Python 3.12 environment, installs its dependencies, runs the scan, and
+check out the repository before invoking the action. By default, the action
+sets up its own Python 3.12 environment, installs its dependencies, runs the scan, and
 uploads the generated reports as an artifact (14-day retention) unless
 `artifact-name` is empty.
 
@@ -30,15 +30,13 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
-  checks: write
   security-events: write
 
 jobs:
   impactprism:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
 
@@ -55,7 +53,7 @@ jobs:
       # if: always() keeps the upload running even when the gate fails.
       - name: Upload SARIF to code scanning
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@d6317709a54fd87078d323eeb0e48ec331c8e621 # v3
         with:
           sarif_file: ${{ steps.impactprism.outputs.sarif-path }}
 
@@ -76,8 +74,6 @@ following, all set before the step that invokes it:
 | Permission          | Level | Why it is needed                                              |
 |---------------------|-------|----------------------------------------------------------------|
 | `contents: read`    | read  | Read the checked-out repository source so the scan can resolve manifests, lockfiles, and imports |
-| `pull-requests: read` | read | Read the pull request ref and metadata so the scan runs against the PR's checked-out commit |
-| `checks: write`     | write | Create and update check runs that report the scan outcome in the GitHub UI |
 | `security-events: write` | write | Upload SARIF results to GitHub code scanning (required by the consuming `upload-sarif` step) |
 
 ## Inputs
@@ -90,6 +86,8 @@ following, all set before the step that invokes it:
 | `severity-threshold` | Minimum finding severity that trips the policy. Valid values: info\|low\|medium\|high\|critical. | false | `low`         |
 | `output-dir`         | Directory for generated reports, relative to the workspace.                | false    | `impactprism-reports`   |
 | `artifact-name`      | Upload artifact name; an empty string disables the upload.                 | false    | `impactprism-reports`   |
+| `install-mode`       | `managed` installs the local package; `offline` uses caller-provided Python dependencies and performs no package installation. | false | `managed` |
+| `python-command`     | Python executable used by `offline` mode.                                  | false    | `python`               |
 
 Notes on the defaults, as implemented:
 
@@ -99,6 +97,14 @@ Notes on the defaults, as implemented:
 - `output-dir` is resolved relative to the workspace; a value that escapes the
   workspace (or contains a NUL byte) falls back to `impactprism-reports`.
 - `artifact-name: ''` disables the artifact upload step entirely.
+- `install-mode: managed` creates a Python 3.12 environment and installs the
+  local package; setup may require access to the configured Python package
+  index.
+- `install-mode: offline` skips Python setup and package installation. The
+  caller must provide a compatible Python executable and dependencies; the
+  Action verifies them with `PIP_NO_INDEX=1` before scanning.
+- In either mode, repository analysis itself does not contact a registry or
+  upload source contents.
 
 ## Outputs
 
