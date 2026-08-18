@@ -95,7 +95,9 @@ def test_repository_parent_named_tests_does_not_mark_production_source_as_test(t
 
     report = analyze_repo(repo)
 
-    assert finding(report, FindingType.SCOPE_MISMATCH, "jest").file.endswith("src\\app.js")
+    assert finding(report, FindingType.SCOPE_MISMATCH, "jest").file.replace("\\", "/").endswith(
+        "src/app.js"
+    )
 
 
 def test_python_parent_named_tests_does_not_mark_production_source_as_test(tmp_path):
