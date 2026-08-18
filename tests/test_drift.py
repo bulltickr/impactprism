@@ -84,6 +84,38 @@ def test_undeclared_direct_use(tmp_path):
     assert item.scope == "dependencies"
 
 
+def test_repository_parent_named_tests_does_not_mark_production_source_as_test(tmp_path):
+    repo = tmp_path / "tests" / "fixture"
+    write_json(
+        repo,
+        "package.json",
+        {"name": "fixture", "version": "1.0.0", "devDependencies": {"jest": "29.0.0"}},
+    )
+    write_file(repo, "src/app.js", 'import jest from "jest";\nexport default jest;\n')
+
+    report = analyze_repo(repo)
+
+    assert finding(report, FindingType.SCOPE_MISMATCH, "jest").file.endswith("src\\app.js")
+
+
+def test_python_parent_named_tests_does_not_mark_production_source_as_test(tmp_path):
+    repo = tmp_path / "tests" / "fixture"
+    write_file(repo, "requirements.txt", "requests==2.31.0\n")
+    write_file(repo, "src/app.py", "import requests\n")
+
+    report = analyze_repo(repo, ecosystem="python")
+
+    assert not any(item.finding_type == FindingType.SCOPE_MISMATCH for item in report)
+
+
+def test_vendored_direct_dependency_is_not_reported_as_undeclared():
+    repo = os.path.join(ROOT, "tests", "fixtures", "correctness", "go_vendor")
+
+    report = analyze_repo(repo, ecosystem="go")
+
+    assert list(report) == []
+
+
 def test_declared_unused_candidate_is_advisory(tmp_path):
     repo = make_npm_repo(
         tmp_path,

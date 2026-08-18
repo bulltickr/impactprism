@@ -389,7 +389,9 @@ def _add_entry(entries: dict, entry: GoModuleEntry) -> None:
         entries[entry.module_path] = entry
         return
     if entry.source == "vendor":
-        entries[entry.module_path] = entry
+        # Vendor metadata can confirm how an import resolves, but it does not
+        # replace a declaration in go.mod/go.work. Keeping the existing source
+        # preserves the distinction between declared and merely vendored code.
         return
     if entry.source == "go.work":
         existing.direct = entry.direct

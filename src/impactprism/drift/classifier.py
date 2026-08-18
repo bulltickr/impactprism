@@ -457,7 +457,7 @@ def classify_npm(
             continue
         file_path = Path(path).resolve()
         source = _read_source(file_path)
-        is_test = _is_test_path(file_path)
+        is_test = _is_test_path(file_path, repo)
         for record in records:
             if record is None:
                 continue
@@ -756,7 +756,7 @@ def classify_python(
         records = imports_by_file[raw_path] or []
         file_path = Path(raw_path).resolve()
         source = _read_source(file_path)
-        is_test = _is_test_path(file_path)
+        is_test = _is_test_path(file_path, repo)
         for record in records:
             specifier = getattr(record, "specifier", None)
             if not isinstance(specifier, str) or not specifier:
@@ -1202,10 +1202,16 @@ def _extract_package(specifier: str):
     return specifier.split("/", 1)[0]
 
 
-def _is_test_path(path: Path) -> bool:
-    if any(part in _TEST_SEGMENTS for part in path.parts):
+def _is_test_path(path: Path, repo: Path | None = None) -> bool:
+    relative = path
+    if repo is not None:
+        try:
+            relative = path.resolve().relative_to(repo.resolve())
+        except (OSError, ValueError):
+            relative = path
+    if any(part in _TEST_SEGMENTS for part in relative.parts):
         return True
-    name = path.name
+    name = relative.name
     return ".test." in name or ".spec." in name
 
 
