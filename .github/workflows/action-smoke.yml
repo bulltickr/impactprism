@@ -19,7 +19,7 @@ jobs:
 
       - name: Run local Action against clean fixture
         id: impactprism
-        uses: ./
+        uses: ./action
         with:
           repo-path: ${{ github.workspace }}/demo/clean-app
           ecosystem: npm

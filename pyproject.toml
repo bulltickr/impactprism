@@ -20,7 +20,11 @@ classifiers = [
     "Environment :: Console",
     "Topic :: Software Development",
 ]
-dependencies = ["cyclonedx-python-lib[validation]>=11,<12", "PyYAML>=6.0"]
+dependencies = [
+    "cyclonedx-python-lib[validation]>=11,<12",
+    "PyYAML>=6.0",
+    "tomli>=2.0; python_version < '3.11'",
+]
 
 [project.scripts]
 impactprism = "impactprism.cli:main"
