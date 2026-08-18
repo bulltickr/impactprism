@@ -312,6 +312,23 @@ def test_finding_id_is_deterministic():
     assert all(character in "0123456789abcdef" for character in first.finding_id)
 
 
+def test_analyze_finding_id_is_stable_across_checkout_paths(tmp_path):
+    first_repo = make_npm_repo(
+        tmp_path / "first",
+        {"name": "demo", "version": "1.0.0"},
+        'import someLib from "some-lib";\nexport default someLib;\n',
+    )
+    second_repo = make_npm_repo(
+        tmp_path / "second",
+        {"name": "demo", "version": "1.0.0"},
+        'import someLib from "some-lib";\nexport default someLib;\n',
+    )
+
+    first = analyze_repo(first_repo).findings
+    second = analyze_repo(second_repo).findings
+    assert [item.finding_id for item in first] == [item.finding_id for item in second]
+
+
 def test_report_api(tmp_path):
     repo = make_npm_repo(
         tmp_path,

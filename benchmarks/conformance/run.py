@@ -14,6 +14,7 @@ from collections import Counter
 from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+EXPECTED_PATH = Path(__file__).with_name("expected.json")
 sys.path.insert(0, str(REPOSITORY_ROOT / "src"))
 
 from impactprism import __version__
@@ -69,7 +70,35 @@ CASES = (
 )
 
 
+def _relative_path(value, repo_path):
+    if value is None:
+        return None
+    try:
+        return Path(value).resolve().relative_to(repo_path.resolve()).as_posix()
+    except (OSError, ValueError):
+        return str(value).replace("\\", "/")
+
+
+def _finding_snapshot(finding, repo_path):
+    item = finding.as_dict()
+    return {
+        "finding_id": item["finding_id"],
+        "finding_type": item["finding_type"],
+        "package": item["package"],
+        "file": _relative_path(item["file"], repo_path),
+        "line": item["line"],
+        "column": item["column"],
+        "manifest": _relative_path(item["manifest"], repo_path),
+        "lockfile": _relative_path(item["lockfile"], repo_path),
+        "scope": item["scope"],
+        "severity": item["severity"],
+        "confidence": item["confidence"],
+        "status": item["status"],
+    }
+
+
 def run_cases() -> dict:
+    expected_snapshots = json.loads(EXPECTED_PATH.read_text(encoding="utf-8"))
     results = []
     for case in CASES:
         findings = analyze_repo(
@@ -77,6 +106,13 @@ def run_cases() -> dict:
         )
         counts = dict(sorted(Counter(finding.finding_type.value for finding in findings).items()))
         expected = case["expected_counts"]
+        actual_snapshot = [
+            _finding_snapshot(finding, REPOSITORY_ROOT / case["path"])
+            for finding in findings
+        ]
+        expected_snapshot = expected_snapshots.get(case["id"])
+        if expected_snapshot is None:
+            raise ValueError("missing golden snapshot for " + case["id"])
         results.append(
             {
                 "id": case["id"],
@@ -84,7 +120,9 @@ def run_cases() -> dict:
                 "ecosystem": case["ecosystem"],
                 "expected_counts": expected,
                 "actual_counts": counts,
-                "passed": counts == expected,
+                "expected_findings": expected_snapshot,
+                "actual_findings": actual_snapshot,
+                "passed": counts == expected and actual_snapshot == expected_snapshot,
             }
         )
     return {

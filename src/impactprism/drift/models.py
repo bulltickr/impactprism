@@ -6,6 +6,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 
 __all__ = ["FindingType", "Severity", "Confidence", "Status", "Finding"]
 
@@ -61,19 +62,38 @@ class Finding:
 
     def __post_init__(self) -> None:
         if not self.finding_id:
-            identity = {
-                "finding_type": self.finding_type.name,
-                "ecosystem": self.ecosystem,
-                "package": self.package,
-                "file": self.file,
-                "line": self.line,
-                "column": self.column,
-                "scope": self.scope,
-                "manifest": self.manifest,
-                "lockfile": self.lockfile,
-            }
-            serialized = json.dumps(identity, sort_keys=True, separators=(",", ":"))
-            self.finding_id = hashlib.sha256(serialized.encode("utf-8")).hexdigest()[:16]
+            self.finding_id = self._hash_identity(self._identity())
+
+    @staticmethod
+    def _hash_identity(identity: dict) -> str:
+        serialized = json.dumps(identity, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(serialized.encode("utf-8")).hexdigest()[:16]
+
+    def _identity(self, repo_dir=None) -> dict:
+        def stable_path(value):
+            if value is None or repo_dir is None:
+                return value
+            try:
+                return Path(value).resolve().relative_to(Path(repo_dir).resolve()).as_posix()
+            except (OSError, ValueError):
+                return str(value).replace("\\", "/")
+
+        return {
+            "finding_type": self.finding_type.name,
+            "ecosystem": self.ecosystem,
+            "package": self.package,
+            "file": stable_path(self.file),
+            "line": self.line,
+            "column": self.column,
+            "scope": self.scope,
+            "manifest": stable_path(self.manifest),
+            "lockfile": stable_path(self.lockfile),
+        }
+
+    def refresh_id(self, repo_dir) -> None:
+        """Recompute the ID with repository-relative provenance paths."""
+
+        self.finding_id = self._hash_identity(self._identity(repo_dir))
 
     def as_dict(self) -> dict:
         return {

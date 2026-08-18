@@ -143,9 +143,8 @@ def analyze_repo(
         try:
             manifests = manifest_module.parse_manifests(repo_dir)
         except Exception as exc:
-            return DriftReport(
-                [_finding_for_manifest_parse_error(repo_dir, "npm", exc, commit_sha=commit_sha)]
-            )
+            findings = [_finding_for_manifest_parse_error(repo_dir, "npm", exc, commit_sha=commit_sha)]
+            return _finalize_report(findings, repo, commit_sha)
         try:
             imported = imports.scan_imports(repo_dir, exclude=exclude)
         except Exception:
@@ -157,9 +156,8 @@ def analyze_repo(
         try:
             graph = go_imports.build_import_graph(repo_dir, exclude=exclude)
         except Exception as exc:
-            return DriftReport(
-                [_finding_for_manifest_parse_error(repo_dir, "go", exc, commit_sha=commit_sha)]
-            )
+            findings = [_finding_for_manifest_parse_error(repo_dir, "go", exc, commit_sha=commit_sha)]
+            return _finalize_report(findings, repo, commit_sha)
         try:
             go_sum = go_manifest_module.parse_go_sum(repo_dir)
         except Exception:
@@ -174,9 +172,8 @@ def analyze_repo(
         try:
             manifest = manifest_module.parse_python_manifest(repo_dir)
         except Exception as exc:
-            return DriftReport(
-                [_finding_for_manifest_parse_error(repo_dir, "python", exc, commit_sha=commit_sha)]
-            )
+            findings = [_finding_for_manifest_parse_error(repo_dir, "python", exc, commit_sha=commit_sha)]
+            return _finalize_report(findings, repo, commit_sha)
         try:
             imported = python_imports.scan_imports(repo_dir, exclude=exclude)
         except Exception:
@@ -191,8 +188,13 @@ def analyze_repo(
     else:
         raise ValueError(f"unsupported ecosystem: {ecosystem!r}")
 
+    return _finalize_report(findings, repo, commit_sha)
+
+
+def _finalize_report(findings, repo, commit_sha):
     for finding in findings:
         finding.commit_sha = commit_sha
+        finding.refresh_id(repo)
     return DriftReport(sorted(findings, key=_sort_key))
 
 

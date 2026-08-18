@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "go-clean-demo": [],
+  "go-finding-fixture": [
+    {
+      "finding_id": "d6fae20b4d729463",
+      "finding_type": "UNRESOLVED_IMPORT",
+      "package": "github.com/example/missingmodule",
+      "file": ".",
+      "line": null,
+      "column": null,
+      "manifest": null,
+      "lockfile": null,
+      "scope": null,
+      "severity": "HIGH",
+      "confidence": "MEDIUM",
+      "status": "OPEN"
+    }
+  ],
+  "npm-clean-demo": [],
+  "npm-finding-demo": [
+    {
+      "finding_id": "98a115984d07e3a9",
+      "finding_type": "DECLARED_UNUSED_CANDIDATE",
+      "package": "react",
+      "file": null,
+      "line": null,
+      "column": null,
+      "manifest": null,
+      "lockfile": null,
+      "scope": "dependencies",
+      "severity": "LOW",
+      "confidence": "MEDIUM",
+      "status": "ADVISORY"
+    },
+    {
+      "finding_id": "6e20b4c15fccd591",
+      "finding_type": "MISSING_LOCKFILE",
+      "package": null,
+      "file": null,
+      "line": null,
+      "column": null,
+      "manifest": "package.json",
+      "lockfile": null,
+      "scope": "dependencies",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "status": "OPEN"
+    },
+    {
+      "finding_id": "6569eaa85b98047a",
+      "finding_type": "UNDECLARED_DIRECT_USE",
+      "package": "missingpkg",
+      "file": "src/index.js",
+      "line": 1,
+      "column": 1,
+      "manifest": null,
+      "lockfile": null,
+      "scope": "dependencies",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "status": "OPEN"
+    }
+  ],
+  "python-clean-demo": [],
+  "python-finding-fixture": [
+    {
+      "finding_id": "6297f79522cb737a",
+      "finding_type": "DECLARED_UNUSED_CANDIDATE",
+      "package": "pytest",
+      "file": null,
+      "line": null,
+      "column": null,
+      "manifest": "pyproject.toml",
+      "lockfile": "poetry.lock",
+      "scope": "devDependencies",
+      "severity": "LOW",
+      "confidence": "MEDIUM",
+      "status": "ADVISORY"
+    },
+    {
+      "finding_id": "284ea3364ef81ddf",
+      "finding_type": "SCOPE_MISMATCH",
+      "package": "beautifulsoup4",
+      "file": "src/app.py",
+      "line": 2,
+      "column": 1,
+      "manifest": "pyproject.toml",
+      "lockfile": "poetry.lock",
+      "scope": "dependencies",
+      "severity": "LOW",
+      "confidence": "MEDIUM",
+      "status": "OPEN"
+    },
+    {
+      "finding_id": "95fbe4e3411015d2",
+      "finding_type": "SCOPE_MISMATCH",
+      "package": "requests",
+      "file": "src/app.py",
+      "line": 1,
+      "column": 1,
+      "manifest": "pyproject.toml",
+      "lockfile": "poetry.lock",
+      "scope": "dependencies",
+      "severity": "LOW",
+      "confidence": "MEDIUM",
+      "status": "OPEN"
+    },
+    {
+      "finding_id": "3e61016e9d0649ee",
+      "finding_type": "UNDECLARED_DIRECT_USE",
+      "package": "yaml",
+      "file": "src/app.py",
+      "line": 5,
+      "column": 1,
+      "manifest": "pyproject.toml",
+      "lockfile": "poetry.lock",
+      "scope": "dependencies",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "status": "OPEN"
+    },
+    {
+      "finding_id": "cb1457d68b996cc7",
+      "finding_type": "UNRESOLVED_IMPORT",
+      "package": ".missing_module",
+      "file": "src/app.py",
+      "line": 6,
+      "column": 1,
+      "manifest": "pyproject.toml",
+      "lockfile": "poetry.lock",
+      "scope": null,
+      "severity": "HIGH",
+      "confidence": "MEDIUM",
+      "status": "OPEN"
+    }
+  ]
+}
