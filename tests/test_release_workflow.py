@@ -16,9 +16,13 @@ def test_release_workflow_uses_explicit_github_release_artifacts():
     assert "on:\n  release:\n    types: [published]" in raw
     assert "permissions:\n  contents: read" in raw
     assert "    permissions:\n      contents: write" in raw
-    assert "python -m build --sdist --wheel --outdir dist" in raw
-    assert "sha256sum * > SHA256SUMS" in raw
+    assert "      id-token: write" in raw
+    assert "      attestations: write" in raw
+    assert "python -m build --no-isolation --sdist --wheel --outdir dist" in raw
+    assert "python scripts/checksums.py dist" in raw
     assert 'gh release upload "$RELEASE_TAG" dist/* --clobber' in raw
+    assert "actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6" in raw
+    assert "subject-path: dist/*" in raw
     assert "pypa/gh-action-pypi-publish" not in raw
     assert "PYPI_API_TOKEN" not in raw
 
@@ -35,8 +39,8 @@ def test_release_workflow_verifies_before_building_and_uploading():
     assert "GITHUB_REF_TYPE: tag" in raw[metadata:tests]
     assert "GITHUB_REF_NAME: ${{ github.event.release.tag_name }}" in raw[metadata:tests]
     assert "python scripts/check_release.py" in raw[metadata:tests]
-    assert "python benchmarks/conformance/run.py --json" in raw[tests:build]
-    assert "python benchmarks/correctness/run.py --json" in raw[tests:build]
+    assert "python scripts/ci.py conformance" in raw[tests:build]
+    assert "python scripts/ci.py correctness" in raw[tests:build]
     assert metadata < tests < build < checksums < upload
 
 
@@ -45,6 +49,17 @@ def test_action_manifest_keeps_ecosystem_input_nested():
 
     assert '  ecosystem:\n    description: "Ecosystem to scan. Valid values: auto|npm|python|go."' in raw
     assert "\n  description: \"Ecosystem to scan." not in raw
+
+
+def test_action_manifest_exposes_explicit_bootstrap_modes():
+    raw = ACTION_MANIFEST.read_text(encoding="utf-8")
+
+    assert "  install-mode:" in raw
+    assert "  python-command:" in raw
+    assert "inputs.install-mode == 'managed'" in raw
+    assert "inputs.install-mode == 'offline'" in raw
+    assert "PIP_NO_INDEX=1" in raw
+    assert "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065" in raw
 
 
 def test_pypi_publishing_workflow_is_removed():

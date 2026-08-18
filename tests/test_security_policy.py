@@ -21,8 +21,8 @@ def test_workflows_do_not_contain_registry_publishing_configuration():
 def test_codeql_has_minimal_security_permissions():
     raw = (WORKFLOWS / "codeql.yml").read_text(encoding="utf-8")
 
-    assert "github/codeql-action/init@v3" in raw
-    assert "github/codeql-action/analyze@v3" in raw
+    assert "github/codeql-action/init@d6317709a54fd87078d323eeb0e48ec331c8e621" in raw
+    assert "github/codeql-action/analyze@d6317709a54fd87078d323eeb0e48ec331c8e621" in raw
     assert "languages: python" in raw
     assert "security-events: write" in raw
     assert "contents: write" not in raw
@@ -54,3 +54,15 @@ def test_all_workflow_checkouts_disable_persisted_credentials():
         for block in checkout_blocks:
             if "uses: actions/checkout@" in block:
                 assert "persist-credentials: false" in block, path.name
+
+
+def test_third_party_workflow_actions_are_pinned_to_full_shas():
+    for path in _workflow_files():
+        raw = path.read_text(encoding="utf-8")
+        for reference in re.findall(r"^\s*uses:\s+([^\s]+)", raw, re.MULTILINE):
+            if reference.startswith("./"):
+                continue
+            owner_repo, separator, revision = reference.partition("@")
+            assert separator and re.fullmatch(r"[0-9a-f]{40}", revision), (
+                f"{path.name} uses an unpinned third-party Action: {reference}"
+            )

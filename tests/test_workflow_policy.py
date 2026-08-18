@@ -67,7 +67,7 @@ def test_compatibility_workflow_prepares_then_runs_the_offline_runner():
 def test_every_checkout_disables_persisted_credentials():
     raw = _workflow_text()
     checkout_blocks = [
-        block for block in _step_blocks(raw) if "uses: actions/checkout@v4" in block
+        block for block in _step_blocks(raw) if "uses: actions/checkout@" in block
     ]
     assert checkout_blocks, "workflow must contain at least one checkout step"
     assert all(
@@ -135,7 +135,7 @@ def test_evidence_is_bounded():
         (
             block
             for block in steps
-            if "uses: actions/github-script@v7" in block
+            if "uses: actions/github-script@" in block
         ),
         None,
     )

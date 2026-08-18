@@ -36,8 +36,9 @@ vulnerability scanner or that a repository is compliant.
 
 ## Action dependencies
 
-GitHub workflows use explicit major-version Action references and disable
-persisted checkout credentials. Dependabot monitors those references. A
+GitHub workflows use full-length commit-SHA Action references with the
+intended major release retained in a comment, and disable persisted checkout
+credentials. Dependabot monitors those references. A
 workflow that needs write permission must keep it at the narrowest job scope
 and explain why the write is required; the release-artifacts workflow is the
 only workflow that currently needs `contents: write`.
