@@ -38,7 +38,7 @@ The OPS venv required by the workspace instructions was checked and is usable:
 ```text
 C:\Users\quint\Desktop\OPS\ops\.venv\Scripts\python.exe
 Python 3.11.11
-impactprism 0.1.0 (editable install from this checkout)
+impactprism 0.3.0 (editable install from this checkout)
 ```
 
 That environment is not sufficient to claim methodology compliance: the frozen

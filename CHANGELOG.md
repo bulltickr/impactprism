@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+No unreleased changes yet.
+
+## 0.3.0 - 2026-08-18
+
 ### Reliability
 
 - Added a canonical normalized scan-report contract for CLI and evidence
@@ -17,10 +21,19 @@
 - Added a repository-local conformance suite and tag-checked release workflow.
 - Preserved Go manifest indirectness while recording imported indirect modules
   as application-root SBOM dependencies when source evidence supports it.
+- Added Python support to the reusable GitHub Action and its clean-runner smoke
+  matrix.
+- Added deterministic npm, Python, and Go conformance fixtures with stable
+  repository-relative finding signatures.
+- Added installed-wheel smoke coverage for clean and finding-producing
+  projects across all three supported ecosystems.
+- Added an explicit-release PyPI workflow using Trusted Publishing and no
+  long-lived registry token.
 
 ### Compatibility notes
 
 - `scan` now treats all canonical findings, including missing lockfiles and
   unresolved imports, as findings for exit-code purposes.
 - Legacy category-only report JSON remains readable by the evidence command.
-- The package and Action version will be synchronized at the next release tag.
+- The package, CLI, SBOM, evidence, and Action artifact version is synchronized
+  at `0.3.0`; the existing historical `v0.2.0` tag is unchanged.

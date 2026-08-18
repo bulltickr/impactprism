@@ -91,7 +91,7 @@ Add ImpactPrism to your pull requests in four lines:
 
 ```yaml
 - name: ImpactPrism scan
-  uses: bulltickr/impactprism@v0.2.0
+  uses: bulltickr/impactprism@v0.3.0
   with:
     repo-path: ${{ github.workspace }}
     fail-on: finding
@@ -101,7 +101,7 @@ The composite action is fully offline (no account, no API key), produces `findin
 
 ## Supported ecosystems
 
-The CLI auto-detects supported project inputs. npm uses `package.json` and supported lockfiles; Python uses supported `pyproject.toml`, `Pipfile`, or `requirements.txt` inputs and lockfiles; Go uses `go.mod`, `go.work`, `go.sum`, and vendored module metadata. The GitHub Action can force `npm` or `go` via its `ecosystem` input.
+The CLI auto-detects supported project inputs. npm uses `package.json` and supported lockfiles; Python uses supported `pyproject.toml`, `Pipfile`, or `requirements.txt` inputs and lockfiles; Go uses `go.mod`, `go.work`, `go.sum`, and vendored module metadata. The GitHub Action can force `npm`, `python`, or `go` via its `ecosystem` input.
 
 - Python checks cover supported manifest/lockfile and import comparisons; coverage varies by packaging format and repository structure.
 

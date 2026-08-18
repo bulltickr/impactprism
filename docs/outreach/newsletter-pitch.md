@@ -3,12 +3,12 @@
 ## Subject options
 
 - Story idea: the dependency-integrity gap behind manifest-only SBOMs
-- A practical CRA angle: checking what npm and Go code actually imports
+- A practical CRA angle: checking what npm, Python, and Go code actually imports
 - Open-source tool for CRA component-transparency evidence
 
 ## Three-sentence pitch
 
-ImpactPrism is an offline open-source tool for npm and Go that compares manifests, lockfiles, and source imports to find undeclared, transitive, scope, drift, and lockfile-mismatch dependencies—the gap a manifest-only SBOM does not cover. It turns those findings into a CycloneDX SBOM, a machine-readable report, and a CRA-grounded evidence pack mapped to Art 13(1)(b), Art 14(1), Annex I, and Annex VII. The story is a practical look at how small EU software teams can make dependency inventory evidence more faithful without adding an account, API key, or hosted service.
+ImpactPrism is an offline open-source tool for npm, Python, and Go that compares manifests, lockfiles, and source imports to find undeclared, transitive, scope, drift, and lockfile-mismatch dependencies—the gap a manifest-only SBOM does not cover. It turns those findings into a CycloneDX SBOM, a machine-readable report, and a CRA-grounded evidence pack mapped to Art 13(1)(b), Art 14(1), Annex I, and Annex VII. The story is a practical look at how small EU software teams can make dependency inventory evidence more faithful without adding an account, API key, or hosted service.
 
 ## Supporting material
 

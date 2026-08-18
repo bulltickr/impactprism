@@ -14,7 +14,7 @@ For Go repositories, the tool compares source imports with `go.mod` and `go.sum`
 
 The output is a CycloneDX SBOM, a machine-readable report, and a CRA-grounded evidence pack with mapped references including Art 13(1)(b), Art 14(1), Annex I, and Annex VII. It is offline and does not require an account or API key.
 
-The repository currently includes an npm demo; for Go, run the primary command on a real Go repository:
+The repository includes npm, Python, and Go demos; for a real Go repository, run the primary command:
 
 ```bash
 pipx run impactprism scan .

@@ -42,7 +42,7 @@ jobs:
 
       - name: ImpactPrism dependency-drift scan
         id: impactprism
-        uses: bulltickr/impactprism@v0.2.0
+        uses: bulltickr/impactprism@v0.3.0
         with:
           repo-path: ${{ github.workspace }}
           ecosystem: auto
@@ -120,9 +120,9 @@ exits 1 only under `fail-on: all`; `scanner-error` exits 1 unless
 ## Versioning
 
 The workflow examples in this README install the action as
-`bulltickr/impactprism@v0.2.0`. Action releases use git tags matching
-`vX.Y.Z`, so pin to a full release tag (e.g. `@v0.2.0`) or a major tag
-(e.g. `@v0`) in consuming workflows. The existing `v0.2.0` example is a
-historical action tag. The package and generated artifacts now read their
-runtime version from `src/impactprism/version.py`; future release work must
-update that value and the release tag together.
+`bulltickr/impactprism@v0.3.0`. Action releases use git tags matching
+`vX.Y.Z`, so pin to a full release tag or a major tag (e.g. `@v0`) in
+consuming workflows. The existing `v0.2.0` tag is historical and remains
+unchanged. The package and generated artifacts read their runtime version from
+`src/impactprism/version.py`; the synchronized release prepared by this tree
+is `v0.3.0`, and its release tag must match that value.

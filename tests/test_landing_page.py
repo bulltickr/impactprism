@@ -33,7 +33,7 @@ def test_public_docs_state_supported_ecosystems_and_limitations():
         "npm uses `package.json` and supported lockfiles",
         "Python uses supported `pyproject.toml`, `Pipfile`, or `requirements.txt` inputs and lockfiles",
         "Go uses `go.mod`, `go.work`, `go.sum`, and vendored module metadata",
-        "The GitHub Action can force `npm` or `go` via its `ecosystem` input",
+        "The GitHub Action can force `npm`, `python`, or `go` via its `ecosystem` input",
     ):
         assert phrase in readme, f"{phrase!r} missing from README"
 
