@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .cra_clauses import load_cra_clauses
+from .reporting import findings_from_report
 
 
 EVIDENCE_STATUSES = ("PASS", "FAIL", "EVIDENCE_GAP", "NOT_ASSESSED", "REVIEW_REQUIRED")
@@ -33,6 +34,16 @@ RATIONALES = {
         "warrants review against Article 13(1)(a) and Annex I Part I to "
         "confirm whether secure-by-default or minimisation expectations apply."
     ),
+}
+_FINDING_TYPE_TO_CATEGORY = {
+    "UNDECLARED_DIRECT_USE": "undeclared",
+    "DIRECT_DEPENDENCY_USED_TRANSITIVELY": "undeclared",
+    "LOCKFILE_MANIFEST_MISMATCH": "undeclared",
+    "MISSING_LOCKFILE": "undeclared",
+    "DECLARED_UNUSED_CANDIDATE": "drift",
+    "SCOPE_MISMATCH": "drift",
+    "UNRESOLVED_IMPORT": "undeclared",
+    "SCANNER_ERROR": "undeclared",
 }
 CRA_REFERENCES = {
     clause_id: clause["title"]
@@ -84,17 +95,30 @@ def _classify_status(category):
 
 def _build_findings(report):
     findings = []
-    for category in ("undeclared", "drift"):
-        for name in _report_entries(report, category):
-            findings.append(
-                {
-                    "category": category,
-                    "name": name,
-                    "clauses": CLAUSE_MAP[category],
-                    "rationale": RATIONALES[category],
-                    "status": _classify_status(category),
-                }
-            )
+    for item in findings_from_report(report):
+        finding_type = item.get("finding_type") or "UNKNOWN"
+        category = _FINDING_TYPE_TO_CATEGORY.get(finding_type)
+        if category is None:
+            category = "undeclared" if item.get("category") == "undeclared" else "drift"
+        name = str(item.get("package") or item.get("name") or "unknown")
+        rationale = RATIONALES.get(category, "The finding requires review against the supported evidence controls.")
+        findings.append(
+            {
+                "finding_type": finding_type,
+                "category": category,
+                "name": name,
+                "package": item.get("package"),
+                "file": item.get("file"),
+                "line": item.get("line"),
+                "column": item.get("column"),
+                "severity": str(item.get("severity") or "info").lower(),
+                "confidence": str(item.get("confidence") or "medium").lower(),
+                "explanation": item.get("explanation") or "",
+                "clauses": CLAUSE_MAP.get(category, []),
+                "rationale": rationale,
+                "status": _classify_status(category),
+            }
+        )
     return findings
 
 
@@ -128,6 +152,27 @@ def _build_evidence(report, source_path, source_report_sha256):
             "status_counts": status_counts,
         },
     }
+
+
+def build_evidence(report, source_path="findings.json", source_report_sha256=None):
+    """Build an evidence pack from an already-loaded canonical report.
+
+    This is the shared adapter used by the CLI and the GitHub Action.  The
+    optional digest is accepted so callers that already loaded a report do not
+    need to serialize it a second time merely to calculate provenance.
+    """
+
+    if source_report_sha256 is None:
+        source_report_sha256 = hashlib.sha256(
+            json.dumps(report, sort_keys=True, indent=2).encode("utf-8")
+        ).hexdigest()
+    return _build_evidence(report, source_path, source_report_sha256)
+
+
+def render_evidence_markdown(evidence):
+    """Render an evidence pack using the canonical Markdown adapter."""
+
+    return _markdown(evidence)
 
 
 def _write_json(path, value):
@@ -202,8 +247,8 @@ def main(argv=None) -> int:
 
     try:
         report, source_report_sha256 = _load_json(source_path)
-        evidence = _build_evidence(report, source_path, source_report_sha256)
-        markdown = _markdown(evidence)
+        evidence = build_evidence(report, source_path, source_report_sha256)
+        markdown = render_evidence_markdown(evidence)
         if args.stdout:
             _write_markdown(args.markdown, evidence)
             json.dump(evidence, sys.stdout, indent=2)

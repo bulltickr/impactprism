@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bulltickr/impactprism/schemas/scan-report.schema.json",
+  "title": "ImpactPrism canonical scan report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generator",
+    "repo",
+    "package_name",
+    "package_version",
+    "ecosystem",
+    "declared",
+    "imported",
+    "findings",
+    "counts"
+  ],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "generator": {"type": "string"},
+    "repo": {"type": "string"},
+    "package_name": {"type": "string"},
+    "package_version": {"type": "string"},
+    "ecosystem": {"type": "string", "enum": ["npm", "python", "go"]},
+    "declared": {"type": "array", "items": {"type": "string"}},
+    "imported": {"type": "array", "items": {"type": "string"}},
+    "drift": {"type": "array", "items": {"type": "string"}},
+    "undeclared": {"type": "array", "items": {"type": "string"}},
+    "scope-mismatch": {"type": "array", "items": {"type": "string"}},
+    "integrity": {"type": "array", "items": {"type": "string"}},
+    "unresolved": {"type": "array", "items": {"type": "string"}},
+    "findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "diagnostics": {"type": "array", "items": {"type": "object"}},
+    "counts": {
+      "type": "object",
+      "required": ["total", "by_type", "by_severity"],
+      "properties": {
+        "total": {"type": "integer", "minimum": 0},
+        "by_type": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+        "by_severity": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}}
+      },
+      "additionalProperties": true
+    },
+    "sbom": {"type": ["object", "null"]}
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "required": ["finding_type", "severity", "confidence", "ecosystem"],
+      "properties": {
+        "finding_type": {"type": "string"},
+        "finding_id": {"type": "string"},
+        "severity": {"type": "string", "enum": ["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL", "info", "low", "medium", "high", "critical"]},
+        "confidence": {"type": "string"},
+        "ecosystem": {"type": "string"},
+        "package": {"type": ["string", "null"]},
+        "file": {"type": ["string", "null"]},
+        "line": {"type": ["integer", "null"]},
+        "column": {"type": ["integer", "null"]},
+        "manifest": {"type": ["string", "null"]},
+        "lockfile": {"type": ["string", "null"]},
+        "commit_sha": {"type": ["string", "null"]},
+        "scope": {"type": ["string", "null"]},
+        "explanation": {"type": "string"},
+        "status": {"type": "string"},
+        "category": {"type": "string"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

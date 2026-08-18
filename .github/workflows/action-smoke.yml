@@ -1,0 +1,35 @@
+name: Action smoke
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+  checks: write
+  security-events: write
+
+jobs:
+  clean-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run local Action against clean fixture
+        id: impactprism
+        uses: ./
+        with:
+          repo-path: ${{ github.workspace }}/demo/clean-app
+          ecosystem: npm
+          fail-on: finding
+          artifact-name: ''
+
+      - name: Assert clean outcome
+        env:
+          OUTCOME: ${{ steps.impactprism.outputs.outcome }}
+          EXIT_CODE: ${{ steps.impactprism.outputs.exit-code }}
+        run: |
+          test "$OUTCOME" = clean
+          test "$EXIT_CODE" = 0

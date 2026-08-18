@@ -74,8 +74,8 @@ def test_models_as_dict_are_plain_and_nested(tmp_path):
     assert verification.as_dict()["scan_after"] == {"count": 0}
     assert description.as_dict()["changed_files"] == ["package.json"]
     assert proposal.as_dict()["description"]["title"] == "Remediate pkg"
-    assert remediation.proposed_only is True
-    assert remediation.as_dict()["proposed_only"] is True
+    assert remediation.proposed_only is False
+    assert remediation.as_dict()["proposed_only"] is False
 
 
 def test_remediation_error_raises():

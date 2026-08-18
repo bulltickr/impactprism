@@ -349,19 +349,22 @@ def test_empty_components_produces_only_root_dependency():
     assert sbom["dependencies"] == [{"ref": root_ref}]
 
 
-def test_components_without_direct_dependency_raise_clear_graph_error():
-    with pytest.raises(ValueError, match="at least one component must be marked direct"):
-        build_cyclonedx_sbom(
-            [
-                {
-                    "name": "transitive",
-                    "version": "1.0.0",
-                    "purl": "pkg:pypi/transitive@1.0.0",
-                    "direct": False,
-                }
-            ],
-            metadata={"name": "app", "version": "1.0.0"},
-        )
+def test_components_without_direct_dependency_keep_an_empty_root_edge():
+    sbom = build_cyclonedx_sbom(
+        [
+            {
+                "name": "transitive",
+                "version": "1.0.0",
+                "purl": "pkg:pypi/transitive@1.0.0",
+                "direct": False,
+            }
+        ],
+        metadata={"name": "app", "version": "1.0.0"},
+    )
+
+    assert_valid_sbom(sbom)
+    root_edges = [item for item in sbom["dependencies"] if item["ref"] == "app@1.0.0"]
+    assert root_edges == [{"ref": "app@1.0.0"}]
 
 
 def test_missing_timestamp_defaults_to_current_utc_time():

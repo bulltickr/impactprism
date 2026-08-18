@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,8 @@ version = "0.1.0"
 description = "Offline dependency-integrity analysis with CycloneDX SBOM output for npm, Python, and Go"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {file = "LICENSE"}
+license = "MIT"
+license-files = ["LICENSE"]
 keywords = ["sbom", "cyclonedx", "supply-chain", "dependency-analysis", "javascript", "security"]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -16,7 +17,6 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Development Status :: 3 - Alpha",
-    "License :: OSI Approved :: MIT License",
     "Environment :: Console",
     "Topic :: Software Development",
 ]

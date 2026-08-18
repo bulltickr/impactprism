@@ -2,7 +2,7 @@
 
 A reusable composite GitHub Action that runs the ImpactPrism dependency-drift
 scan on the checked-out repository and produces a CRA-grounded evidence pack:
-`findings.json` (the raw scan report), `bom.json` (a CycloneDX 1.5 SBOM),
+`findings.json` (the raw scan report), `bom.json` (a CycloneDX 1.6 SBOM),
 `impactprism.sarif` (SARIF 2.1.0 for code scanning), `evidence.json` /
 `evidence.md` (each finding annotated with its CRA clause mapping and
 rationale), and `summary.md` (the human-readable outcome summary, also

@@ -32,6 +32,26 @@ def make_repo(tmp_path, name="repo", dependencies=None, dev_dependencies=None, s
     if dev_dependencies:
         package["devDependencies"] = dev_dependencies
     write_file(repo, "package.json", json.dumps(package, indent=2))
+    lock_packages = {
+        "": {
+            "name": name,
+            "version": "1.0.0",
+            "dependencies": dependencies or {},
+        }
+    }
+    for dependency_name, dependency_version in (dependencies or {}).items():
+        lock_packages["node_modules/" + dependency_name] = {
+            "version": str(dependency_version).lstrip("^")
+        }
+    for dependency_name, dependency_version in (dev_dependencies or {}).items():
+        lock_packages["node_modules/" + dependency_name] = {
+            "version": str(dependency_version).lstrip("^")
+        }
+    write_file(
+        repo,
+        "package-lock.json",
+        json.dumps({"name": name, "version": "1.0.0", "lockfileVersion": 3, "packages": lock_packages}, indent=2),
+    )
     write_file(repo, "src/App.jsx", source)
     return repo
 
@@ -335,7 +355,7 @@ def test_scan_go_clean_json_shape_and_exit_zero(tmp_path, monkeypatch, capsys):
     assert report["drift"] == []
     assert report["undeclared"] == []
     assert report["scope-mismatch"] == []
-    assert report["sbom"] is None
+    assert report["sbom"]["specVersion"] == "1.6"
 
 
 def test_scan_go_drift_exit_one(tmp_path, monkeypatch, capsys):
@@ -414,7 +434,7 @@ def test_module_entry_scan_go_json(tmp_path):
     assert report["ecosystem"] == "go"
     assert report["package_name"] == "example.com/demo"
     assert report["scope-mismatch"] == []
-    assert report["sbom"] is None
+    assert report["sbom"]["specVersion"] == "1.6"
 
 
 def test_scan_repo_root_exit_zero(monkeypatch, tmp_path):

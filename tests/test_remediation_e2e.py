@@ -1,4 +1,5 @@
 import subprocess
+import importlib
 from pathlib import Path
 
 import pytest
@@ -168,6 +169,42 @@ def test_remediate_dry_run_mutates_nothing(npm_fixture_repo):
         verify=False,
         dry_run=True,
     )
+
+    after_files = {
+        path.relative_to(npm_fixture_repo).as_posix(): path.read_bytes()
+        for path in npm_fixture_repo.rglob("*")
+        if path.is_file()
+    }
+    assert after_files == before_files
+
+
+def test_apply_failure_rolls_back_manifest_and_lockfiles(npm_fixture_repo, monkeypatch):
+    finding = _finding(npm_fixture_repo, "npm", "missingpkg")
+    before_files = {
+        path.relative_to(npm_fixture_repo).as_posix(): path.read_bytes()
+        for path in npm_fixture_repo.rglob("*")
+        if path.is_file()
+    }
+    remediation_module = importlib.import_module("impactprism.remediation.remediate")
+
+    def fail_lockfile_update(*args, **kwargs):
+        raise RemediationError("simulated lockfile failure")
+
+    monkeypatch.setattr(
+        remediation_module.LockfileUpdater,
+        "run",
+        fail_lockfile_update,
+    )
+
+    with pytest.raises(RemediationError, match="simulated lockfile failure"):
+        remediate(
+            finding.as_dict(),
+            str(npm_fixture_repo),
+            ecosystem="npm",
+            dry_run=False,
+            update_lockfile=True,
+            verify=False,
+        )
 
     after_files = {
         path.relative_to(npm_fixture_repo).as_posix(): path.read_bytes()

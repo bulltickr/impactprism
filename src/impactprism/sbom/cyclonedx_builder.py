@@ -168,12 +168,6 @@ def build_cyclonedx_sbom(
         if item.get("direct") is True:
             direct_refs.append(Dependency(ref=component_ref))
 
-    if bom_components and not direct_refs:
-        raise ValueError(
-            "Cannot build a complete dependency graph: at least one component "
-            "must be marked direct"
-        )
-
     dependencies.append(Dependency(ref=root_ref, dependencies=direct_refs))
     bom = Bom(
         metadata=BomMetaData(

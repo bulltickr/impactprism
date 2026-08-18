@@ -182,9 +182,6 @@ class RemediationPlan:
     pr_proposal: PrProposal | None = None
     proposed_only: bool = True
 
-    def __post_init__(self) -> None:
-        self.proposed_only = True
-
     def as_dict(self) -> dict:
         return {
             "finding": dict(self.finding),
@@ -193,7 +190,7 @@ class RemediationPlan:
             "verification": self.verification.as_dict() if self.verification else None,
             "pr_description": self.pr_description.as_dict() if self.pr_description else None,
             "pr_proposal": self.pr_proposal.as_dict() if self.pr_proposal else None,
-            "proposed_only": True,
+            "proposed_only": self.proposed_only,
         }
 
 

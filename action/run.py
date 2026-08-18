@@ -13,6 +13,7 @@ generated reports are ever uploaded; source file contents are never embedded.
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import sys
 from dataclasses import dataclass
@@ -21,62 +22,6 @@ from enum import Enum
 from pathlib import Path
 
 SEVERITY_ORDER = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
-
-_CLAUSE_MAP = {
-    "UNDECLARED_DIRECT_USE": ["Art 13(1)(b)", "Art 14(1)", "Annex I Part II", "Annex VII"],
-    "DIRECT_DEPENDENCY_USED_TRANSITIVELY": [
-        "Art 13(1)(b)",
-        "Art 14(1)",
-        "Annex I Part II",
-        "Annex VII",
-    ],
-    "LOCKFILE_MANIFEST_MISMATCH": ["Art 14(1)", "Annex VII"],
-    "MISSING_LOCKFILE": ["Art 14(1)", "Annex VII"],
-    "DECLARED_UNUSED_CANDIDATE": ["Art 13(1)(a)", "Annex I Part I"],
-    "SCOPE_MISMATCH": ["Art 13(1)(a)", "Annex I Part I"],
-    "UNRESOLVED_IMPORT": ["Art 13(1)(a)", "Annex I Part II"],
-    "SCANNER_ERROR": ["Art 13(1)(b)"],
-}
-
-_RATIONALES = {
-    "UNDECLARED_DIRECT_USE": (
-        "Undeclared dependencies fall outside the SBOM/component transparency "
-        "required by Art 13(1)(b) and evade the vulnerability-handling "
-        "obligations of Art 14(1)/Annex VII."
-    ),
-    "DIRECT_DEPENDENCY_USED_TRANSITIVELY": (
-        "Directly imported components that are only available transitively "
-        "evade declared-component transparency and vulnerability-handling "
-        "obligations."
-    ),
-    "LOCKFILE_MANIFEST_MISMATCH": (
-        "Disagreement between the manifest and the lockfile undermines the "
-        "reproducibility and vulnerability tracking required by the "
-        "vulnerability-handling process."
-    ),
-    "MISSING_LOCKFILE": (
-        "No lockfile exists to pin declared dependency versions, breaking build "
-        "reproducibility and the vulnerability-handling process required by "
-        "Art 14(1)/Annex VII."
-    ),
-    "DECLARED_UNUSED_CANDIDATE": (
-        "Unnecessary installed components expand the attack surface contrary "
-        "to the secure-by-default and minimisation requirements."
-    ),
-    "SCOPE_MISMATCH": (
-        "Dependencies used outside their declared scope widen the attack "
-        "surface contrary to secure-by-default minimisation."
-    ),
-    "UNRESOLVED_IMPORT": (
-        "An import that cannot be resolved to a declared component breaks "
-        "component transparency and build reproducibility."
-    ),
-    "SCANNER_ERROR": (
-        "A manifest could not be parsed, so findings would be unreliable; "
-        "scan integrity and transparency require surfacing the failure as a "
-        "scanner error rather than reporting a clean scan."
-    ),
-}
 
 _SARIF_LEVELS = {
     "critical": "error",
@@ -209,124 +154,15 @@ def _run_analysis(repo_path, ecosystem, commit_sha):
     return report.as_dicts()
 
 
-def _encode_purl_name(name):
-    encoded = []
-    for byte in name.encode("utf-8"):
-        character = chr(byte)
-        if (character.isalnum() and byte < 128) or character in "-._~":
-            encoded.append(character)
-        else:
-            encoded.append("%%%02X" % byte)
-    return "".join(encoded)
+def _build_sbom(repo_path, ecosystem):
+    """Use the package's canonical SBOM service for Action output."""
 
-
-def _build_bom(repo_path, ecosystem):
     _ensure_import_paths()
-    if ecosystem == "npm":
-        from impactprism.manifest import parse_manifest
+    from impactprism.analysis import generate_sbom
 
-        manifest = parse_manifest(str(repo_path))
-        components = []
-        for dependency in manifest.dependencies:
-            resolved = dependency.locked_version or dependency.version or "0.0.0"
-            components.append(
-                {
-                    "purl": "pkg:npm/" + _encode_purl_name(dependency.name) + "@" + resolved,
-                    "name": dependency.name,
-                    "version": resolved,
-                    "scope": (
-                        "required"
-                        if dependency.kind
-                        in ("dependencies", "peerDependencies", "optionalDependencies")
-                        else "optional"
-                    ),
-                    "direct": True,
-                    "transitive": False,
-                }
-            )
-        metadata = {
-            "name": manifest.name or "unknown",
-            "version": manifest.version or "0.0.0",
-            "tool_name": "impactprism-action",
-            "tool_version": "0.1.0",
-            "timestamp": _utc_timestamp(),
-        }
-        return components, metadata
-    if ecosystem == "go":
-        from impactprism.go_manifest import parse_go_manifest
-
-        manifest = parse_go_manifest(str(repo_path))
-        components = []
-        for dependency in manifest.dependencies:
-            components.append(
-                {
-                    "purl": "pkg:golang/" + dependency.module + "@" + dependency.version,
-                    "name": dependency.module,
-                    "version": dependency.version,
-                    "scope": "required",
-                    "direct": bool(dependency.direct),
-                    "transitive": not bool(dependency.direct),
-                }
-            )
-        metadata = {
-            "name": manifest.module_path or "unknown",
-            "version": "",
-            "tool_name": "impactprism-action",
-            "tool_version": "0.1.0",
-            "timestamp": _utc_timestamp(),
-        }
-        return components, metadata
-    raise ValueError("unsupported ecosystem for bom: " + str(ecosystem))
-
-
-def _build_cyclonedx(components, metadata):
-    _ensure_import_paths()
-    try:
-        from impactprism.sbom.cyclonedx_builder import build_cyclonedx_sbom
-
-        return build_cyclonedx_sbom(components, metadata=metadata), True
-    except Exception:
-        return _minimal_cyclonedx(components, metadata), False
-
-
-def _minimal_cyclonedx(components, metadata):
-    bom_components = []
-    for item in components:
-        bom_components.append(
-            {
-                "type": "library",
-                "bom-ref": item["purl"],
-                "name": item["name"],
-                "version": item["version"],
-                "purl": item["purl"],
-                "properties": [
-                    {"name": "impactprism:direct", "value": "true" if item.get("direct") else "false"},
-                    {"name": "impactprism:transitive", "value": "true" if item.get("transitive") else "false"},
-                    {"name": "impactprism:scope", "value": item.get("scope")},
-                ],
-            }
-        )
-    return {
-        "bomFormat": "CycloneDX",
-        "specVersion": "1.5",
-        "version": 1,
-        "metadata": {
-            "timestamp": metadata.get("timestamp", _utc_timestamp()),
-            "tools": [
-                {
-                    "vendor": "impactprism",
-                    "name": metadata.get("tool_name", "impactprism-action"),
-                    "version": metadata.get("tool_version", "0.1.0"),
-                }
-            ],
-            "component": {
-                "type": "application",
-                "name": metadata.get("name", "unknown"),
-                "version": metadata.get("version", "0.0.0"),
-            },
-        },
-        "components": bom_components,
-    }
+    if ecosystem not in ("npm", "go"):
+        raise ValueError("unsupported ecosystem for bom: " + str(ecosystem))
+    return generate_sbom(str(repo_path))
 
 
 def _relative_file(repo_path, file_path):
@@ -420,50 +256,41 @@ def _package_identity(repo_path, ecosystem):
     return "unknown", "unknown"
 
 
-def _build_evidence(repo_path, findings, package_name, package_version, commit_sha):
+def _build_evidence(
+    repo_path,
+    findings,
+    package_name,
+    package_version,
+    commit_sha,
+    source_report_sha256=None,
+):
     _ensure_import_paths()
     import impactprism.evidence as evidence_module
-
-    cra_references = getattr(evidence_module, "CRA_REFERENCES", {})
-    evidence_findings = []
-    by_severity = {}
-    for finding in findings:
-        finding_type = finding.get("finding_type") or "UNKNOWN"
-        severity = _normalize_severity(finding.get("severity"))
-        by_severity[severity] = by_severity.get(severity, 0) + 1
-        evidence_findings.append(
-            {
-                "finding_type": finding_type,
-                "package": finding.get("package"),
-                "file": finding.get("file"),
-                "line": finding.get("line"),
-                "column": finding.get("column"),
-                "severity": severity,
-                "clauses": _CLAUSE_MAP.get(finding_type, []),
-                "rationale": _RATIONALES.get(finding_type, ""),
-            }
-        )
-    return {
-        "generator": "impactprism-evidence",
-        "version": "0.1.0",
-        "timestamp": _utc_timestamp(),
-        "source_report": "findings.json",
+    report = {
+        "schema_version": 1,
+        "generator": "impactprism-action",
         "repo": str(repo_path),
         "commit_sha": commit_sha,
         "package_name": package_name,
         "package_version": package_version,
-        "clause_map": _CLAUSE_MAP,
-        "findings": evidence_findings,
-        "summary": {
-            "total_findings": len(findings),
-            "by_severity": by_severity,
-            "clean": not findings,
-        },
-        "cra_references": cra_references,
+        "findings": findings,
     }
+    evidence = evidence_module.build_evidence(
+        report,
+        source_path="findings.json",
+        source_report_sha256=source_report_sha256,
+    )
+    evidence["repo"] = str(repo_path)
+    evidence["commit_sha"] = commit_sha
+    return evidence
 
 
 def _evidence_markdown(evidence):
+    if "schema_version" in evidence and "legal_source" in evidence:
+        _ensure_import_paths()
+        import impactprism.evidence as evidence_module
+
+        return evidence_module.render_evidence_markdown(evidence)
     lines = [
         "# ImpactPrism Evidence Pack",
         "",
@@ -743,8 +570,7 @@ def main(argv=None) -> int:
     bom_validated = True
     if error_kind == "none" and resolved_ecosystem is not None:
         try:
-            components, metadata = _build_bom(repo_path, resolved_ecosystem)
-            bom, bom_validated = _build_cyclonedx(components, metadata)
+            bom = _build_sbom(repo_path, resolved_ecosystem)
             bom_path = output_dir / "bom.json"
             _write_json(bom_path, bom)
             bom_path_str = str(bom_path.resolve())
@@ -756,6 +582,7 @@ def main(argv=None) -> int:
     _write_json(
         findings_path,
         {
+            "schema_version": 1,
             "generator": "impactprism-action",
             "version": "0.1.0",
             "timestamp": _utc_timestamp(),
@@ -781,7 +608,15 @@ def main(argv=None) -> int:
     )
 
     package_name, package_version = _package_identity(repo_path, resolved_ecosystem)
-    evidence = _build_evidence(repo_path, findings, package_name, package_version, commit_sha)
+    source_report_sha256 = hashlib.sha256(findings_path.read_bytes()).hexdigest()
+    evidence = _build_evidence(
+        repo_path,
+        findings,
+        package_name,
+        package_version,
+        commit_sha,
+        source_report_sha256=source_report_sha256,
+    )
     evidence_path = output_dir / "evidence.json"
     _write_json(evidence_path, evidence)
     (output_dir / "evidence.md").write_text(_evidence_markdown(evidence), encoding="utf-8")

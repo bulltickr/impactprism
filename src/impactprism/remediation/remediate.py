@@ -13,6 +13,33 @@ from .verify import verify_remediation
 
 __all__ = ["remediate"]
 
+_ROLLBACK_LOCKFILES = (
+    "package-lock.json",
+    "npm-shrinkwrap.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "go.sum",
+)
+
+
+def _capture_mutation_state(repo_dir: str, manifest_path: Path) -> dict[Path, bytes | None]:
+    repo = Path(repo_dir).resolve()
+    paths = {manifest_path.resolve()}
+    paths.update(repo / name for name in _ROLLBACK_LOCKFILES)
+    return {path: path.read_bytes() if path.is_file() else None for path in paths}
+
+
+def _restore_mutation_state(state: dict[Path, bytes | None]) -> None:
+    for path, content in state.items():
+        if content is None:
+            try:
+                path.unlink()
+            except FileNotFoundError:
+                pass
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+
 
 def _detect_ecosystem(repo_dir: str) -> str:
     repo = Path(repo_dir)
@@ -42,7 +69,7 @@ def remediate(
     ecosystem: str = "auto",
     update_lockfile: bool = True,
     verify: bool = True,
-    dry_run: bool = False,
+    dry_run: bool = True,
     commit_sha: str | None = None,
     offline: bool = False,
     registry: str | None = None,
@@ -71,25 +98,28 @@ def remediate(
     if manifest_patch is None:
         raise RemediationError("finding is not remediable by manifest patch")
 
-    if not dry_run:
-        try:
-            patcher.apply_manifest_patch(repo_dir, manifest_patch)
-        except Exception as exc:
-            raise RemediationError(f"failed to apply manifest patch: {exc}") from exc
+    if ecosystem == "python" and not dry_run:
+        raise RemediationError(
+            "Python remediation apply is not supported yet; use the proposed plan "
+            "and apply a reviewed requirements/lockfile change manually."
+        )
 
-    lockfile_plan = None
-    if update_lockfile:
-        try:
+    rollback_state = (
+        _capture_mutation_state(repo_dir, Path(manifest_patch.path))
+        if not dry_run
+        else {}
+    )
+    try:
+        if not dry_run:
+            patcher.apply_manifest_patch(repo_dir, manifest_patch)
+
+        lockfile_plan = None
+        if update_lockfile:
             updater = LockfileUpdater(dry_run=dry_run, offline=offline, registry=registry)
             lockfile_plan = updater.run(repo_dir, ecosystem, patch=manifest_patch)
-        except RemediationError:
-            raise
-        except Exception as exc:
-            raise RemediationError(f"failed to update lockfile: {exc}") from exc
 
-    verification = None
-    if verify:
-        try:
+        verification = None
+        if verify:
             verification = verify_remediation(
                 repo_dir,
                 finding,
@@ -97,15 +127,21 @@ def remediate(
                 scan_before=scan_before,
                 commit_sha=commit_sha,
             )
-        except Exception as exc:
-            raise RemediationError(f"failed to verify remediation: {exc}") from exc
+    except RemediationError:
+        if not dry_run:
+            _restore_mutation_state(rollback_state)
+        raise
+    except Exception as exc:
+        if not dry_run:
+            _restore_mutation_state(rollback_state)
+        raise RemediationError(f"failed to apply and verify remediation: {exc}") from exc
 
     base_plan = RemediationPlan(
         finding=finding,
         manifest_patch=manifest_patch,
         lockfile_plan=lockfile_plan,
         verification=verification,
-        proposed_only=True,
+        proposed_only=dry_run,
     )
 
     try:
@@ -123,5 +159,5 @@ def remediate(
         verification=verification,
         pr_description=pr_description,
         pr_proposal=pr_proposal,
-        proposed_only=True,
+        proposed_only=dry_run,
     )

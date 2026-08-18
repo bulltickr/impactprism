@@ -149,7 +149,7 @@ ImpactPrism is not a vulnerability scanner. Trivy and Dependency-Check tell you 
 
 | Command | 0 | 1 | 2 |
 |---------|---|---|---|
-| `scan` / `analyze` | Clean — no drift, undeclared or scope findings | Findings present | Error (bad path, missing manifest/lockfile, scanner error) |
+| `scan` / `analyze` | Clean — no supported findings or scanner diagnostics | Any supported finding is present | Error (bad path, unsupported input, or scanner error) |
 | `evidence` / `clauses` | Success | — | Error (missing/invalid input, invalid clause map) |
 
 ## CLI reference
@@ -186,6 +186,7 @@ CI runs on every push and pull request on a Python 3.10 / 3.11 / 3.12 matrix: `p
 ## License, security, contributing, feedback
 
 - **License** — [MIT](LICENSE), Copyright (c) 2026 ImpactPrism contributors.
-- **Security** — report vulnerabilities privately via the [GitHub issues](https://github.com/bulltickr/impactprism/issues) tracker; the scanner itself is offline and never sends source code anywhere.
-- **Contributing** — issues and pull requests welcome; run the full test suite before opening a PR.
+- **Security** — see [SECURITY.md](SECURITY.md); the scanner itself is offline and never sends source code anywhere.
+- **Contributing** — see [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); run the full test suite before opening a PR.
+- **Threat model** — see [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) for assets, controls, and explicit limits.
 - **Feedback** — found a dependency your SBOM tool can't see? [Open an issue](https://github.com/bulltickr/impactprism/issues) or join the discussion. ImpactPrism is free and MIT — stars, issues and PRs are the funnel.

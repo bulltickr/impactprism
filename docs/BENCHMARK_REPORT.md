@@ -23,14 +23,14 @@ The required inputs and runner were not available:
 
 | Required item | Expected location or requirement | Observed result |
 |---|---|---|
-| Frozen 20-repository manifest | `benchmarks/g2/manifest.yaml` | Missing; no `benchmarks\` directory exists in this product checkout |
+| Frozen 20-repository manifest | `benchmarks/g2/manifest.yaml` | Missing; the benchmark directory and preflight validator exist, but no frozen repository input set is present |
 | Pinned repository identities | 20 canonical URLs, lowercase 40-character commit SHAs, license evidence | Missing because the manifest is missing |
 | Ground truth | `benchmarks/g2/ground-truth/<repository-id>.json` | Missing; no label files are present |
 | Two independent labeler sets | Blinded labeler A and B files | Missing |
 | Adjudication | Frozen disagreement decisions and sign-off | Missing |
 | Frozen dependency lock | `benchmarks/g2/requirements-lock.txt` | Missing |
 | Recorded benchmark environment | `benchmarks/g2/environment.json` | Missing |
-| Canonical G2 runner/harness | Runner capable of clone, detached-SHA verification, scan, normalization, and scoring | Missing |
+| Canonical G2 runner/harness | Runner capable of clone, detached-SHA verification, scan, normalization, and scoring | Partial; `benchmarks/g2/validate.py` validates the required package but does not provide the missing repository input set |
 | Result bundle | Raw outputs, hashes, normalized predictions, metric inputs/outputs | Missing |
 
 The OPS venv required by the workspace instructions was checked and is usable:

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .sbom.cyclonedx_builder import build_cyclonedx_sbom
 from .imports import scan_imports as _ast_scan_imports
+from .go_manifest import parse_go_manifest
 from .manifest import LockfileParseError, parse_lockfile, parse_python_manifest
 from .python_imports import scan_imports as _python_scan_imports
 from .python_manifest import canonical_name, is_python_repo
@@ -174,6 +175,8 @@ def _normalized_components(package_json, lockfile):
 
 def generate_sbom(repo_dir: str) -> dict:
     repo_path = Path(repo_dir).resolve()
+    if (repo_path / "go.mod").is_file() and not (repo_path / "package.json").is_file():
+        return _generate_go_sbom(repo_path)
     if not (repo_path / "package.json").is_file() and is_python_repo(repo_path):
         return _generate_python_sbom(repo_path)
     package_json = _load_json(repo_path / "package.json")
@@ -195,6 +198,39 @@ def generate_sbom(repo_dir: str) -> dict:
     metadata = {
         "name": _package_name(package_json),
         "version": _package_version(package_json),
+        "tool_name": "impactprism-cyclonedx",
+        "tool_version": "0.1.0",
+        "timestamp": _utc_timestamp(),
+    }
+    return build_cyclonedx_sbom(components, metadata=metadata)
+
+
+def _generate_go_sbom(repo_path: Path) -> dict:
+    """Generate the canonical Go SBOM from the normalized Go manifest model."""
+
+    manifest = parse_go_manifest(repo_path)
+    components = []
+    for dependency in manifest.dependencies:
+        module = dependency.replacement or dependency.module
+        version = dependency.version or "0.0.0"
+        if dependency.replacement and not dependency.replacement_local:
+            replacement_parts = dependency.replacement.rsplit(" ", 1)
+            if len(replacement_parts) == 2 and replacement_parts[1].startswith("v"):
+                module, version = replacement_parts
+        components.append(
+            {
+                "name": module,
+                "version": version,
+                "purl": "pkg:golang/" + module + "@" + version,
+                "scope": "required",
+                "direct": dependency.direct,
+                "transitive": not dependency.direct,
+                "ecosystem": "go",
+            }
+        )
+    metadata = {
+        "name": manifest.module_path or "unknown",
+        "version": "0.0.0",
         "tool_name": "impactprism-cyclonedx",
         "tool_version": "0.1.0",
         "timestamp": _utc_timestamp(),

@@ -1,0 +1,34 @@
+name: Bug report
+description: Report incorrect, incomplete, or unstable scanner behavior
+title: "bug: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please remove secrets and proprietary source code before submitting.
+  - type: input
+    id: version
+    attributes:
+      label: ImpactPrism version or commit
+    validations:
+      required: true
+  - type: input
+    id: ecosystem
+    attributes:
+      label: Ecosystem and package manager
+      placeholder: npm + pnpm, Go + vendor, Python + Poetry
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include a minimal sanitized fixture or reproducible command.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true

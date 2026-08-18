@@ -119,6 +119,7 @@ def analyze_repo(
     repo_dir: str,
     ecosystem: str = "auto",
     commit_sha: str | None = None,
+    exclude: set[str] | None = None,
 ) -> DriftReport:
     """Classify dependency drift for a whole repository.
 
@@ -146,7 +147,7 @@ def analyze_repo(
                 [_finding_for_manifest_parse_error(repo_dir, "npm", exc, commit_sha=commit_sha)]
             )
         try:
-            imported = imports.scan_imports(repo_dir)
+            imported = imports.scan_imports(repo_dir, exclude=exclude)
         except Exception:
             imported = {}
         findings = _classify_npm_manifests(
@@ -154,7 +155,7 @@ def analyze_repo(
         )
     elif ecosystem == "go":
         try:
-            graph = go_imports.build_import_graph(repo_dir)
+            graph = go_imports.build_import_graph(repo_dir, exclude=exclude)
         except Exception as exc:
             return DriftReport(
                 [_finding_for_manifest_parse_error(repo_dir, "go", exc, commit_sha=commit_sha)]
@@ -177,7 +178,7 @@ def analyze_repo(
                 [_finding_for_manifest_parse_error(repo_dir, "python", exc, commit_sha=commit_sha)]
             )
         try:
-            imported = python_imports.scan_imports(repo_dir)
+            imported = python_imports.scan_imports(repo_dir, exclude=exclude)
         except Exception:
             imported = {}
         try:

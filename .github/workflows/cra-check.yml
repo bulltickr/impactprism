@@ -31,6 +31,10 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install trusted scanner
+        working-directory: scanner
+        run: python -m pip install -e .
+
       - name: Run analyzer from trusted scanner
         id: analyze
         working-directory: scanner

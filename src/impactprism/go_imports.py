@@ -222,6 +222,7 @@ def _parse_import_spec(tokens: list, index: int):
 def scan_go_imports(
     repo_dir,
     *,
+    exclude=None,
     max_file_bytes=None,
     max_total_bytes=None,
     max_files=None,
@@ -244,6 +245,7 @@ def scan_go_imports(
     repo = Path(repo_dir)
     if not repo.is_dir():
         return result
+    exclude = set(exclude or [])
     if max_file_bytes is None:
         max_file_bytes = budgets.MAX_FILE_BYTES
     if max_total_bytes is None:
@@ -277,7 +279,7 @@ def scan_go_imports(
                 is_dir = False
             name = entry.name
             if is_dir:
-                if name == "vendor" or name.startswith("."):
+                if name == "vendor" or name.startswith(".") or name in exclude:
                     continue
                 stack.append((Path(entry.path), depth + 1))
                 continue
@@ -308,7 +310,7 @@ def _is_main_module_import(manifest, import_path: str) -> bool:
     return import_path == main_module or import_path.startswith(main_module + "/")
 
 
-def build_import_graph(repo_dir, manifest=None) -> GoImportGraph:
+def build_import_graph(repo_dir, manifest=None, *, exclude=None) -> GoImportGraph:
     """Build the package import graph and module-usage classification.
 
     If ``manifest`` is omitted the repo manifest is loaded via
@@ -318,7 +320,7 @@ def build_import_graph(repo_dir, manifest=None) -> GoImportGraph:
     repo = Path(repo_dir)
     if manifest is None:
         manifest = go_mod.parse_go_manifest(repo)
-    sources = scan_go_imports(repo)
+    sources = scan_go_imports(repo, exclude=exclude)
 
     module_usage = {}
     for entry in getattr(manifest, "modules", []):

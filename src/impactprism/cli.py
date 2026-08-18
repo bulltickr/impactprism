@@ -13,6 +13,7 @@ from .drift import FindingType, analyze_repo
 from .evidence import main as evidence_main
 from .cra_clauses import main as cra_clauses_main
 from .python_manifest import is_python_repo
+from .reporting import build_scan_report, scan_exit_code
 from .remediation.models import RemediationError
 from .remediation.remediate import remediate
 
@@ -62,9 +63,11 @@ def _bucket_packages(findings, finding_type):
     )
 
 
-def _classifier_report(repo_path):
+def _classifier_report(repo_path, excludes=None):
     try:
-        drift_report = analyze_repo(str(repo_path), ecosystem="auto")
+        drift_report = analyze_repo(
+            str(repo_path), ecosystem="auto", exclude=set(excludes or [])
+        )
     except Exception as error:
         print("error: " + str(error), file=sys.stderr)
         return None
@@ -80,8 +83,8 @@ def _classifier_report(repo_path):
     return drift_report
 
 
-def _go_report(repo_path, classifier):
-    graph = go_imports.build_import_graph(repo_path)
+def _go_report(repo_path, classifier, sbom=None, excludes=None):
+    graph = go_imports.build_import_graph(repo_path, exclude=set(excludes or []))
     main_module = getattr(graph.manifest, "main_module", None)
     declared = sorted(
         {
@@ -98,38 +101,83 @@ def _go_report(repo_path, classifier):
             if getattr(usage, "used", False)
         }
     )
-    findings = list(classifier.findings)
-    undeclared = sorted(
-        set(_bucket_packages(findings, FindingType.UNDECLARED_DIRECT_USE))
-        | set(
-            _bucket_packages(
-                findings, FindingType.DIRECT_DEPENDENCY_USED_TRANSITIVELY
-            )
-        )
+    return build_scan_report(
+        repo=str(repo_path),
+        ecosystem="go",
+        findings=classifier.as_dicts(),
+        package_name=main_module or "unknown",
+        package_version="0.0.0",
+        declared=declared,
+        imported=imported,
+        sbom=sbom,
     )
-    return {
-        "repo": str(repo_path),
-        "package_name": main_module or "unknown",
-        "package_version": "0.0.0",
-        "declared": declared,
-        "imported": imported,
-        "drift": _bucket_packages(findings, FindingType.DECLARED_UNUSED_CANDIDATE),
-        "undeclared": undeclared,
-        "scope-mismatch": _bucket_packages(findings, FindingType.SCOPE_MISMATCH),
-        "ecosystem": "go",
-        "sbom": None,
-    }
 
 
 def _run_analyze(args):
-    delegated = [args.repo_dir]
-    if args.sbom is not None:
-        delegated.extend(["--sbom", args.sbom])
-    if args.report is not None:
-        delegated.extend(["--report", args.report])
-    if args.json:
-        delegated.append("--json")
-    return analysis_main(delegated)
+    repo_path = Path(args.repo_dir).resolve()
+    if not repo_path.is_dir():
+        print("error: repository directory not found: " + str(repo_path), file=sys.stderr)
+        return 2
+    ecosystem = _detect_ecosystem(repo_path)
+    if ecosystem is None:
+        print("error: no supported ecosystem manifest found in " + str(repo_path), file=sys.stderr)
+        return 2
+
+    excludes = set(args.exclude or [])
+    temp_report = None
+    try:
+        legacy_report = {}
+        if ecosystem in ("npm", "python"):
+            fd, temp_report = tempfile.mkstemp(suffix=".json")
+            os.close(fd)
+            delegated = [args.repo_dir, "--report", temp_report]
+            for name in sorted(excludes):
+                delegated.extend(["--exclude", name])
+            with contextlib.redirect_stdout(io.StringIO()):
+                analysis_rc = analysis_main(delegated)
+            if analysis_rc == 2:
+                return 2
+            legacy_report = _load_json(temp_report)
+
+        classifier = _classifier_report(repo_path, excludes)
+        if classifier is None:
+            return 2
+        sbom = generate_sbom(str(repo_path))
+        if ecosystem == "go":
+            report = _go_report(repo_path, classifier, sbom=sbom, excludes=excludes)
+        else:
+            report = build_scan_report(
+                repo=str(repo_path),
+                ecosystem=ecosystem,
+                findings=classifier.as_dicts(),
+                package_name=legacy_report.get("package_name", "unknown"),
+                package_version=legacy_report.get("package_version", "0.0.0"),
+                declared=legacy_report.get("declared", []),
+                imported=legacy_report.get("imported", []),
+                sbom=sbom,
+            )
+
+        if args.report is not None:
+            _write_json(args.report, report)
+        if args.sbom is not None:
+            _write_json(args.sbom, sbom)
+        if args.json:
+            json.dump(report, sys.stdout, indent=2)
+            print()
+        else:
+            print("Repository: " + report["repo"])
+            print("Package: " + report["package_name"] + "@" + report["package_version"])
+            print("Findings: " + str(report["counts"]["total"]))
+        return scan_exit_code(report)
+    except Exception as error:
+        print("error: " + str(error), file=sys.stderr)
+        return 2
+    finally:
+        if temp_report is not None:
+            try:
+                os.remove(temp_report)
+            except OSError:
+                pass
 
 
 def _run_evidence(args):
@@ -234,21 +282,30 @@ def _run_scan(args):
             if analysis_rc == 2:
                 return 2
             report = _load_json(report_path)
-            classifier = _classifier_report(repo_path)
+            classifier = _classifier_report(repo_path, excludes)
             if classifier is None:
                 return 2
-            report["scope-mismatch"] = _bucket_packages(
-                classifier.findings, FindingType.SCOPE_MISMATCH
+            sbom = generate_sbom(str(repo_path))
+            report = build_scan_report(
+                repo=str(repo_path),
+                ecosystem=ecosystem,
+                findings=classifier.as_dicts(),
+                package_name=report.get("package_name", "unknown"),
+                package_version=report.get("package_version", "0.0.0"),
+                declared=report.get("declared", []),
+                imported=report.get("imported", []),
+                sbom=sbom,
             )
-            report["ecosystem"] = ecosystem
-            report["sbom"] = generate_sbom(str(repo_path))
+            if args.sbom is not None:
+                _write_json(args.sbom, sbom)
         else:
-            classifier = _classifier_report(repo_path)
+            classifier = _classifier_report(repo_path, excludes)
             if classifier is None:
                 return 2
-            report = _go_report(repo_path, classifier)
+            sbom = generate_sbom(str(repo_path))
+            report = _go_report(repo_path, classifier, sbom=sbom, excludes=excludes)
             if args.sbom is not None:
-                _write_json(args.sbom, None)
+                _write_json(args.sbom, sbom)
 
         _write_json(report_path, report)
 
@@ -262,9 +319,7 @@ def _run_scan(args):
             json.dump(report, sys.stdout, indent=2)
             print()
 
-        if report["drift"] or report["undeclared"] or report["scope-mismatch"]:
-            return 1
-        return 0
+        return scan_exit_code(report)
     except Exception as error:
         print("error: " + str(error), file=sys.stderr)
         return 2
@@ -282,6 +337,7 @@ def main(argv=None) -> int:
 
     analyze = subparsers.add_parser("analyze", help="analyze a repository")
     analyze.add_argument("repo_dir")
+    analyze.add_argument("--exclude", action="append", metavar="PAT", default=None)
     analyze.add_argument("--sbom", metavar="PATH")
     analyze.add_argument("--report", metavar="PATH")
     analyze.add_argument("--json", action="store_true")
