@@ -23,8 +23,10 @@ python benchmarks/compatibility/run.py \
 `prepare.py` is the explicit network boundary and only performs Git checkout
 of the pinned public commits. `run.py` never fetches, installs repository
 dependencies, executes repository code, or contacts a registry. It verifies
-the detached commit, clean worktree, deterministic archive hash, required
-inputs, finding-family counts, and a normalized output digest.
+the detached commit, clean worktree, platform-stable Git tree ID, required
+inputs, finding-family counts, and a normalized output digest. The tree ID is
+used instead of hashing a tar stream so the same pinned source is verifiable
+with different Git versions and operating systems.
 
 The manifest records license identifiers and pinned license-file URLs for
 selection traceability. It does not redistribute repository source or license

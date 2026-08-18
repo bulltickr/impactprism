@@ -66,9 +66,9 @@ def _validate_manifest(document: dict[str, Any]) -> list[dict[str, Any]]:
         commit_sha = case.get("commit_sha")
         if not isinstance(commit_sha, str) or not re.fullmatch(r"[0-9a-f]{40}", commit_sha):
             raise ValueError(f"{prefix}.commit_sha must be a lowercase 40-character SHA")
-        archive_sha = case.get("source_snapshot_sha256")
-        if not isinstance(archive_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", archive_sha):
-            raise ValueError(f"{prefix}.source_snapshot_sha256 must be a lowercase SHA-256")
+        tree_sha = case.get("source_tree_sha")
+        if not isinstance(tree_sha, str) or not re.fullmatch(r"[0-9a-f]{40}", tree_sha):
+            raise ValueError(f"{prefix}.source_tree_sha must be a lowercase Git tree SHA")
         ecosystem = case.get("ecosystem")
         if ecosystem not in SUPPORTED_ECOSYSTEMS:
             raise ValueError(f"{prefix}.ecosystem is unsupported: {ecosystem!r}")
@@ -170,13 +170,12 @@ def _verify_checkout(case: dict[str, Any], snapshot: Path) -> list[str]:
     if dirty:
         _diagnostic(diagnostics, "checkout is not clean")
     try:
-        archive = _git(snapshot, "archive", "--format=tar", "HEAD", text=False)
-        archive_sha = hashlib.sha256(archive).hexdigest()
+        tree_sha = str(_git(snapshot, "rev-parse", "HEAD^{tree}"))
     except (OSError, subprocess.CalledProcessError) as error:
-        _diagnostic(diagnostics, f"cannot create Git archive: {error}")
-        archive_sha = ""
-    if archive_sha != case["source_snapshot_sha256"]:
-        _diagnostic(diagnostics, "git archive hash does not match manifest")
+        _diagnostic(diagnostics, f"cannot read Git tree: {error}")
+        tree_sha = ""
+    if tree_sha != case["source_tree_sha"]:
+        _diagnostic(diagnostics, "Git tree ID does not match manifest")
 
     scan_root = (snapshot / case["scan_subpath"]).resolve()
     if not scan_root.is_dir():
