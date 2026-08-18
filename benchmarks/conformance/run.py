@@ -37,6 +37,35 @@ CASES = (
             "UNDECLARED_DIRECT_USE": 1,
         },
     },
+    {
+        "id": "python-clean-demo",
+        "path": "demo/python-clean",
+        "ecosystem": "python",
+        "expected_counts": {},
+    },
+    {
+        "id": "python-finding-fixture",
+        "path": "tests/fixtures/python_repo",
+        "ecosystem": "python",
+        "expected_counts": {
+            "DECLARED_UNUSED_CANDIDATE": 1,
+            "SCOPE_MISMATCH": 2,
+            "UNDECLARED_DIRECT_USE": 1,
+            "UNRESOLVED_IMPORT": 1,
+        },
+    },
+    {
+        "id": "go-clean-demo",
+        "path": "demo/go-clean",
+        "ecosystem": "go",
+        "expected_counts": {},
+    },
+    {
+        "id": "go-finding-fixture",
+        "path": "tests/fixtures/remediation/go_repo",
+        "ecosystem": "go",
+        "expected_counts": {"UNRESOLVED_IMPORT": 1},
+    },
 )
 
 
@@ -85,4 +114,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

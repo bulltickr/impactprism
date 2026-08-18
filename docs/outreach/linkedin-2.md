@@ -21,7 +21,7 @@ The command is:
 pipx run impactprism scan .
 ```
 
-It is offline, requires no account or API key, and supports npm and Go. The local example is [demo/](../../demo/); the sample output is [docs/samples/evidence-sample.md](../samples/evidence-sample.md).
+It is offline, requires no account or API key, and supports selected npm, Python, and Go checks. The local example is [demo/](../../demo/); the sample output is [docs/samples/evidence-sample.md](../samples/evidence-sample.md).
 
 This is an evidence aid, not a legal opinion or a claim that running one scan establishes CRA compliance. Teams still need to determine scope, applicability, review ownership, and the evidence their product and process require.
 

@@ -33,3 +33,49 @@ jobs:
         run: |
           test "$OUTCOME" = clean
           test "$EXIT_CODE" = 0
+
+  python-clean-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run local Action against clean Python fixture
+        id: impactprism
+        uses: ./action
+        with:
+          repo-path: ${{ github.workspace }}/demo/python-clean
+          ecosystem: python
+          fail-on: finding
+          artifact-name: ''
+
+      - name: Assert clean Python outcome
+        env:
+          OUTCOME: ${{ steps.impactprism.outputs.outcome }}
+          EXIT_CODE: ${{ steps.impactprism.outputs.exit-code }}
+        run: |
+          test "$OUTCOME" = clean
+          test "$EXIT_CODE" = 0
+
+  go-clean-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run local Action against clean Go fixture
+        id: impactprism
+        uses: ./action
+        with:
+          repo-path: ${{ github.workspace }}/demo/go-clean
+          ecosystem: go
+          fail-on: finding
+          artifact-name: ''
+
+      - name: Assert clean Go outcome
+        env:
+          OUTCOME: ${{ steps.impactprism.outputs.outcome }}
+          EXIT_CODE: ${{ steps.impactprism.outputs.exit-code }}
+        run: |
+          test "$OUTCOME" = clean
+          test "$EXIT_CODE" = 0

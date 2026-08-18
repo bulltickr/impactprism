@@ -139,12 +139,24 @@ def _resolve_ecosystem(repo_path, ecosystem):
             return "npm"
         if (repo_path / "go.mod").is_file():
             return "go"
+        _ensure_import_paths()
+        from impactprism.python_manifest import is_python_repo
+
+        if is_python_repo(repo_path):
+            return "python"
         return None
-    if ecosystem not in ("npm", "go"):
+    if ecosystem not in ("npm", "python", "go"):
         return None
-    marker = "package.json" if ecosystem == "npm" else "go.mod"
-    if not (repo_path / marker).is_file():
+    if ecosystem == "npm" and not (repo_path / "package.json").is_file():
         return None
+    if ecosystem == "go" and not (repo_path / "go.mod").is_file():
+        return None
+    if ecosystem == "python":
+        _ensure_import_paths()
+        from impactprism.python_manifest import is_python_repo
+
+        if not is_python_repo(repo_path):
+            return None
     return ecosystem
 
 
@@ -162,7 +174,7 @@ def _build_sbom(repo_path, ecosystem):
     _ensure_import_paths()
     from impactprism.analysis import generate_sbom
 
-    if ecosystem not in ("npm", "go"):
+    if ecosystem not in ("npm", "python", "go"):
         raise ValueError("unsupported ecosystem for bom: " + str(ecosystem))
     return generate_sbom(str(repo_path))
 
@@ -253,6 +265,11 @@ def _package_identity(repo_path, ecosystem):
 
             manifest = parse_go_manifest(str(repo_path))
             return manifest.module_path or "unknown", ""
+        if ecosystem == "python":
+            from impactprism.python_manifest import parse_python_manifest
+
+            manifest = parse_python_manifest(str(repo_path))
+            return manifest.name or "unknown", manifest.version or "unknown"
     except Exception:
         pass
     return "unknown", "unknown"

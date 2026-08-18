@@ -83,7 +83,7 @@ following, all set before the step that invokes it:
 | Name                 | Description                                                                | Required | Default                 |
 |----------------------|----------------------------------------------------------------------------|----------|-------------------------|
 | `repo-path`          | Path to the repository to scan.                                            | false    | `${{ github.workspace }}` |
-| `ecosystem`          | Ecosystem to scan. Valid values: auto\|npm\|go.                            | false    | `auto`                  |
+| `ecosystem`          | Ecosystem to scan. Valid values: auto\|npm\|python\|go.                  | false    | `auto`                  |
 | `fail-on`            | Exit policy. Valid values: never\|finding\|all.                            | false    | `finding`               |
 | `severity-threshold` | Minimum finding severity that trips the policy. Valid values: info\|low\|medium\|high\|critical. | false | `low`         |
 | `output-dir`         | Directory for generated reports, relative to the workspace.                | false    | `impactprism-reports`   |
@@ -92,8 +92,8 @@ following, all set before the step that invokes it:
 Notes on the defaults, as implemented:
 
 - `repo-path` resolves to the workspace when unset.
-- `ecosystem: auto` detects `package.json` (npm) or `go.mod` (go); if neither
-  is present the outcome is `unsupported-ecosystem`.
+- `ecosystem: auto` detects `package.json` (npm), `go.mod` (Go), or a supported
+  Python manifest; if none is present the outcome is `unsupported-ecosystem`.
 - `output-dir` is resolved relative to the workspace; a value that escapes the
   workspace (or contains a NUL byte) falls back to `impactprism-reports`.
 - `artifact-name: ''` disables the artifact upload step entirely.

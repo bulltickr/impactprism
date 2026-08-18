@@ -15,6 +15,9 @@ from action.run import (
     classify_outcome,
     exit_code,
     main,
+    _build_sbom,
+    _package_identity,
+    _resolve_ecosystem,
 )
 
 
@@ -38,6 +41,22 @@ def test_outcome_members_and_values():
 
 def test_clean_empty_findings():
     assert classify_outcome([], policy=Policy()) is Outcome.CLEAN
+
+
+def test_action_supports_python_ecosystem_and_artifacts(tmp_path):
+    repo = tmp_path / "python-app"
+    repo.mkdir()
+    (repo / "pyproject.toml").write_text(
+        '[project]\nname = "python-app"\nversion = "1.0.0"\ndependencies = ["requests==2.31.0"]\n',
+        encoding="utf-8",
+    )
+    (repo / "requirements.txt").write_text("requests==2.31.0\n", encoding="utf-8")
+    (repo / "app.py").write_text("import requests\n", encoding="utf-8")
+
+    assert _resolve_ecosystem(repo, "auto") == "python"
+    assert _resolve_ecosystem(repo, "python") == "python"
+    assert _package_identity(repo, "python") == ("python-app", "1.0.0")
+    assert _build_sbom(repo, "python")["specVersion"] == "1.6"
 
 
 def test_clean_evidence_markdown_does_not_claim_compliance():

@@ -97,7 +97,7 @@ Add ImpactPrism to your pull requests in four lines:
     fail-on: finding
 ```
 
-The composite action is fully offline (no account, no API key), produces `findings.json`, `bom.json`, `impactprism.sarif`, `evidence.json`/`evidence.md` and `summary.md`, uploads a SARIF report to code scanning, and exits per the `fail-on` policy (`never` | `finding` | `all`). The current action inputs are scoped to npm and Go; the CLI also supports selected Python checks. See [action/README.md](action/README.md) for inputs, outputs and required workflow permissions.
+The composite action is fully offline (no account, no API key), produces `findings.json`, `bom.json`, `impactprism.sarif`, `evidence.json`/`evidence.md` and `summary.md`, uploads a SARIF report to code scanning, and exits per the `fail-on` policy (`never` | `finding` | `all`). The Action and CLI support selected npm, Python, and Go checks. See [action/README.md](action/README.md) for inputs, outputs and required workflow permissions.
 
 ## Supported ecosystems
 
