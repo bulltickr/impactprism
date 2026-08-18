@@ -623,3 +623,24 @@ def test_import_outside_all_groups_flagged_undeclared(tmp_path, capsys):
     report = json.loads(captured.out)
     assert report["undeclared"] == ["lodash"]
     assert report["drift"] == []
+
+
+def test_generate_go_sbom_roots_imported_indirect_modules(tmp_path):
+    repo = tmp_path / "go-app"
+    write_file(
+        repo,
+        "go.mod",
+        "module example.com/app\n\ngo 1.21\n\nrequire example.com/dep v1.2.3 // indirect\n",
+    )
+    write_file(
+        repo,
+        "main.go",
+        'package main\n\nimport "example.com/dep/pkg"\n\nfunc main() { pkg.Run() }\n',
+    )
+
+    sbom = generate_sbom(str(repo))
+    purl = "pkg:golang/example.com/dep@v1.2.3"
+    root = next(item for item in sbom["dependencies"] if item["ref"] == "example.com/app@0.0.0")
+    assert root["dependsOn"] == [purl]
+    component = _component(sbom, "dep")
+    assert {item["value"] for item in component["properties"] if item["name"] == "impactprism:direct"} == {"false"}

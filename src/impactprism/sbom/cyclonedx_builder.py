@@ -18,6 +18,8 @@ except ImportError as exc:
         "cyclonedx-python-lib[validation] is required to build CycloneDX SBOMs"
     ) from exc
 
+from ..version import __version__
+
 
 _HASH_ALGORITHMS = {
     "SHA-1": HashAlgorithm.SHA_1,
@@ -87,7 +89,7 @@ def build_cyclonedx_sbom(
     name = metadata.get("name", "unknown")
     version = metadata.get("version", "0.0.0")
     tool_name = metadata.get("tool_name", "impactprism-cyclonedx")
-    tool_version = metadata.get("tool_version", "0.1.0")
+    tool_version = metadata.get("tool_version", __version__)
     root_ref = BomRef(f"{name}@{version}")
     root_component = Component(
         type=ComponentType.APPLICATION,
@@ -165,7 +167,7 @@ def build_cyclonedx_sbom(
         dependencies.append(
             Dependency(ref=component_ref, dependencies=child_dependencies)
         )
-        if item.get("direct") is True:
+        if item.get("direct") is True or item.get("root_dependency") is True:
             direct_refs.append(Dependency(ref=component_ref))
 
     dependencies.append(Dependency(ref=root_ref, dependencies=direct_refs))

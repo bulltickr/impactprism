@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "impactprism"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Offline dependency-integrity analysis with CycloneDX SBOM output for npm, Python, and Go"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -36,6 +36,9 @@ test = ["pytest"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "impactprism.__version__"}
 
 [tool.setuptools.package-data]
 impactprism = ["cra_clauses.yaml"]

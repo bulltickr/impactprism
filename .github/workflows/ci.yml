@@ -33,6 +33,9 @@ jobs:
       - name: Check installed dependencies
         run: python -m pip check
 
+      - name: Run local conformance fixtures
+        run: python benchmarks/conformance/run.py --json
+
       - name: Build package
         run: python -m build
 

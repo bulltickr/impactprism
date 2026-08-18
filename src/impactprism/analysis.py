@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .sbom.cyclonedx_builder import build_cyclonedx_sbom
+from .version import __version__
+from . import go_imports
 from .imports import scan_imports as _ast_scan_imports
 from .go_manifest import parse_go_manifest
 from .manifest import LockfileParseError, parse_lockfile, parse_python_manifest
@@ -199,7 +201,7 @@ def generate_sbom(repo_dir: str) -> dict:
         "name": _package_name(package_json),
         "version": _package_version(package_json),
         "tool_name": "impactprism-cyclonedx",
-        "tool_version": "0.1.0",
+        "tool_version": __version__,
         "timestamp": _utc_timestamp(),
     }
     return build_cyclonedx_sbom(components, metadata=metadata)
@@ -209,6 +211,17 @@ def _generate_go_sbom(repo_path: Path) -> dict:
     """Generate the canonical Go SBOM from the normalized Go manifest model."""
 
     manifest = parse_go_manifest(repo_path)
+    try:
+        import_graph = go_imports.build_import_graph(repo_path)
+        used_modules = {
+            module_path
+            for module_path, usage in import_graph.module_usage.items()
+            if usage.used
+        }
+    except Exception:
+        # SBOM generation remains useful when source graph extraction cannot
+        # complete; manifest directness is still preserved in that case.
+        used_modules = set()
     components = []
     for dependency in manifest.dependencies:
         module = dependency.replacement or dependency.module
@@ -225,6 +238,7 @@ def _generate_go_sbom(repo_path: Path) -> dict:
                 "scope": "required",
                 "direct": dependency.direct,
                 "transitive": not dependency.direct,
+                "root_dependency": dependency.direct or module in used_modules,
                 "ecosystem": "go",
             }
         )
@@ -232,7 +246,7 @@ def _generate_go_sbom(repo_path: Path) -> dict:
         "name": manifest.module_path or "unknown",
         "version": "0.0.0",
         "tool_name": "impactprism-cyclonedx",
-        "tool_version": "0.1.0",
+        "tool_version": __version__,
         "timestamp": _utc_timestamp(),
     }
     return build_cyclonedx_sbom(components, metadata=metadata)
@@ -267,7 +281,7 @@ def _generate_python_sbom(repo_path: Path) -> dict:
         "name": manifest.name or "unknown",
         "version": manifest.version or "0.0.0",
         "tool_name": "impactprism-cyclonedx",
-        "tool_version": "0.1.0",
+        "tool_version": __version__,
         "timestamp": _utc_timestamp(),
     }
     return build_cyclonedx_sbom(components, metadata=metadata)

@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .cra_clauses import load_cra_clauses
 from .reporting import findings_from_report
+from .version import __version__
 
 
 EVIDENCE_STATUSES = ("PASS", "FAIL", "EVIDENCE_GAP", "NOT_ASSESSED", "REVIEW_REQUIRED")
@@ -131,7 +132,7 @@ def _build_evidence(report, source_path, source_report_sha256):
         status_counts[finding["status"]] += 1
     return {
         "generator": "impactprism-evidence",
-        "version": "0.1.0",
+        "version": __version__,
         "timestamp": _utc_timestamp(),
         "schema_version": _CLAUSE_MAP_DATA["schema_version"],
         "map_version": _CLAUSE_MAP_DATA["map_version"],

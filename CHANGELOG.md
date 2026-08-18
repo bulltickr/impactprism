@@ -12,6 +12,11 @@
   failures.
 - Added clean-runner dependency installation to the reusable Action and CRA
   workflow.
+- Centralized the runtime version used by package metadata, evidence, SBOM,
+  and Action artifacts.
+- Added a repository-local conformance suite and tag-checked release workflow.
+- Preserved Go manifest indirectness while recording imported indirect modules
+  as application-root SBOM dependencies when source evidence supports it.
 
 ### Compatibility notes
 

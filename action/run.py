@@ -21,6 +21,8 @@ from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 
+from impactprism import __version__
+
 SEVERITY_ORDER = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 
 _SARIF_LEVELS = {
@@ -584,7 +586,7 @@ def main(argv=None) -> int:
         {
             "schema_version": 1,
             "generator": "impactprism-action",
-            "version": "0.1.0",
+            "version": __version__,
             "timestamp": _utc_timestamp(),
             "repo": str(repo_path),
             "commit_sha": commit_sha,

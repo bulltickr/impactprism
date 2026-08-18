@@ -38,6 +38,10 @@ behavioral contract, verification performed, and compatibility impact.
 Changes to JSON, SARIF, SBOM, evidence, or Action outputs require explicit
 fixture coverage and a note in `CHANGELOG.md`.
 
+For a tagged release, follow [docs/RELEASING.md](docs/RELEASING.md). The
+release workflow verifies metadata and builds artifacts but does not publish to
+a package registry automatically.
+
 ## Reporting security issues
 
 Please follow [SECURITY.md](SECURITY.md) rather than opening a public issue for

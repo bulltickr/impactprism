@@ -230,6 +230,29 @@ def test_dependencies_include_component_edges_and_direct_root_edges():
     assert dependencies[root_ref]["dependsOn"] == [first_purl, third_purl]
 
 
+def test_root_dependency_can_preserve_manifest_indirectness():
+    purl = "pkg:golang/example.com/indirect@v1.2.3"
+    sbom = build_cyclonedx_sbom(
+        [
+            {
+                "name": "example.com/indirect",
+                "version": "v1.2.3",
+                "purl": purl,
+                "direct": False,
+                "transitive": True,
+                "root_dependency": True,
+            }
+        ],
+        metadata={"name": "app", "version": "1.0.0"},
+    )
+
+    assert_valid_sbom(sbom)
+    root = next(item for item in sbom["dependencies"] if item["ref"] == "app@1.0.0")
+    assert root["dependsOn"] == [purl]
+    component = component_by_purl(sbom, purl)
+    assert {item["value"] for item in component["properties"] if item["name"] == "impactprism:direct"} == {"false"}
+
+
 def test_dangling_and_duplicate_dependency_refs_are_removed_in_input_order():
     root_ref = "app@1.0.0"
     first_purl = "pkg:pypi/first@1.0.0"
