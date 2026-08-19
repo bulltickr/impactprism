@@ -175,11 +175,26 @@ def _normalized_components(package_json, lockfile):
     return components
 
 
-def generate_sbom(repo_dir: str) -> dict:
+def generate_sbom(repo_dir: str, ecosystem: str | None = None) -> dict:
+    """Generate the SBOM for the requested or detected ecosystem.
+
+    An explicit ecosystem matters for repositories that intentionally contain
+    more than one manifest.  The old inference remains the default for
+    callers that do not have an explicit scan selection.
+    """
+
     repo_path = Path(repo_dir).resolve()
-    if (repo_path / "go.mod").is_file() and not (repo_path / "package.json").is_file():
+    if ecosystem == "go" or (
+        ecosystem is None
+        and (repo_path / "go.mod").is_file()
+        and not (repo_path / "package.json").is_file()
+    ):
         return _generate_go_sbom(repo_path)
-    if not (repo_path / "package.json").is_file() and is_python_repo(repo_path):
+    if ecosystem == "python" or (
+        ecosystem is None
+        and not (repo_path / "package.json").is_file()
+        and is_python_repo(repo_path)
+    ):
         return _generate_python_sbom(repo_path)
     package_json = _load_json(repo_path / "package.json")
     lockfile = None

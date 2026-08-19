@@ -18,11 +18,17 @@ repository inputs
 - `drift/classifier.py` is responsible for finding classification.
 - `reporting.py` normalizes findings and defines report categories and exit
   semantics.
+- `scan_service.py` is the provider-neutral orchestration boundary shared by
+  the CLI and GitHub Action. It resolves the selected ecosystem, collects
+  compatibility metadata, builds the canonical report, and generates the
+  explicitly selected SBOM.
 - `evidence.py` maps normalized findings to the versioned contextual clause
   map.
 - `sbom/cyclonedx_builder.py` validates CycloneDX output.
-- `cli.py` and `action/run.py` orchestrate execution; they should not invent
-  ecosystem-specific finding semantics.
+- `cli.py` and `action/run.py` are presentation adapters. The Action adds
+  SARIF, GitHub outputs, summaries, and artifact handling, but it consumes the
+  same scan-service result as the CLI rather than inventing ecosystem-specific
+  finding semantics.
 
 ## Finding contract
 

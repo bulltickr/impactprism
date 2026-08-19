@@ -31,3 +31,9 @@ Paths from the configuration file are relative to the scanned repository. CLI
 flags override configured values. Unknown sections and keys are errors rather
 than being silently ignored. `impactprism doctor .` validates the file without
 running a scan.
+
+The GitHub Action also reads `.impactprism.toml` by default. Its explicit
+`exclude`, `config-path`, `baseline-path`, and `delta-path` inputs override the
+corresponding repository settings. Action paths are resolved relative to the
+scanned repository; the generated report directory remains controlled by the
+Action's `output-dir` input.

@@ -14,6 +14,8 @@ from .drift.models import FindingType
 
 REPORT_SCHEMA_VERSION = 1
 
+SEVERITY_ORDER = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
+
 FINDING_CATEGORIES = {
     FindingType.UNDECLARED_DIRECT_USE.name: "undeclared",
     FindingType.DIRECT_DEPENDENCY_USED_TRANSITIVELY.name: "undeclared",
@@ -171,3 +173,27 @@ def scan_exit_code(report: dict, findings=None) -> int:
     if any(item.get("finding_type") == FindingType.SCANNER_ERROR.name for item in findings):
         return 2
     return 1 if findings else 0
+
+
+def policy_exit_code(
+    report: dict,
+    findings=None,
+    *,
+    fail_on: str = "finding",
+    severity_threshold: str = "low",
+) -> int:
+    """Apply the shared local finding gate without hiding scanner errors."""
+
+    findings = findings_from_report(report) if findings is None else list(findings)
+    if any(item.get("finding_type") == FindingType.SCANNER_ERROR.name for item in findings):
+        return 2
+    if fail_on == "never":
+        return 0
+    threshold = str(severity_threshold).lower()
+    if threshold not in SEVERITY_ORDER:
+        raise ValueError("severity threshold must be one of: " + ", ".join(SEVERITY_ORDER))
+    return 1 if any(
+        SEVERITY_ORDER.get(str(item.get("severity") or "info").lower(), 0)
+        >= SEVERITY_ORDER[threshold]
+        for item in findings
+    ) else 0

@@ -9,7 +9,7 @@ fixtures, and built artifacts are all part of the release boundary.
 1. Update `CHANGELOG.md` and move the intended entries out of `Unreleased`.
 2. Update `src/impactprism/version.py` to the release version. Because the
    repository already has a historical `v0.2.0` tag, the next synchronized
-   package/Action release should use `v0.3.0` or later; do not move an existing
+   package/Action release should use `v0.4.0` or later; do not move an existing
    tag.
 3. Run the local checks from the repository root:
 
@@ -17,6 +17,7 @@ fixtures, and built artifacts are all part of the release boundary.
    python scripts/ci.py verify
    python scripts/check_release.py
    python scripts/ci.py build
+   python scripts/verify_release_artifacts.py dist
    python scripts/checksums.py dist
    ```
 

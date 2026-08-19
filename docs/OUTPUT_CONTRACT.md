@@ -17,6 +17,12 @@ and versioned independently from the package release number.
 - [Doctor schema](schemas/doctor.schema.json) — output from the offline
   `doctor` command.
 
+The Action's `findings.json` validates against the scan-report schema and adds
+Action-only fields such as `outcome`, `policy`, `error`, `bom_validated`, and
+`timestamp`. This is an additive envelope for existing workflow consumers;
+the findings, buckets, counts, package metadata, and embedded SBOM come from
+the same scan service as the CLI.
+
 The schemas are also regression-tested against generated outputs. They are
 documentation and validation artifacts; the normal runtime does not require
 the `jsonschema` package.

@@ -47,6 +47,22 @@ inputs:
     description: Python executable used by offline mode.
     required: false
     default: python
+  exclude:
+    description: Newline-separated directory names to exclude in addition to repository defaults.
+    required: false
+    default: ""
+  config-path:
+    description: Optional ImpactPrism TOML configuration path; otherwise .impactprism.toml is auto-detected.
+    required: false
+    default: ""
+  baseline-path:
+    description: Optional previous canonical scan report, resolved relative to the scanned repository.
+    required: false
+    default: ""
+  delta-path:
+    description: Optional path for the baseline delta JSON, resolved relative to the scanned repository.
+    required: false
+    default: ""
 
 outputs:
   outcome:
@@ -67,6 +83,9 @@ outputs:
   exit-code:
     description: Exit code produced by the scan step.
     value: ${{ steps.run.outputs.exit-code }}
+  output-dir:
+    description: Absolute path to the directory containing the generated reports.
+    value: ${{ steps.run.outputs.output-dir }}
 
 runs:
   using: composite
@@ -116,6 +135,10 @@ runs:
         INPUT_OUTPUT_DIR: ${{ inputs.output-dir }}
         INPUT_ARTIFACT_NAME: ${{ inputs.artifact-name }}
         INPUT_INSTALL_MODE: ${{ inputs.install-mode }}
+        INPUT_EXCLUDE: ${{ inputs.exclude }}
+        INPUT_CONFIG_PATH: ${{ inputs.config-path }}
+        INPUT_BASELINE_PATH: ${{ inputs.baseline-path }}
+        INPUT_DELTA_PATH: ${{ inputs.delta-path }}
         PYTHON_COMMAND: ${{ inputs.python-command }}
         PIP_NO_INDEX: "1"
         PYTHONPATH: ${{ github.action_path }}/../src
@@ -127,6 +150,6 @@ runs:
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: ${{ inputs.artifact-name }}
-        path: ${{ github.workspace }}/${{ inputs.output-dir }}
+        path: ${{ steps.run.outputs.output-dir }}
         if-no-files-found: ignore
         retention-days: 14

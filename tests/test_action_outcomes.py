@@ -171,7 +171,7 @@ def test_scanner_error_takes_precedence_and_has_policy_exit(fail_on):
     for findings in ([], [{"severity": "critical"}]):
         outcome = classify_outcome(findings, error_kind="scanner_error", policy=policy)
         assert outcome is Outcome.SCANNER_ERROR
-        assert exit_code(outcome, policy) == (0 if fail_on == "never" else 1)
+        assert exit_code(outcome, policy) == 2
 
 
 @pytest.mark.parametrize(

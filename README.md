@@ -10,7 +10,7 @@ Install a tagged GitHub Release wheel, then scan the repository:
 
 ```bash
 python -m pip install \
-  https://github.com/bulltickr/impactprism/releases/download/v0.3.0/impactprism-0.3.0-py3-none-any.whl
+  https://github.com/bulltickr/impactprism/releases/download/v0.4.0/impactprism-0.4.0-py3-none-any.whl
 impactprism scan .
 open evidence.md            # rendered Markdown preflight report
 ```
@@ -122,7 +122,7 @@ Add ImpactPrism to your pull requests in four lines:
 
 ```yaml
 - name: ImpactPrism scan
-  uses: bulltickr/impactprism@v0.3.0
+  uses: bulltickr/impactprism@v0.4.0
   with:
     repo-path: ${{ github.workspace }}
     fail-on: finding
@@ -156,7 +156,7 @@ The repository's optional reference map is stored in [src/impactprism/cra_clause
 
 | Output | Format | Contents |
 |--------|--------|----------|
-| `findings.json` | JSON | Raw scan report produced by the GitHub Action |
+| `findings.json` | JSON | Canonical scan report plus GitHub Action outcome metadata |
 | `bom.json` | CycloneDX 1.6 | SBOM with per-component hashes, scope, and `impactprism:direct`/`transitive`/`scope` properties plus a dependency graph |
 | `impactprism.sarif` | SARIF 2.1.0 | Findings as code-scanning results with file/line locations |
 | `evidence.json` / `evidence.md` | JSON / Markdown | Review-oriented preflight with findings, statuses, rationale, and configured reference mappings |

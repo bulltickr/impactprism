@@ -2,7 +2,7 @@
 
 A reusable composite GitHub Action that runs the ImpactPrism dependency-drift
 scan on the checked-out repository and produces a CRA-grounded evidence pack:
-`findings.json` (the raw scan report), `bom.json` (a CycloneDX 1.6 SBOM),
+`findings.json` (the canonical scan report plus Action metadata), `bom.json` (a CycloneDX 1.6 SBOM),
 `impactprism.sarif` (SARIF 2.1.0 for code scanning), `evidence.json` /
 `evidence.md` (each finding annotated with its CRA clause mapping and
 rationale), and `summary.md` (the human-readable outcome summary, also
@@ -42,7 +42,7 @@ jobs:
 
       - name: ImpactPrism dependency-drift scan
         id: impactprism
-        uses: bulltickr/impactprism@v0.3.0
+        uses: bulltickr/impactprism@v0.4.0
         with:
           repo-path: ${{ github.workspace }}
           ecosystem: auto
@@ -88,6 +88,10 @@ following, all set before the step that invokes it:
 | `artifact-name`      | Upload artifact name; an empty string disables the upload.                 | false    | `impactprism-reports`   |
 | `install-mode`       | `managed` installs the local package; `offline` uses caller-provided Python dependencies and performs no package installation. | false | `managed` |
 | `python-command`     | Python executable used by `offline` mode.                                  | false    | `python`               |
+| `exclude`            | Newline-separated directory names added to the built-in exclusions.         | false    | empty                  |
+| `config-path`        | Optional TOML configuration path; otherwise `.impactprism.toml` is used.   | false    | empty                  |
+| `baseline-path`      | Previous canonical report, resolved relative to the scanned repository.     | false    | empty                  |
+| `delta-path`         | Baseline delta output path, resolved relative to the scanned repository.    | false    | empty                  |
 
 Notes on the defaults, as implemented:
 
@@ -105,6 +109,10 @@ Notes on the defaults, as implemented:
   Action verifies them with `PIP_NO_INDEX=1` before scanning.
 - In either mode, repository analysis itself does not contact a registry or
   upload source contents.
+- Configuration and explicit Action inputs follow this precedence: input value,
+  then `.impactprism.toml`, then the built-in default. The Action's generated
+  `findings.json` contains the canonical scan-report fields plus Action outcome
+  metadata for existing consumers.
 
 ## Outputs
 
@@ -116,21 +124,22 @@ Notes on the defaults, as implemented:
 | `sarif-path`    | Absolute path to impactprism.sarif.                                |
 | `evidence-path` | Absolute path to evidence.json.                                    |
 | `exit-code`     | Exit code produced by the scan step.                               |
+| `output-dir`    | Absolute path to the resolved generated-report directory.          |
 
 `bom-path` is empty when no ecosystem could be resolved or the scanner
 errored, since the SBOM is only built after a successful analysis.
 
 `exit-code` follows the `fail-on` policy: `clean` and `finding` always exit 0;
 `policy-failure` exits 1 unless `fail-on: never`; `unsupported-ecosystem`
-exits 1 only under `fail-on: all`; `scanner-error` exits 1 unless
-`fail-on: never`. With `fail-on: never` the step always exits 0.
+exits 1 only under `fail-on: all`; `scanner-error` always exits 2 because a
+scanner failure is not a finding and must not be mistaken for a clean result.
 
 ## Versioning
 
 The workflow examples in this README install the action as
-`bulltickr/impactprism@v0.3.0`. Action releases use git tags matching
+`bulltickr/impactprism@v0.4.0`. Action releases use git tags matching
 `vX.Y.Z`, so pin to a full release tag or a major tag (e.g. `@v0`) in
 consuming workflows. The existing `v0.2.0` tag is historical and remains
 unchanged. The package and generated artifacts read their runtime version from
 `src/impactprism/version.py`; the synchronized release prepared by this tree
-is `v0.3.0`, and its release tag must match that value.
+is `v0.4.0`, and its release tag must match that value.

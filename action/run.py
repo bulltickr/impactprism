@@ -90,7 +90,7 @@ def exit_code(outcome, policy):
     if outcome == Outcome.UNSUPPORTED_ECOSYSTEM:
         return 1 if policy.fail_on == "all" else 0
     if outcome == Outcome.SCANNER_ERROR:
-        return 0 if policy.fail_on == "never" else 1
+        return 2
     return 0
 
 
@@ -117,6 +117,8 @@ def _ensure_import_paths():
 
 
 def _write_json(path, value):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
 
 
@@ -128,10 +130,15 @@ def _resolve_repo_path():
 
 
 def _read_policy():
-    return Policy(
-        fail_on=_env("INPUT_FAIL_ON", "finding"),
-        severity_threshold=_env("INPUT_SEVERITY_THRESHOLD", "low"),
-    )
+    fail_on = _env("INPUT_FAIL_ON", "finding").lower()
+    threshold = _env("INPUT_SEVERITY_THRESHOLD", "low").lower()
+    if fail_on not in ("never", "finding", "all"):
+        raise ValueError("fail-on must be never, finding, or all")
+    if threshold not in SEVERITY_ORDER:
+        raise ValueError(
+            "severity-threshold must be one of: " + ", ".join(SEVERITY_ORDER)
+        )
+    return Policy(fail_on=fail_on, severity_threshold=threshold)
 
 
 def _resolve_ecosystem(repo_path, ecosystem):
@@ -161,12 +168,16 @@ def _resolve_ecosystem(repo_path, ecosystem):
     return ecosystem
 
 
-def _run_analysis(repo_path, ecosystem, commit_sha):
+def _run_analysis(repo_path, ecosystem, commit_sha, excludes=None):
     _ensure_import_paths()
-    from impactprism.drift import analyze_repo
+    from impactprism.scan_service import scan_repository
 
-    report = analyze_repo(str(repo_path), ecosystem=ecosystem, commit_sha=commit_sha)
-    return report.as_dicts()
+    return scan_repository(
+        repo_path,
+        ecosystem=ecosystem,
+        commit_sha=commit_sha,
+        excludes=excludes,
+    )
 
 
 def _build_sbom(repo_path, ecosystem):
@@ -283,18 +294,18 @@ def _build_evidence(
     package_version,
     commit_sha,
     source_report_sha256=None,
+    report=None,
 ):
     _ensure_import_paths()
     import impactprism.evidence as evidence_module
-    report = {
-        "schema_version": 1,
-        "generator": "impactprism-action",
-        "repo": str(repo_path),
-        "commit_sha": commit_sha,
-        "package_name": package_name,
-        "package_version": package_version,
-        "findings": findings,
-    }
+    report = dict(report or {})
+    report.setdefault("schema_version", 1)
+    report.setdefault("generator", "impactprism-action")
+    report.setdefault("repo", str(repo_path))
+    report.setdefault("commit_sha", commit_sha)
+    report.setdefault("package_name", package_name)
+    report.setdefault("package_version", package_version)
+    report.setdefault("findings", findings)
     evidence = evidence_module.build_evidence(
         report,
         source_path="findings.json",
@@ -365,6 +376,29 @@ def _counts(findings):
     return {"total": len(findings), "by_severity": by_severity, "by_type": by_type}
 
 
+def _diagnostic_finding(kind, message, ecosystem=None):
+    """Keep failed pre-scan runs from producing an empty PASS evidence pack."""
+
+    identity = (str(kind) + ":" + str(message)).encode("utf-8")
+    return {
+        "finding_type": "SCANNER_ERROR",
+        "finding_id": hashlib.sha256(identity).hexdigest()[:16],
+        "severity": "CRITICAL",
+        "confidence": "HIGH",
+        "ecosystem": ecosystem or "unknown",
+        "package": None,
+        "file": None,
+        "line": None,
+        "column": None,
+        "manifest": None,
+        "lockfile": None,
+        "commit_sha": None,
+        "scope": None,
+        "explanation": str(message),
+        "status": "OPEN",
+    }
+
+
 def _short_sha(commit_sha):
     if not commit_sha:
         return "none"
@@ -422,14 +456,9 @@ def _explanation(outcome, policy):
             "so the step succeeds (exit 0)."
         )
     if outcome == Outcome.SCANNER_ERROR:
-        if policy.fail_on == "never":
-            return (
-                'The scanner errored but fail-on is "never", '
-                "so the step succeeds (exit 0)."
-            )
         return (
-            'The scanner errored and fail-on is "' + policy.fail_on + '", '
-            "so the step fails (exit 1)."
+            "The scanner errored, so the step fails (exit 2) even when "
+            'fail-on is "' + policy.fail_on + '".'
         )
     return ""
 
@@ -547,8 +576,56 @@ def _resolve_output_dir(workspace):
     return candidate
 
 
+def _input_lines(name):
+    """Read a newline-separated multi-value Action input."""
+
+    raw = os.environ.get(name, "")
+    return [value.strip() for value in raw.splitlines() if value.strip()]
+
+
+def _resolve_repo_relative(repo_path, value):
+    if not value:
+        return None
+    path = Path(value)
+    return path if path.is_absolute() else (repo_path / path).resolve()
+
+
+def _load_action_config(repo_path):
+    _ensure_import_paths()
+    from impactprism.config import load_config
+
+    explicit = os.environ.get("INPUT_CONFIG_PATH") or None
+    return load_config(repo_path, explicit)
+
+
+def _clear_generated_outputs(output_dir, preserve=()):
+    """Remove only files owned by this Action before a rerun."""
+
+    preserved = {Path(path).resolve() for path in preserve if path}
+    for name in (
+        "findings.json",
+        "bom.json",
+        "impactprism.sarif",
+        "evidence.json",
+        "evidence.md",
+        "summary.md",
+        "delta.json",
+    ):
+        path = output_dir / name
+        if path.resolve() in preserved:
+            continue
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            pass
+
+
 def main(argv=None) -> int:
-    policy = _read_policy()
+    try:
+        policy = _read_policy()
+    except ValueError as error:
+        print("impactprism-action: " + str(error), file=sys.stderr)
+        return 2
     ecosystem_input = _env("INPUT_ECOSYSTEM", "auto")
     # An explicitly empty artifact name disables upload; preserve that value
     # instead of treating it as an omitted input.
@@ -563,63 +640,123 @@ def main(argv=None) -> int:
     error_message = None
     findings = []
     resolved_ecosystem = None
+    scan_result = None
+    scan_report = {}
+    delta = None
+    config = {"scan": {}}
 
     if not repo_path.is_dir():
+        _clear_generated_outputs(output_dir)
         error_kind = "scanner_error"
         error_message = "repository directory not found: " + str(repo_path)
     else:
-        resolved_ecosystem = _resolve_ecosystem(repo_path, ecosystem_input)
-        if resolved_ecosystem is None:
-            error_kind = "unsupported"
-            error_message = "unsupported or missing ecosystem"
-        else:
-            try:
-                findings = _run_analysis(repo_path, resolved_ecosystem, commit_sha)
-            except ValueError as exc:
-                if "unsupported" in str(exc).lower():
-                    error_kind = "unsupported"
-                else:
-                    error_kind = "scanner_error"
-                error_message = str(exc)
-            except Exception as exc:
-                error_kind = "scanner_error"
-                error_message = str(exc)
+        try:
+            config = _load_action_config(repo_path)
+            configured_baseline = config.get("scan", {}).get("baseline")
+            input_baseline = os.environ.get("INPUT_BASELINE_PATH")
+            preserve_baseline = _resolve_repo_relative(
+                repo_path, input_baseline or configured_baseline
+            )
+            _clear_generated_outputs(
+                output_dir, preserve=(preserve_baseline,) if preserve_baseline else ()
+            )
+            resolved_ecosystem = _resolve_ecosystem(repo_path, ecosystem_input)
+            if resolved_ecosystem is None:
+                error_kind = "unsupported"
+                error_message = "unsupported or missing ecosystem"
+            else:
+                _ensure_import_paths()
+                from impactprism.baseline import compare_reports, load_report
+                from impactprism.scan_service import DEFAULT_SCAN_EXCLUDES
 
-    outcome = classify_outcome(findings, error_kind, policy)
+                excludes = set(DEFAULT_SCAN_EXCLUDES)
+                excludes.update(config.get("scan", {}).get("exclude", []))
+                excludes.update(_input_lines("INPUT_EXCLUDE"))
+                scan_result = _run_analysis(
+                    repo_path,
+                    resolved_ecosystem,
+                    commit_sha,
+                    excludes=excludes,
+                )
+                scan_report = dict(scan_result.report)
+                findings = list(scan_result.findings)
+                if scan_result.scanner_error:
+                    error_kind = "scanner_error"
+                    error_message = scan_result.scanner_error_message
+
+                baseline_value = os.environ.get("INPUT_BASELINE_PATH") or config.get(
+                    "scan", {}
+                ).get("baseline")
+                delta_value = os.environ.get("INPUT_DELTA_PATH") or config.get(
+                    "scan", {}
+                ).get("delta")
+                if baseline_value:
+                    baseline_path = _resolve_repo_relative(repo_path, baseline_value)
+                    baseline = load_report(baseline_path)
+                    delta = compare_reports(
+                        scan_report, baseline, baseline_path=baseline_path
+                    )
+                    scan_report["delta"] = delta
+                    if delta_value:
+                        _write_json(
+                            _resolve_repo_relative(repo_path, delta_value), delta
+                        )
+        except ValueError as exc:
+            error_kind = "scanner_error"
+            error_message = str(exc)
+        except Exception as exc:
+            error_kind = "scanner_error"
+            error_message = str(exc)
+
+    gated_findings = delta["new_findings"] if delta is not None else findings
+    if error_kind != "none" and not findings:
+        findings = [_diagnostic_finding(error_kind, error_message, resolved_ecosystem)]
+        gated_findings = findings
+    outcome = classify_outcome(gated_findings, error_kind, policy)
     code = exit_code(outcome, policy)
 
     bom_path_str = ""
-    bom_validated = True
-    if error_kind == "none" and resolved_ecosystem is not None:
-        try:
-            bom = _build_sbom(repo_path, resolved_ecosystem)
-            bom_path = output_dir / "bom.json"
-            _write_json(bom_path, bom)
-            bom_path_str = str(bom_path.resolve())
-        except Exception:
-            bom_path_str = ""
+    bom_validated = False
+    if scan_result is not None and scan_result.sbom is not None and error_kind == "none":
+        bom_path = output_dir / "bom.json"
+        _write_json(bom_path, scan_result.sbom)
+        bom_path_str = str(bom_path.resolve())
+        bom_validated = True
 
     counts = _counts(findings)
     findings_path = output_dir / "findings.json"
-    _write_json(
-        findings_path,
+    findings_report = dict(scan_report)
+    findings_report.update(
         {
             "schema_version": 1,
+            "repo": str(repo_path),
+            "package_name": findings_report.get("package_name", "unknown"),
+            "package_version": findings_report.get("package_version", "0.0.0"),
+            "ecosystem": findings_report.get("ecosystem") or resolved_ecosystem or "unknown",
+            "declared": findings_report.get("declared", []),
+            "imported": findings_report.get("imported", []),
             "generator": "impactprism-action",
             "version": __version__,
             "timestamp": _utc_timestamp(),
-            "repo": str(repo_path),
             "commit_sha": commit_sha,
-            "ecosystem": resolved_ecosystem,
             "outcome": outcome.value,
-            "policy": {"fail_on": policy.fail_on, "severity_threshold": policy.severity_threshold},
+            "policy": {
+                "fail_on": policy.fail_on,
+                "severity_threshold": policy.severity_threshold,
+            },
             "counts": counts,
             "findings": findings,
             "error": (
-                None if error_kind == "none" else {"kind": error_kind, "message": error_message or ""}
+                None
+                if error_kind == "none"
+                else {"kind": error_kind, "message": error_message or ""}
             ),
             "bom_validated": bom_validated,
-        },
+        }
+    )
+    _write_json(
+        findings_path,
+        findings_report,
     )
 
     repository = os.environ.get("GITHUB_REPOSITORY") or None
@@ -629,7 +766,8 @@ def main(argv=None) -> int:
         _build_sarif(repo_path, findings, outcome.value, commit_sha, resolved_ecosystem, repository),
     )
 
-    package_name, package_version = _package_identity(repo_path, resolved_ecosystem)
+    package_name = findings_report.get("package_name", "unknown")
+    package_version = findings_report.get("package_version", "unknown")
     source_report_sha256 = hashlib.sha256(findings_path.read_bytes()).hexdigest()
     evidence = _build_evidence(
         repo_path,
@@ -638,6 +776,7 @@ def main(argv=None) -> int:
         package_version,
         commit_sha,
         source_report_sha256=source_report_sha256,
+        report=findings_report,
     )
     evidence_path = output_dir / "evidence.json"
     _write_json(evidence_path, evidence)
@@ -666,6 +805,7 @@ def main(argv=None) -> int:
             "bom-path": bom_path_str,
             "sarif-path": str(sarif_path.resolve()),
             "evidence-path": str(evidence_path.resolve()),
+            "output-dir": str(output_dir.resolve()),
             "exit-code": str(code),
         }
     )

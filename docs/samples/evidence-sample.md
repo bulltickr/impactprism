@@ -1,7 +1,7 @@
 # ImpactPrism Evidence Pack
 
 - Generator: impactprism-evidence
-- Version: 0.3.0
+- Version: 0.4.0
 - Schema version: 2
 - Map version: 1.0.0
 - Legal source: Regulation (EU) 2024/2847 - Cyber Resilience Act

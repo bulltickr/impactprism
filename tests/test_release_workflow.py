@@ -19,7 +19,9 @@ def test_release_workflow_uses_explicit_github_release_artifacts():
     assert "      id-token: write" in raw
     assert "      attestations: write" in raw
     assert "python -m build --no-isolation --sdist --wheel --outdir dist" in raw
-    assert "python scripts/checksums.py dist" in raw
+    assert "python scripts/verify_release_artifacts.py dist" in raw
+    assert "python scripts/checksums.py --strict dist" in raw
+    assert "python -m pip install --no-index --no-deps --target .release-wheel dist/*.whl" in raw
     assert 'gh release upload "$RELEASE_TAG" dist/* --clobber' in raw
     assert "actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6" in raw
     assert "subject-path: dist/*" in raw
@@ -60,6 +62,15 @@ def test_action_manifest_exposes_explicit_bootstrap_modes():
     assert "inputs.install-mode == 'offline'" in raw
     assert "PIP_NO_INDEX=1" in raw
     assert "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065" in raw
+
+
+def test_action_manifest_exposes_common_scan_controls_and_safe_upload_path():
+    raw = ACTION_MANIFEST.read_text(encoding="utf-8")
+
+    for name in ("exclude", "config-path", "baseline-path", "delta-path"):
+        assert f"  {name}:" in raw
+    assert "path: ${{ steps.run.outputs.output-dir }}" in raw
+    assert "INPUT_BASELINE_PATH: ${{ inputs.baseline-path }}" in raw
 
 
 def test_pypi_publishing_workflow_is_removed():

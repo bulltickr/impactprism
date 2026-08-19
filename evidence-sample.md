@@ -1,13 +1,13 @@
 # ImpactPrism Evidence Pack
 
 - Generator: impactprism-evidence
-- Version: 0.3.0
+- Version: 0.4.0
 - Schema version: 2
 - Map version: 1.0.0
 - Legal source: Regulation (EU) 2024/2847 - Cyber Resilience Act
 - Overall status: REVIEW_REQUIRED
 - Timestamp: 2026-08-15T20:10:44.861936Z
-- Source report: C:\Users\quint\AppData\Local\Temp\opencode\ip-refactor-report.json
+- Source report: examples/scan-report.json
 - Package: demo@1.0.0
 
 ## Findings

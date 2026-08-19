@@ -38,7 +38,7 @@ The project-supported environment was checked and is usable:
 ```text
 the project-supported Python executable
 Python 3.11.x
-impactprism 0.3.0 (editable install from this checkout)
+impactprism 0.4.0 (editable install from this checkout)
 ```
 
 That environment is not sufficient to claim methodology compliance: the frozen

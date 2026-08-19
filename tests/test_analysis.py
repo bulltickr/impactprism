@@ -141,7 +141,7 @@ def test_generate_sbom_structure(tmp_path):
     assert sbom["metadata"]["timestamp"].endswith("+00:00")
     assert sbom["metadata"]["tools"][0]["vendor"] == "impactprism"
     assert sbom["metadata"]["tools"][0]["name"] == "impactprism-cyclonedx"
-    assert sbom["metadata"]["tools"][0]["version"] == "0.3.0"
+    assert sbom["metadata"]["tools"][0]["version"] == "0.4.0"
     assert isinstance(sbom["components"], list)
     names = [c["name"] for c in sbom["components"]]
     assert [c["purl"] for c in sbom["components"]] == sorted(

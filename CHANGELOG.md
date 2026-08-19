@@ -18,6 +18,28 @@
   guidance for an external open-source project.
 - Added CodeQL analysis and Dependabot coverage for Python and GitHub Actions.
 
+## 0.4.0 - 2026-08-19
+
+### Reliability
+
+- Unified CLI and GitHub Action repository scanning through one provider-neutral
+  scan service.
+- Added canonical report fields, configuration, exclusions, and baseline/delta
+  support to the GitHub Action while preserving its existing outcome envelope.
+- Made explicit ecosystem selection reach SBOM generation for mixed-manifest
+  repositories.
+- Removed stale Action-owned artifacts before reruns and made uploaded paths use
+  the runner-resolved output directory.
+- Added CLI severity-threshold policy handling and release-artifact validation.
+- Added direct CLI/Action parity tests covering schemas, evidence digests,
+  configuration, baselines, repeated runs, and clean artifact behavior.
+
+### Release boundary
+
+- Release distributions are checked for exact wheel/sdist contents, package
+  data, version metadata, and installed-wheel smoke behavior before checksums
+  and upload.
+
 ## 0.3.0 - 2026-08-18
 
 ### Reliability
@@ -48,4 +70,4 @@
   unresolved imports, as findings for exit-code purposes.
 - Legacy category-only report JSON remains readable by the evidence command.
 - The package, CLI, SBOM, evidence, and Action artifact version is synchronized
-  at `0.3.0`; the existing historical `v0.2.0` tag is unchanged.
+  at `0.4.0`; the existing historical `v0.2.0` tag is unchanged.
