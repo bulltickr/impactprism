@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+_No unreleased changes._
+
+## 0.4.0 - 2026-08-19
+
 ### OSS operations
 
 - Established explicit GitHub Release artifacts with SHA-256 checksums.
@@ -22,8 +26,6 @@
 - Made the pull-request CRA gate use an explicit, trusted scan scope so
   intentional demo and fixture findings do not block workflow-only changes;
   evidence comments now remain available when findings fail the gate.
-
-## 0.4.0 - 2026-08-19
 
 ### Reliability
 
