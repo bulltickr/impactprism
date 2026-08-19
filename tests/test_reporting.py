@@ -10,6 +10,7 @@ from impactprism.reporting import (
     findings_from_report,
     scan_exit_code,
 )
+from impactprism.baseline import compare_reports, delta_exit_code
 
 
 def _finding(finding_type, package, severity="medium"):
@@ -76,6 +77,34 @@ def test_evidence_adapter_includes_modern_finding_types():
     }
     assert all(item["clauses"] for item in evidence)
     assert all(item["status"] == "REVIEW_REQUIRED" for item in evidence)
+
+
+def test_baseline_delta_only_gates_new_findings():
+    baseline = build_scan_report(
+        repo="repo",
+        ecosystem="npm",
+        findings=[_finding("UNDECLARED_DIRECT_USE", "lodash")],
+    )
+    current = build_scan_report(
+        repo="repo",
+        ecosystem="npm",
+        findings=[
+            _finding("UNDECLARED_DIRECT_USE", "lodash"),
+            _finding("UNRESOLVED_IMPORT", "missing", "high"),
+        ],
+    )
+    delta = compare_reports(current, baseline, baseline_path="baseline.json")
+    assert delta["counts"] == {
+        "current": 2,
+        "baseline": 1,
+        "new": 1,
+        "existing": 1,
+        "resolved": 0,
+    }
+    assert delta_exit_code(current, delta) == 1
+
+    unchanged = compare_reports(baseline, baseline)
+    assert delta_exit_code(baseline, unchanged) == 0
 
 
 def test_legacy_category_report_remains_readable():

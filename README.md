@@ -39,6 +39,19 @@ uploads repository contents.
 | `bom.json`      | CycloneDX SBOM — pass `--sbom bom.json` to write it |
 | `report.json`   | Raw scan report — pass `--report report.json` to write it |
 
+For pull-request workflows, compare against a previously accepted report:
+
+```bash
+impactprism scan . --baseline baseline.json --delta delta.json --report report.json
+impactprism diff report.json baseline.json --json
+```
+
+With `--baseline`, exit code `1` means a new finding was introduced; existing
+findings do not fail the incremental gate, and resolved findings are listed in
+the delta. Scanner errors still return exit code `2`. See
+[docs/OUTPUT_CONTRACT.md](docs/OUTPUT_CONTRACT.md) for the versioned report,
+evidence, delta, and CLI-error contracts.
+
 GitHub Releases provide the official CLI wheel, source archive, and
 `SHA256SUMS`. The project’s distribution source is GitHub, while the scanner
 itself remains an offline local tool.
@@ -176,8 +189,10 @@ finding, with exit code 2; this keeps the failure explainable to automation.
 ```
 impactprism doctor [repo] [--json]
 impactprism scan <repo> [--exclude PAT] [--sbom PATH] [--report PATH] [--evidence PATH] [--json]
+impactprism scan <repo> [--baseline PATH] [--delta PATH]
 impactprism analyze <repo_dir> [--exclude PAT] [--sbom PATH] [--report PATH] [--json]
 impactprism evidence <scan_report> [--markdown PATH] [--json PATH] [--stdout]
+impactprism diff <current_report> <baseline_report> [--json]
 impactprism clauses [path]
 ```
 
@@ -185,6 +200,7 @@ impactprism clauses [path]
 |------------|-----------|-------|
 | `doctor` | `[repo]` — repository to diagnose (default: current directory) | `--json` |
 | `scan` | `<repo>` — repository to scan | `--exclude PAT` (repeatable), `--sbom PATH`, `--report PATH`, `--evidence PATH`, `--json` |
+| `diff` | `<current_report> <baseline_report>` | `--json` |
 | `analyze` | `<repo_dir>` — repository to analyze | `--exclude PAT` (repeatable), `--sbom PATH`, `--report PATH`, `--json` |
 | `evidence` | `<scan_report>` — report JSON | `--markdown PATH` (default `evidence.md`), `--json PATH` (default `evidence.json`), `--stdout` |
 | `clauses` | `[path]` — optional clause-map YAML | — |

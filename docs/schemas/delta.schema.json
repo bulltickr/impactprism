@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bulltickr/impactprism/schemas/delta.schema.json",
+  "title": "ImpactPrism baseline delta",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generator",
+    "baseline_report",
+    "baseline_schema_version",
+    "current_schema_version",
+    "new_findings",
+    "existing_findings",
+    "resolved_findings",
+    "counts"
+  ],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "generator": {"type": "string", "const": "impactprism-baseline"},
+    "baseline_report": {"type": ["string", "null"]},
+    "baseline_schema_version": {"type": ["integer", "null"]},
+    "current_schema_version": {"type": ["integer", "null"]},
+    "new_findings": {"type": "array", "items": {"type": "object"}},
+    "existing_findings": {"type": "array", "items": {"type": "object"}},
+    "resolved_findings": {"type": "array", "items": {"type": "object"}},
+    "counts": {
+      "type": "object",
+      "required": ["current", "baseline", "new", "existing", "resolved"],
+      "properties": {
+        "current": {"type": "integer", "minimum": 0},
+        "baseline": {"type": "integer", "minimum": 0},
+        "new": {"type": "integer", "minimum": 0},
+        "existing": {"type": "integer", "minimum": 0},
+        "resolved": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

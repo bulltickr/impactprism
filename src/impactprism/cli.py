@@ -9,6 +9,7 @@ from pathlib import Path
 
 from . import go_imports
 from .analysis import generate_sbom, main as analysis_main
+from .baseline import compare_reports, delta_exit_code, load_report
 from .drift import FindingType, analyze_repo
 from .evidence import main as evidence_main
 from .doctor import main as doctor_main
@@ -284,6 +285,28 @@ def _run_remediate(args):
     return 0
 
 
+def _run_diff(args):
+    try:
+        current = load_report(args.current_report)
+        baseline = load_report(args.baseline_report)
+        delta = compare_reports(
+            current, baseline, baseline_path=args.baseline_report
+        )
+    except ValueError as error:
+        return _emit_cli_error(str(error), json_mode=args.json)
+    if args.json:
+        json.dump(delta, sys.stdout, indent=2)
+        print()
+    else:
+        counts = delta["counts"]
+        print(
+            "New: {new}; existing: {existing}; resolved: {resolved}".format(
+                **counts
+            )
+        )
+    return delta_exit_code(current, delta)
+
+
 def _run_scan(args):
     excludes = sorted(DEFAULT_SCAN_EXCLUDES | set(args.exclude or []))
     repo_path = Path(args.repo).resolve()
@@ -356,6 +379,17 @@ def _run_scan(args):
             if args.sbom is not None and sbom is not None:
                 _write_json(args.sbom, sbom)
 
+        delta = None
+        if args.baseline is not None:
+            try:
+                baseline = load_report(args.baseline)
+                delta = compare_reports(report, baseline, baseline_path=args.baseline)
+            except ValueError as error:
+                return _emit_cli_error(str(error), json_mode=args.json)
+            report["delta"] = delta
+            if args.delta is not None:
+                _write_json(args.delta, delta)
+
         _write_json(report_path, report)
 
         evidence_argv = [report_path]
@@ -371,6 +405,18 @@ def _run_scan(args):
         if scanner_error_message and not args.json:
             print("error: " + scanner_error_message, file=sys.stderr)
 
+        if delta is not None:
+            if not args.json:
+                print(
+                    "Baseline: "
+                    + str(delta["counts"]["new"])
+                    + " new, "
+                    + str(delta["counts"]["existing"])
+                    + " existing, "
+                    + str(delta["counts"]["resolved"])
+                    + " resolved"
+                )
+            return delta_exit_code(report, delta)
         return scan_exit_code(report)
     except Exception as error:
         return _emit_cli_error(str(error), json_mode=args.json, kind="scanner-error")
@@ -474,8 +520,18 @@ def main(argv=None) -> int:
     scan.add_argument("--sbom", metavar="PATH")
     scan.add_argument("--report", metavar="PATH")
     scan.add_argument("--evidence", metavar="PATH")
+    scan.add_argument("--baseline", metavar="PATH", help="compare findings with a previous scan report")
+    scan.add_argument("--delta", metavar="PATH", help="write the baseline comparison JSON")
     scan.add_argument("--json", action="store_true")
     scan.set_defaults(func=_run_scan)
+
+    diff = subparsers.add_parser(
+        "diff", help="compare two scan reports without scanning a repository"
+    )
+    diff.add_argument("current_report")
+    diff.add_argument("baseline_report")
+    diff.add_argument("--json", action="store_true")
+    diff.set_defaults(func=_run_diff)
 
     args = parser.parse_args(argv)
     return args.func(args)

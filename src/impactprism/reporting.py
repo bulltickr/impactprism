@@ -164,11 +164,10 @@ def build_scan_report(
     }
 
 
-def scan_exit_code(report: dict) -> int:
+def scan_exit_code(report: dict, findings=None) -> int:
     """Return the stable CLI exit code for a canonical report."""
 
-    findings = findings_from_report(report)
+    findings = findings_from_report(report) if findings is None else list(findings)
     if any(item.get("finding_type") == FindingType.SCANNER_ERROR.name for item in findings):
         return 2
     return 1 if findings else 0
-

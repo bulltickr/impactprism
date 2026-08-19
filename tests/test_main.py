@@ -198,6 +198,50 @@ def test_scan_undeclared_exits_one(tmp_path, monkeypatch, capsys):
     capsys.readouterr()
 
 
+def test_scan_baseline_gates_only_new_findings(tmp_path, monkeypatch, capsys):
+    baseline_repo = make_repo(
+        tmp_path,
+        "baseline-repo",
+        dependencies={"react": "18.2.0"},
+        source="const value = 1;\n",
+    )
+    baseline_path = tmp_path / "baseline.json"
+    monkeypatch.chdir(tmp_path)
+    assert main(["scan", str(baseline_repo), "--report", str(baseline_path)]) == 1
+    capsys.readouterr()
+
+    same_repo = make_repo(
+        tmp_path,
+        "same-repo",
+        dependencies={"react": "18.2.0"},
+        source="const value = 1;\n",
+    )
+    delta_path = tmp_path / "delta.json"
+    assert main(
+        [
+            "scan",
+            str(same_repo),
+            "--baseline",
+            str(baseline_path),
+            "--delta",
+            str(delta_path),
+            "--json",
+        ]
+    ) == 0
+    report = json.loads(capsys.readouterr().out)
+    delta = json.loads(delta_path.read_text(encoding="utf-8"))
+    assert report["delta"]["counts"]["new"] == 0
+    assert delta["counts"]["existing"] >= 1
+
+
+def test_diff_command_returns_new_findings(tmp_path, capsys):
+    baseline = make_report(tmp_path, undeclared=["lodash"])
+    current = make_report(tmp_path, name="current", undeclared=["lodash", "axios"])
+    assert main(["diff", str(current), str(baseline), "--json"]) == 1
+    delta = json.loads(capsys.readouterr().out)
+    assert delta["counts"]["new"] == 1
+
+
 def test_scan_exclude_skips_test_dirs(tmp_path, monkeypatch, capsys):
     repo = make_repo(
         tmp_path,
