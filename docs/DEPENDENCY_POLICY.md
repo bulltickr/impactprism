@@ -42,3 +42,8 @@ credentials. Dependabot monitors those references. A
 workflow that needs write permission must keep it at the narrowest job scope
 and explain why the write is required; the release-artifacts workflow is the
 only workflow that currently needs `contents: write`.
+
+The public composite Action and security workflow use Node24-based Action
+majors. GitHub-hosted runners satisfy this requirement; self-hosted runner
+operators should verify that their runner is new enough before adopting the
+Action in offline or private environments.

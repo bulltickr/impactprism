@@ -61,7 +61,15 @@ def test_action_manifest_exposes_explicit_bootstrap_modes():
     assert "inputs.install-mode == 'managed'" in raw
     assert "inputs.install-mode == 'offline'" in raw
     assert "PIP_NO_INDEX=1" in raw
-    assert "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065" in raw
+    assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0" in raw
+    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1" in raw
+
+
+def test_action_readme_tracks_pinned_public_examples():
+    raw = (ROOT / "action" / "README.md").read_text(encoding="utf-8")
+
+    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1" in raw
+    assert "github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4" in raw
 
 
 def test_action_manifest_exposes_common_scan_controls_and_safe_upload_path():

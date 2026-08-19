@@ -21,8 +21,8 @@ def test_workflows_do_not_contain_registry_publishing_configuration():
 def test_codeql_has_minimal_security_permissions():
     raw = (WORKFLOWS / "codeql.yml").read_text(encoding="utf-8")
 
-    assert "github/codeql-action/init@d6317709a54fd87078d323eeb0e48ec331c8e621" in raw
-    assert "github/codeql-action/analyze@d6317709a54fd87078d323eeb0e48ec331c8e621" in raw
+    assert "github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4" in raw
+    assert "github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4" in raw
     assert "languages: python" in raw
     assert "security-events: write" in raw
     assert "contents: write" not in raw
@@ -76,3 +76,10 @@ def test_action_smoke_covers_provider_neutral_and_composite_boundaries():
     assert "python scripts/ci.py action-smoke" in raw
     assert "uses: ./action" in raw
     assert "shell: pwsh" in raw
+
+
+def test_public_action_manifest_uses_current_pinned_runtime_majors():
+    raw = (ROOT / "action" / "action.yml").read_text(encoding="utf-8")
+
+    assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0" in raw
+    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1" in raw

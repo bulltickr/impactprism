@@ -17,6 +17,8 @@
 - Added installation, support, security, contributor, and maintainer-triage
   guidance for an external open-source project.
 - Added CodeQL analysis and Dependabot coverage for Python and GitHub Actions.
+- Aligned the public composite Action, CodeQL workflow, and integration examples
+  with pinned Node24-era Action majors.
 - Made the pull-request CRA gate use an explicit, trusted scan scope so
   intentional demo and fixture findings do not block workflow-only changes;
   evidence comments now remain available when findings fail the gate.

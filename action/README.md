@@ -36,7 +36,7 @@ jobs:
   impactprism:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -53,7 +53,7 @@ jobs:
       # if: always() keeps the upload running even when the gate fails.
       - name: Upload SARIF to code scanning
         if: always()
-        uses: github/codeql-action/upload-sarif@d6317709a54fd87078d323eeb0e48ec331c8e621 # v3
+        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4
         with:
           sarif_file: ${{ steps.impactprism.outputs.sarif-path }}
 
