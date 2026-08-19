@@ -13,6 +13,7 @@ from .baseline import compare_reports, delta_exit_code, load_report
 from .drift import FindingType, analyze_repo
 from .evidence import main as evidence_main
 from .doctor import main as doctor_main
+from .config import load_config, resolve_config_path
 from .cra_clauses import main as cra_clauses_main
 from .python_manifest import is_python_repo
 from .reporting import build_scan_report, scan_exit_code
@@ -36,7 +37,9 @@ DEFAULT_SCAN_EXCLUDES = {
 
 
 def _write_json(path, value):
-    with Path(path).open("w", encoding="utf-8") as handle:
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", encoding="utf-8") as handle:
         json.dump(value, handle, indent=2)
         handle.write("\n")
 
@@ -308,7 +311,6 @@ def _run_diff(args):
 
 
 def _run_scan(args):
-    excludes = sorted(DEFAULT_SCAN_EXCLUDES | set(args.exclude or []))
     repo_path = Path(args.repo).resolve()
     if not repo_path.is_dir():
         return _emit_cli_error(
@@ -322,7 +324,36 @@ def _run_scan(args):
             json_mode=args.json,
         )
 
-    report_path = args.report
+    try:
+        config = load_config(repo_path, args.config)
+    except ValueError as error:
+        return _emit_cli_error(str(error), json_mode=args.json)
+    scan_config = config.get("scan", {})
+    output_config = config.get("outputs", {})
+    policy_config = config.get("policy", {})
+    excludes = sorted(
+        DEFAULT_SCAN_EXCLUDES
+        | set(scan_config.get("exclude", []))
+        | set(args.exclude or [])
+    )
+    report_arg = args.report or output_config.get("report")
+    sbom_arg = args.sbom or output_config.get("sbom")
+    evidence_arg = args.evidence or output_config.get("evidence")
+    baseline_arg = args.baseline or scan_config.get("baseline")
+    delta_arg = args.delta or scan_config.get("delta")
+    if report_arg:
+        report_arg = resolve_config_path(repo_path, report_arg) if args.report is None else report_arg
+    if sbom_arg:
+        sbom_arg = resolve_config_path(repo_path, sbom_arg) if args.sbom is None else sbom_arg
+    if evidence_arg:
+        evidence_arg = resolve_config_path(repo_path, evidence_arg) if args.evidence is None else evidence_arg
+    if baseline_arg:
+        baseline_arg = resolve_config_path(repo_path, baseline_arg) if args.baseline is None else baseline_arg
+    if delta_arg:
+        delta_arg = resolve_config_path(repo_path, delta_arg) if args.delta is None else delta_arg
+    fail_on = args.fail_on or policy_config.get("fail_on", "finding")
+
+    report_path = report_arg
     temp_report = None
     try:
         if report_path is None:
@@ -334,8 +365,8 @@ def _run_scan(args):
             analyze_argv = [args.repo]
             for name in excludes:
                 analyze_argv.extend(["--exclude", name])
-            if args.sbom is not None:
-                analyze_argv.extend(["--sbom", args.sbom])
+            if sbom_arg is not None:
+                analyze_argv.extend(["--sbom", sbom_arg])
             analyze_argv.extend(["--report", report_path])
             with contextlib.redirect_stdout(
                 io.StringIO() if args.json else sys.stdout
@@ -359,8 +390,8 @@ def _run_scan(args):
                 imported=report.get("imported", []),
                 sbom=sbom,
             )
-            if args.sbom is not None and sbom is not None:
-                _write_json(args.sbom, sbom)
+            if sbom_arg is not None and sbom is not None:
+                _write_json(sbom_arg, sbom)
         else:
             classifier = _classifier_report(repo_path, excludes)
             scanner_error = _has_scanner_error(classifier)
@@ -376,25 +407,25 @@ def _run_scan(args):
                 report = _go_report(
                     repo_path, classifier, sbom=sbom, excludes=excludes
                 )
-            if args.sbom is not None and sbom is not None:
-                _write_json(args.sbom, sbom)
+            if sbom_arg is not None and sbom is not None:
+                _write_json(sbom_arg, sbom)
 
         delta = None
-        if args.baseline is not None:
+        if baseline_arg is not None:
             try:
-                baseline = load_report(args.baseline)
-                delta = compare_reports(report, baseline, baseline_path=args.baseline)
+                baseline = load_report(baseline_arg)
+                delta = compare_reports(report, baseline, baseline_path=baseline_arg)
             except ValueError as error:
                 return _emit_cli_error(str(error), json_mode=args.json)
             report["delta"] = delta
-            if args.delta is not None:
-                _write_json(args.delta, delta)
+            if delta_arg is not None:
+                _write_json(delta_arg, delta)
 
         _write_json(report_path, report)
 
         evidence_argv = [report_path]
-        if args.evidence is not None:
-            evidence_argv.extend(["--json", args.evidence])
+        if evidence_arg is not None:
+            evidence_argv.extend(["--json", evidence_arg])
         if evidence_main(evidence_argv) == 2:
             return 2
 
@@ -416,8 +447,10 @@ def _run_scan(args):
                     + str(delta["counts"]["resolved"])
                     + " resolved"
                 )
-            return delta_exit_code(report, delta)
-        return scan_exit_code(report)
+            code = delta_exit_code(report, delta)
+        else:
+            code = scan_exit_code(report)
+        return 0 if fail_on == "never" and code == 1 else code
     except Exception as error:
         return _emit_cli_error(str(error), json_mode=args.json, kind="scanner-error")
     finally:
@@ -522,6 +555,8 @@ def main(argv=None) -> int:
     scan.add_argument("--evidence", metavar="PATH")
     scan.add_argument("--baseline", metavar="PATH", help="compare findings with a previous scan report")
     scan.add_argument("--delta", metavar="PATH", help="write the baseline comparison JSON")
+    scan.add_argument("--config", metavar="PATH", help="configuration file (default: .impactprism.toml in the repository)")
+    scan.add_argument("--fail-on", choices=("finding", "never"), help="local exit policy; overrides configuration")
     scan.add_argument("--json", action="store_true")
     scan.set_defaults(func=_run_scan)
 

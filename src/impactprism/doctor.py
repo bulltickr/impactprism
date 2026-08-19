@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
+from .config import CONFIG_NAME, load_config
 from .python_manifest import is_python_repo
 
 
@@ -101,6 +102,14 @@ def diagnose(repo="."):
         return _build_report(repo_path, None, checks)
 
     checks.append(_check("repository", "pass", "Repository directory is readable", path=str(repo_path)))
+    config_path = repo_path / CONFIG_NAME
+    if config_path.is_file():
+        try:
+            load_config(repo_path)
+        except ValueError as error:
+            checks.append(_check("configuration", "fail", str(error), path=str(config_path)))
+        else:
+            checks.append(_check("configuration", "pass", "Configuration file is valid", path=str(config_path)))
     ecosystem = _detect_ecosystem(repo_path)
     if ecosystem is None:
         checks.append(

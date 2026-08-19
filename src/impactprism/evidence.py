@@ -180,7 +180,9 @@ def render_evidence_markdown(evidence):
 
 
 def _write_json(path, value):
-    with Path(path).open("w", encoding="utf-8") as handle:
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", encoding="utf-8") as handle:
         json.dump(value, handle, indent=2)
         handle.write("\n")
 
@@ -233,7 +235,9 @@ def _markdown(evidence):
 
 
 def _write_markdown(path, evidence):
-    Path(path).write_text(_markdown(evidence), encoding="utf-8")
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(_markdown(evidence), encoding="utf-8")
 
 
 def main(argv=None) -> int:

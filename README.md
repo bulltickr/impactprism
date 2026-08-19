@@ -30,6 +30,11 @@ impactprism doctor . --json
 repository inputs, and lockfile availability. It never contacts a registry or
 uploads repository contents.
 
+For repeatable local settings, add an optional
+[`.impactprism.toml`](docs/CONFIGURATION.md) to the repository. It can define
+additional exclusions, baseline/delta paths, output paths, and the local
+`fail_on` policy; command-line flags always take precedence.
+
 `scan` produces, in the current directory:
 
 | File            | Contents |

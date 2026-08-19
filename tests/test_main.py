@@ -234,6 +234,37 @@ def test_scan_baseline_gates_only_new_findings(tmp_path, monkeypatch, capsys):
     assert delta["counts"]["existing"] >= 1
 
 
+def test_scan_uses_strict_local_configuration(tmp_path, monkeypatch, capsys):
+    repo = make_repo(
+        tmp_path,
+        "configured",
+        dependencies={"react": "18.2.0"},
+        source="import React from 'react';\n",
+    )
+    write_file(repo, "generated/leak.js", "import missingpkg from 'missingpkg';\n")
+    write_file(
+        repo,
+        ".impactprism.toml",
+        "[scan]\nexclude = ['generated']\n"
+        "[outputs]\nreport = 'artifacts/report.json'\n"
+        "evidence = 'artifacts/evidence.json'\n"
+        "[policy]\nfail_on = 'never'\n",
+    )
+    monkeypatch.chdir(tmp_path)
+    assert main(["scan", str(repo)]) == 0
+    capsys.readouterr()
+    assert (repo / "artifacts" / "report.json").is_file()
+    assert (repo / "artifacts" / "evidence.json").is_file()
+
+
+def test_scan_rejects_unknown_configuration(tmp_path, capsys):
+    repo = make_repo(tmp_path, "bad-config", dependencies={"react": "18.2.0"}, source="import React from 'react';\n")
+    write_file(repo, ".impactprism.toml", "[unexpected]\nvalue = true\n")
+    assert main(["scan", str(repo), "--json"]) == 2
+    output = json.loads(capsys.readouterr().out)
+    assert output["error"]["kind"] == "input-error"
+
+
 def test_diff_command_returns_new_findings(tmp_path, capsys):
     baseline = make_report(tmp_path, undeclared=["lodash"])
     current = make_report(tmp_path, name="current", undeclared=["lodash", "axios"])
