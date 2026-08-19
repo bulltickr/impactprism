@@ -1,6 +1,6 @@
 # ImpactPrism G2 Benchmark Report
 
-> **INTERNAL — NON-PUBLIC — NOT A PERFORMANCE, COMPLIANCE, OR CUSTOMER CLAIM**
+> **PUBLIC — INCOMPLETE — NOT A PERFORMANCE, COMPLIANCE, OR CUSTOMER CLAIM**
 
 ## Status
 
@@ -33,11 +33,11 @@ The required inputs and runner were not available:
 | Canonical G2 runner/harness | Runner capable of clone, detached-SHA verification, scan, normalization, and scoring | Partial; `benchmarks/g2/validate.py` validates the required package but does not provide the missing repository input set |
 | Result bundle | Raw outputs, hashes, normalized predictions, metric inputs/outputs | Missing |
 
-The OPS venv required by the workspace instructions was checked and is usable:
+The project-supported environment was checked and is usable:
 
 ```text
-C:\Users\quint\Desktop\OPS\ops\.venv\Scripts\python.exe
-Python 3.11.11
+the project-supported Python executable
+Python 3.11.x
 impactprism 0.3.0 (editable install from this checkout)
 ```
 

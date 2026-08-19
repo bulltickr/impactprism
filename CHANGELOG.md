@@ -5,6 +5,15 @@
 ### OSS operations
 
 - Established explicit GitHub Release artifacts with SHA-256 checksums.
+- Published versioned scan, evidence, delta, doctor, and CLI-error schemas with
+  compatibility guidance.
+- Added offline first-run diagnostics through `impactprism doctor`.
+- Added opt-in baseline/delta scanning and a strict repository-local
+  `.impactprism.toml` configuration file.
+- Expanded governed correctness coverage with pnpm and Python optional-
+  dependency fixtures.
+- Sanitized public benchmark and sample artifacts so they contain no local
+  workstation paths or internal-only references.
 - Added installation, support, security, contributor, and maintainer-triage
   guidance for an external open-source project.
 - Added CodeQL analysis and Dependabot coverage for Python and GitHub Actions.

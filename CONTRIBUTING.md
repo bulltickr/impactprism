@@ -12,11 +12,8 @@ imports, then produces review-oriented artifacts.
 4. Run:
 
    ```text
-   python -m pytest -q
-   python benchmarks/conformance/run.py --json
-   python benchmarks/correctness/run.py --json
-   python -m build
-   python -m impactprism scan demo/clean-app
+   python scripts/ci.py verify
+   python scripts/ci.py build
    ```
 
 5. Explain parser limitations, ecosystem assumptions, and output-schema changes

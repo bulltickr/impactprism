@@ -10,8 +10,12 @@ and versioned independently from the package release number.
   `scan` and `analyze`.
 - [Evidence pack schema](schemas/evidence-pack.schema.json) — output from
   `evidence` and the evidence artifact produced by the Action.
+- [Baseline delta schema](schemas/delta.schema.json) — output from incremental
+  scans and the `diff` command.
 - [CLI error schema](schemas/cli-error.schema.json) — JSON returned for input
   and scanner errors when `--json` is requested.
+- [Doctor schema](schemas/doctor.schema.json) — output from the offline
+  `doctor` command.
 
 The schemas are also regression-tested against generated outputs. They are
 documentation and validation artifacts; the normal runtime does not require

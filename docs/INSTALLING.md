@@ -46,5 +46,8 @@ SARIF artifacts. See [action/README.md](../action/README.md).
 python -m venv .venv
 source .venv/bin/activate       # Windows: .venv\\Scripts\\Activate.ps1
 python -m pip install -e ".[test]"
-python -m pytest -q
+python scripts/ci.py verify
 ```
+
+After installation, `impactprism doctor .` checks the local runtime and
+repository inputs without network access.

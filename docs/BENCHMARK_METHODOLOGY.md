@@ -1,10 +1,10 @@
 # ImpactPrism G2 Benchmark Methodology
 
-> **INTERNAL — NON-PUBLIC — VERSION-CONTROLLED GATE SPECIFICATION**
+> **PUBLIC — INCOMPLETE — VERSION-CONTROLLED EVALUATION SPECIFICATION**
 >
-> This document is an internal engineering and release-control artifact. It is
-> not a customer claim, certification, audit opinion, marketing material, or
-> evidence that G2 has passed.
+> This document describes a planned evaluation protocol. It is not a
+> performance claim, certification, audit opinion, marketing material, or
+> evidence that the evaluation has passed.
 
 ## Status at this checkout
 
@@ -20,7 +20,7 @@ inventing repositories, commit SHAs, labels, results, or pass claims.
 
 ## Purpose and scope
 
-The CTO review requires a frozen, adjudicated benchmark of 20 real repositories
+The planned evaluation requires a frozen, adjudicated benchmark of 20 real repositories
 with at least 6 JavaScript, 7 Python, 5 Go, 5 monorepo, and 4
 dynamic/generated-code repositories. It also requires two independent labelers,
 precision and recall reported separately by finding type, undeclared-use recall
@@ -35,20 +35,11 @@ and REVIEW_REQUIRED used as appropriate.
 
 ### Reconciled source material
 
-- The internal CTO review at `C:\Users\quint\Desktop\OPS\docs\CODEX_CTO_REVIEW.md`
-  supplies the 20-repository quotas, two-labeler requirement, per-finding
-  metrics, provenance, recall/FP targets, and zero-critical-false-negative
-  expectation.
-- The internal reality check at
-  `C:\Users\quint\Desktop\OPS\docs\REALITY_CHECK.md` rejects autonomous or
-  compliance-assurance overclaims and requires a human-controlled, evidence-
-  supporting posture. This document is therefore internal, non-public, and
-  does not change product positioning or commercial claims.
-- Existing product materials (`README.md`, `action/README.md`,
-  `.ops_work/quality_review.md`, and the scanner source/tests) establish the
-  finding vocabulary, current CLI behavior, default exclusions, and known
-  dynamic-import/workspace limitations. Local demos and fixtures are not
-  substituted for the required real-repository manifest.
+- The public README, Action documentation, scanner source, and tests establish
+  the finding vocabulary, current CLI behavior, default exclusions, and known
+  dynamic-import/workspace limitations.
+- Local demos and fixtures are not substituted for the required real-repository
+  manifest.
 
 ## 1. Required 20-repository manifest
 
@@ -316,7 +307,7 @@ precision = TP / (TP + FP) * 100
 A zero denominator is N/A, never zero and never a pass. Report micro (pooled)
 and per-repository/per-finding-type counts. Because all possible non-findings
 are not enumerable, FP% here is explicitly the false-positive share of emitted
-finding instances; it is the metric paired with the CTO review's precision
+finding instances; it is the metric paired with the planned evaluation's precision
 target. If a fully enumerated negative-opportunity set exists, also report
 conventional FPR = FP / (FP + TN) * 100 and define that candidate universe.
 
@@ -330,17 +321,17 @@ UNDECLARED_DIRECT_USE false-positive share < 5.00%
 
 The thresholds are evaluated on pooled eligible gold rows across all 20
 repositories, not a hand-picked subset. Report precision and recall separately
-for every other finding type. The CTO review's precision-at-least-95% target
+for every other finding type. The planned evaluation's precision-at-least-95% target
 and zero-critical-false-negative expectation are release-readiness checks and
 must be shown; they must not be hidden by the pooled result.
 
 A G2 result is PASS only when the two numeric conditions, complete manifest,
 complete labels/adjudication, zero unresolved core evidence gaps, reproducible
 artifacts, and all sign-offs are present. Otherwise it is FAIL or INCOMPLETE.
-An absent result is not a pass. No public or customer-facing performance claim
-may be made from this internal gate.
+An absent result is not a pass. No performance claim may be made from this
+incomplete evaluation.
 
-## 7. Artifact retention and non-public handling
+## 7. Artifact retention and privacy
 
 The immutable run bundle contains at minimum:
 
@@ -354,11 +345,11 @@ The immutable run bundle contains at minimum:
 - signed review and sign-off record.
 
 Keep generated bundles for 24 months after they are superseded in an encrypted,
-access-controlled internal store. Keep the methodology, manifest, ground-truth
+access-controlled store when they contain private repository data. Keep the methodology, manifest, ground-truth
 labels, result index, and sign-off metadata in version control indefinitely
 unless an approved retention decision requires removal. Do not commit source
 snapshots, credentials, tokens, or customer code. Scrub secrets from raw logs.
-This benchmark and every result bundle are internal and non-public.
+Do not commit private repository source, credentials, tokens, or customer data.
 
 ## 8. Reruns and change control
 
@@ -389,7 +380,7 @@ dated approvals from:
 
 1. the benchmark owner, attesting that the 20-row manifest, quotas, licenses,
    pinned SHAs, environment, and artifacts are complete;
-2. the engineering/CTO owner, attesting that the exact command ran against the
+2. the maintainer, attesting that the exact command ran against the
    recorded scanner commit and that recall/FP calculations match frozen inputs;
 3. an independent reviewer/adjudicator, attesting that blinding, disagreement
    handling, unsupported-result treatment, and critical false-negative review
@@ -398,4 +389,4 @@ dated approvals from:
 Each approval records role, date, benchmark revision, manifest hash, result
 hash, and any exception. Until all three approvals exist, the only permitted
 status is INCOMPLETE, FAIL, or NOT_RUN. No result in this document authorizes
-a public claim, customer claim, compliance claim, or regulatory conclusion.
+a performance claim, compliance claim, or regulatory conclusion.

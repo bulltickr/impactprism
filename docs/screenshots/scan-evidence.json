@@ -5,7 +5,7 @@
   "schema_version": 2,
   "map_version": "1.0.0",
   "legal_source": "Regulation (EU) 2024/2847 - Cyber Resilience Act",
-  "source_report": "C:\\Users\\quint\\Desktop\\OPS\\products\\impactprism\\docs\\screenshots\\scan-report.json",
+  "source_report": "docs/screenshots/scan-report.json",
   "package_name": "impactprism-demo",
   "package_version": "1.0.0",
   "clause_map": {

@@ -1,6 +1,6 @@
 $ python main.py scan demo/npm-app --report docs/screenshots/scan-report.json --evidence 
 docs/screenshots/scan-evidence.json
-Repository: C:\Users\quint\Desktop\OPS\products\impactprism\demo\npm-app
+Repository: demo/npm-app
 Package: impactprism-demo@1.0.0
 Declared dependencies: 1
 Imported packages: 1

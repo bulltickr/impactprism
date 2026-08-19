@@ -5,8 +5,8 @@ Describe the problem and the intended behavioral contract.
 ## Verification
 
 - [ ] Focused tests added or updated
-- [ ] `python -m pytest -q`
-- [ ] `python -m build`
+- [ ] `python scripts/ci.py verify`
+- [ ] `python scripts/ci.py build`
 - [ ] Demo or fixture scan run when relevant
 
 ## Output compatibility

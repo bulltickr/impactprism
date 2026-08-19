@@ -223,7 +223,9 @@ pip install -e .[test]
 python -m pytest tests -q
 ```
 
-CI runs on every push and pull request on a Python 3.10 / 3.11 / 3.12 matrix: `pip install -e .[test]`, `python -m pytest -q`, `python -m build`, and an `impactprism scan .` exit-0 self-check.
+CI runs on every push and pull request on a Python 3.10 / 3.11 / 3.12 matrix:
+`pip install -e .[test]`, the provider-neutral verification commands, package
+build checks, and an `impactprism scan .` exit-0 self-check.
 
 The provider-neutral verification entry point is
 `python scripts/ci.py verify`; see [docs/CI_PORTABILITY.md](docs/CI_PORTABILITY.md)

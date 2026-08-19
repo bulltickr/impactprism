@@ -53,7 +53,7 @@
           "ruleId": "MISSING_LOCKFILE",
           "level": "warning",
           "message": {
-            "text": "Manifest C:\\Users\\quint\\Desktop\\OPS\\products\\impactprism\\demo\\npm-app\\package.json declares dependencies but no recognized lockfile (package-lock.json, npm-shrinkwrap.json, yarn.lock, pnpm-lock.yaml) was found, so declared and used dependencies cannot be verified for reproducibility."
+            "text": "Manifest demo/npm-app/package.json declares dependencies but no recognized lockfile (package-lock.json, npm-shrinkwrap.json, yarn.lock, pnpm-lock.yaml) was found, so declared and used dependencies cannot be verified for reproducibility."
           },
           "properties": {
             "outcome": "policy-failure",

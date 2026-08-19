@@ -102,6 +102,8 @@ def test_baseline_delta_only_gates_new_findings():
         "resolved": 0,
     }
     assert delta_exit_code(current, delta) == 1
+    schema_path = Path(__file__).parents[1] / "docs" / "schemas" / "delta.schema.json"
+    validate(delta, json.loads(schema_path.read_text(encoding="utf-8")))
 
     unchanged = compare_reports(baseline, baseline)
     assert delta_exit_code(baseline, unchanged) == 0
