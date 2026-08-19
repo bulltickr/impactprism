@@ -264,7 +264,7 @@ def test_subprocess_clauses_smoke():
 
 
 def test_subprocess_help_smoke():
-    for command in ("analyze", "evidence"):
+    for command in ("analyze", "evidence", "doctor"):
         result = subprocess.run(
             [sys.executable, os.path.join(ROOT, "main.py"), command, "--help"],
             capture_output=True,
@@ -273,6 +273,32 @@ def test_subprocess_help_smoke():
         )
         assert result.returncode == 0
         assert command in result.stdout
+
+
+def test_doctor_reports_supported_repo_and_json_contract(tmp_path, capsys):
+    from jsonschema import validate
+
+    repo = make_repo(
+        tmp_path,
+        "doctor-clean",
+        dependencies={"react": "18.2.0"},
+        source="import React from 'react';\n",
+    )
+    assert main(["doctor", str(repo), "--json"]) == 0
+    report = json.loads(capsys.readouterr().out)
+    schema_path = Path(ROOT) / "docs" / "schemas" / "doctor.schema.json"
+    validate(report, json.loads(schema_path.read_text(encoding="utf-8")))
+    assert report["ecosystem"] == "npm"
+    assert report["status"] in ("pass", "warn")
+
+
+def test_doctor_fails_for_unsupported_repository(tmp_path, capsys):
+    repo = tmp_path / "unsupported"
+    repo.mkdir()
+    assert main(["doctor", str(repo), "--json"]) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert report["status"] == "fail"
+    assert any(check["id"] == "ecosystem" for check in report["checks"])
 
 
 def test_module_entry_clauses():

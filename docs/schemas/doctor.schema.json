@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bulltickr/impactprism/schemas/doctor.schema.json",
+  "title": "ImpactPrism doctor report",
+  "type": "object",
+  "required": ["schema_version", "generator", "version", "target", "ecosystem", "status", "summary", "checks"],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "generator": {"type": "string", "const": "impactprism-doctor"},
+    "version": {"type": "string"},
+    "target": {"type": "string"},
+    "ecosystem": {"type": ["string", "null"], "enum": ["npm", "python", "go", null]},
+    "status": {"type": "string", "enum": ["pass", "warn", "fail"]},
+    "summary": {
+      "type": "object",
+      "required": ["checks", "failures", "warnings"],
+      "properties": {
+        "checks": {"type": "integer", "minimum": 0},
+        "failures": {"type": "integer", "minimum": 0},
+        "warnings": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "message"],
+        "properties": {
+          "id": {"type": "string"},
+          "status": {"type": "string", "enum": ["pass", "warn", "fail"]},
+          "message": {"type": "string"},
+          "details": {"type": "object"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

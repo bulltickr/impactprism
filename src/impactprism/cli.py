@@ -11,11 +11,13 @@ from . import go_imports
 from .analysis import generate_sbom, main as analysis_main
 from .drift import FindingType, analyze_repo
 from .evidence import main as evidence_main
+from .doctor import main as doctor_main
 from .cra_clauses import main as cra_clauses_main
 from .python_manifest import is_python_repo
 from .reporting import build_scan_report, scan_exit_code
 from .remediation.models import RemediationError
 from .remediation.remediate import remediate
+from .version import __version__
 
 
 DEFAULT_SCAN_EXCLUDES = {
@@ -218,6 +220,13 @@ def _run_evidence(args):
     return evidence_main(delegated)
 
 
+def _run_doctor(args):
+    delegated = [args.repo]
+    if args.json:
+        delegated.append("--json")
+    return doctor_main(delegated)
+
+
 def _run_clauses(args):
     return cra_clauses_main([args.path] if args.path is not None else [])
 
@@ -375,6 +384,7 @@ def _run_scan(args):
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="ImpactPrism command line interface.")
+    parser.add_argument("--version", action="version", version=__version__)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     analyze = subparsers.add_parser("analyze", help="analyze a repository")
@@ -401,6 +411,13 @@ def main(argv=None) -> int:
     )
     evidence.add_argument("--stdout", action="store_true")
     evidence.set_defaults(func=_run_evidence)
+
+    doctor = subparsers.add_parser(
+        "doctor", help="check local runtime and repository readiness"
+    )
+    doctor.add_argument("repo", nargs="?", default=".")
+    doctor.add_argument("--json", action="store_true")
+    doctor.set_defaults(func=_run_doctor)
 
     clauses = subparsers.add_parser("clauses", help="print the CRA clause map")
     clauses.add_argument("path", nargs="?", default=None)

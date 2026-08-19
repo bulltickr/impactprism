@@ -19,6 +19,17 @@ For source installation and development setup, see
 [docs/INSTALLING.md](docs/INSTALLING.md). The GitHub Action requires no local
 CLI installation.
 
+If the command fails before scanning, run the offline diagnostic first:
+
+```text
+impactprism doctor .
+impactprism doctor . --json
+```
+
+`doctor` checks the Python runtime, required local dependencies, supported
+repository inputs, and lockfile availability. It never contacts a registry or
+uploads repository contents.
+
 `scan` produces, in the current directory:
 
 | File            | Contents |
@@ -163,6 +174,7 @@ finding, with exit code 2; this keeps the failure explainable to automation.
 ## CLI reference
 
 ```
+impactprism doctor [repo] [--json]
 impactprism scan <repo> [--exclude PAT] [--sbom PATH] [--report PATH] [--evidence PATH] [--json]
 impactprism analyze <repo_dir> [--exclude PAT] [--sbom PATH] [--report PATH] [--json]
 impactprism evidence <scan_report> [--markdown PATH] [--json PATH] [--stdout]
@@ -171,6 +183,7 @@ impactprism clauses [path]
 
 | Subcommand | Arguments | Flags |
 |------------|-----------|-------|
+| `doctor` | `[repo]` — repository to diagnose (default: current directory) | `--json` |
 | `scan` | `<repo>` — repository to scan | `--exclude PAT` (repeatable), `--sbom PATH`, `--report PATH`, `--evidence PATH`, `--json` |
 | `analyze` | `<repo_dir>` — repository to analyze | `--exclude PAT` (repeatable), `--sbom PATH`, `--report PATH`, `--json` |
 | `evidence` | `<scan_report>` — report JSON | `--markdown PATH` (default `evidence.md`), `--json PATH` (default `evidence.json`), `--stdout` |
