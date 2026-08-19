@@ -1,0 +1,30 @@
+// Copy this file to Jenkinsfile when Jenkins is the CI provider.
+// This example assumes a POSIX-capable Jenkins agent.
+// Jenkins Pipeline reference: https://www.jenkins.io/doc/book/pipeline/jenkinsfile/
+
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+    }
+
+    stages {
+        stage('Verify') {
+            steps {
+                sh '''
+                    set -eu
+                    python3 -m venv .impactprism-ci-venv
+                    . .impactprism-ci-venv/bin/activate
+                    python --version
+                    python -m pip install --upgrade pip build "setuptools>=77"
+                    python -m pip install -e ".[test]"
+                    python -m pip check
+                    python scripts/ci.py verify
+                    python scripts/ci.py build
+                    python scripts/checksums.py dist --strict
+                '''
+            }
+        }
+    }
+}

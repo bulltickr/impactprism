@@ -1,0 +1,31 @@
+# Copy this file to .gitlab-ci.yml when GitLab is the CI provider.
+# GitLab CI syntax: https://docs.gitlab.com/ci/yaml/
+
+image: python:3.12
+
+stages:
+  - verify
+
+variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip/
+
+impactprism-verify:
+  stage: verify
+  script:
+    - python --version
+    - python -m pip install --upgrade pip build "setuptools>=77"
+    - python -m pip install -e ".[test]"
+    - python -m pip check
+    - python scripts/ci.py verify
+    - python scripts/ci.py build
+    - python scripts/checksums.py dist --strict
+  artifacts:
+    when: always
+    paths:
+      - dist/
+    expire_in: 1 week

@@ -1,0 +1,35 @@
+# Copy this file to azure-pipelines.yml when Azure Pipelines is the provider.
+# Python pipeline reference:
+# https://learn.microsoft.com/en-us/azure/devops/pipelines/ecosystems/python
+
+trigger:
+  - main
+
+jobs:
+  - job: impactprism_verify
+    displayName: ImpactPrism verification
+    strategy:
+      matrix:
+        Python310:
+          python.version: "3.10"
+        Python311:
+          python.version: "3.11"
+        Python312:
+          python.version: "3.12"
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+      - task: UsePythonVersion@0
+        displayName: Use Python $(python.version)
+        inputs:
+          versionSpec: "$(python.version)"
+
+      - script: |
+          python --version
+          python -m pip install --upgrade pip build "setuptools>=77"
+          python -m pip install -e ".[test]"
+          python -m pip check
+          python scripts/ci.py verify
+          python scripts/ci.py build
+          python scripts/checksums.py dist --strict
+        displayName: Verify ImpactPrism

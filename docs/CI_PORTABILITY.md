@@ -10,6 +10,7 @@ The provider-neutral verification contract is:
 python -m pip install -e ".[test]"
 python scripts/ci.py verify
 python scripts/ci.py action-smoke
+python scripts/ci.py validate-ci-examples
 python scripts/ci.py build
 python scripts/checksums.py dist
 ```
@@ -17,6 +18,11 @@ python scripts/checksums.py dist
 The same commands can run in GitLab CI, CircleCI, Azure Pipelines, Jenkins,
 a local checkout, or a self-hosted runner. They do not call the GitHub API and
 do not require a GitHub token.
+
+Copyable provider examples live in [docs/ci](ci/README.md): GitLab CI, Azure
+Pipelines, Jenkins, and POSIX/Windows self-hosted runners. They all invoke the
+same provider-neutral commands below; the provider files only allocate a
+runner, select Python, and collect optional build artifacts.
 
 For an air-gapped build, install from an approved local wheelhouse with
 `--no-index` and `--find-links`; the verification commands themselves do not
@@ -31,8 +37,14 @@ The commands are intentionally separated:
 | `python scripts/ci.py correctness` | Governed correctness fixtures |
 | `python scripts/ci.py smoke` | Clean demo CLI smoke test |
 | `python scripts/ci.py action-smoke` | Provider-neutral Action runner contract: clean, finding, scanner-error, output validation, and workspace containment |
-| `python scripts/ci.py verify` | Test, conformance, correctness, CLI smoke, and Action smoke |
+| `python scripts/ci.py validate-ci-examples` | Static validation of the checked-in GitLab, Azure, Jenkins, and self-hosted examples |
+| `python scripts/ci.py verify` | Test, conformance, correctness, CLI smoke, Action smoke, and CI-example validation |
 | `python scripts/ci.py build` | Build source and wheel distributions |
+
+The examples are templates, not hosted-provider validation. A provider's
+runner image, network policy, Python installation, package mirror, and plugin
+configuration remain external prerequisites. Validate the copied file with
+the provider's own linter before enabling it.
 
 The build command intentionally uses `--no-isolation`: the caller must make
 the declared build requirements available before invoking it. This makes the

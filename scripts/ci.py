@@ -48,12 +48,17 @@ def action_smoke() -> None:
     _run("provider-neutral Action smoke", "scripts/action_smoke.py")
 
 
+def validate_ci_examples() -> None:
+    _run("provider-neutral CI examples", "scripts/validate_ci_examples.py")
+
+
 def verify() -> None:
     test()
     conformance()
     correctness()
     smoke()
     action_smoke()
+    validate_ci_examples()
 
 
 COMMANDS = {
@@ -63,6 +68,7 @@ COMMANDS = {
     "build": build,
     "smoke": smoke,
     "action-smoke": action_smoke,
+    "validate-ci-examples": validate_ci_examples,
     "verify": verify,
 }
 
