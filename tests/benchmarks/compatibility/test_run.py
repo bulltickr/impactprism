@@ -47,3 +47,23 @@ def test_digest_is_canonical_for_normalized_rows():
     rows = [{"finding_type": "B", "line": 2}, {"finding_type": "A", "line": 1}]
 
     assert _digest(rows) == _digest(json.loads(json.dumps(rows)))
+
+
+def test_manifest_records_real_repository_identity_and_evidence_contract():
+    document = json.loads(MANIFEST.read_text(encoding="utf-8"))
+
+    for case in _validate_manifest(document):
+        assert case["url"].startswith("https://github.com/")
+        assert len(case["commit_sha"]) == 40
+        assert len(case["source_tree_sha"]) == 40
+        assert case["license_evidence_url"].endswith(case["license_path"])
+        assert case["expected_result"] in {"clean", "findings"}
+
+
+def test_public_workflow_keeps_network_and_offline_phases_explicit():
+    workflow = Path(".github/workflows/compatibility.yml").read_text(encoding="utf-8")
+
+    assert "Prepare pinned public repositories" in workflow
+    assert "Run offline compatibility corpus" in workflow
+    assert "--json" in workflow
+    assert "actions/upload-artifact@" in workflow

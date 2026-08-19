@@ -20,6 +20,7 @@ from typing import Any
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPOSITORY_ROOT / "src"))
 
+from impactprism import __version__
 from impactprism.drift import analyze_repo
 
 
@@ -226,6 +227,7 @@ def _run_case(case: dict[str, Any], snapshot_root: Path) -> dict[str, Any]:
         "id": case["id"],
         "url": case["url"],
         "commit_sha": case["commit_sha"],
+        "source_tree_sha": case["source_tree_sha"],
         "ecosystem": case["ecosystem"],
         "expected_result": case["expected_result"],
         "expected_counts": expected_counts,
@@ -244,11 +246,14 @@ def run_corpus(manifest_path: str | Path, snapshot_root: str | Path) -> dict[str
     snapshots = Path(snapshot_root).resolve()
     document = json.loads(manifest.read_text(encoding="utf-8"))
     cases = _validate_manifest(document)
+    manifest_sha256 = hashlib.sha256(manifest.read_bytes()).hexdigest()
     results = [_run_case(case, snapshots) for case in cases]
     return {
         "schema_version": 1,
         "runner": "impactprism-public-compatibility",
+        "scanner_version": __version__,
         "corpus_id": document.get("corpus_id"),
+        "manifest_sha256": manifest_sha256,
         "accuracy_claim": False,
         "network_accessed": False,
         "repository_code_executed": False,

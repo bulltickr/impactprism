@@ -20,6 +20,12 @@ python benchmarks/compatibility/run.py \
   benchmarks/compatibility/manifest.json /tmp/impactprism-compatibility --json
 ```
 
+The JSON result is the evidence artifact for a run. It includes the scanner
+version, the SHA-256 of the manifest, each pinned commit and source-tree ID,
+the expected and observed finding-family counts, and the normalized output
+digest. The manually triggered GitHub Actions workflow uploads this result as
+`impactprism-compatibility-result` for 14 days.
+
 `prepare.py` is the explicit network boundary and only performs Git checkout
 of the pinned public commits. `run.py` never fetches, installs repository
 dependencies, executes repository code, or contacts a registry. It verifies
@@ -32,3 +38,8 @@ The manifest records license identifiers and pinned license-file URLs for
 selection traceability. It does not redistribute repository source or license
 files. Changes to the corpus require a reviewed manifest and golden-digest
 update; results must not be presented as precision, recall, or broad accuracy.
+
+On Windows, prepare and run the corpus under the same user context. Git may
+reject a checkout created by another Windows identity as a dubious repository;
+that is an environment ownership issue, not a scanner result. Do not weaken
+Git's safety checks globally just to bypass it.

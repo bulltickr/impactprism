@@ -180,11 +180,14 @@ is a substitute for reviewing scanner scope, limitations, or findings.
 The CLI auto-detects supported project inputs. npm uses `package.json` and supported lockfiles; Python uses supported `pyproject.toml`, `Pipfile`, or `requirements.txt` inputs and lockfiles; Go uses `go.mod`, `go.work`, `go.sum`, and vendored module metadata. The GitHub Action can force `npm`, `python`, or `go` via its `ecosystem` input.
 
 - Python checks cover supported manifest/lockfile and import comparisons; coverage varies by packaging format and repository structure.
-
 - Manifest sources: `go.mod` (module, `require`, `replace`), `go.work` (workspace member modules and their `replace` rules), `go.sum` (checksums), and `vendor/modules.txt` for vendored builds.
 - A package-level import graph is aggregated to the module level; each module is classified by observed use (`used`/`direct`).
 - Go findings: `UNDECLARED_DIRECT_USE` (imported but not declared in `go.mod`), `DECLARED_UNUSED_CANDIDATE` (direct dependency never imported), `DIRECT_DEPENDENCY_USED_TRANSITIVELY` (imported directly but only declared indirect), `LOCKFILE_MANIFEST_MISMATCH` (declared module with no `go.sum` entry) and `UNRESOLVED_IMPORT` (import resolves to no declared module).
 - Standard-library and main-module imports are excluded from findings.
+
+The public pinned real-repository compatibility corpus has a separate
+[reproducible report](docs/COMPATIBILITY_REPORT.md). It is compatibility
+regression evidence, not a broad accuracy claim.
 
 ## Release-evidence preflight
 
