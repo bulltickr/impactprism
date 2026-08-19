@@ -189,6 +189,10 @@ The public pinned real-repository compatibility corpus has a separate
 [reproducible report](docs/COMPATIBILITY_REPORT.md). It is compatibility
 regression evidence, not a broad accuracy claim.
 
+Hard-case limits and reviewed coverage for workspaces, dynamic imports, and
+checked-in generated source are documented in
+[HARD_CASE_COVERAGE.md](docs/HARD_CASE_COVERAGE.md).
+
 ## Release-evidence preflight
 
 `impactprism evidence <scan_report.json>` (or the `--evidence` flag on `scan`) turns the scan report into a release-evidence preflight in Markdown and JSON. It records the available inputs, findings, rationale, statuses, and configured reference mappings. `REVIEW_REQUIRED` means a person must examine the finding; `NOT_ASSESSED` means the relevant question was not established by the supported checks. A clean report means no supported check produced a finding in the scanned inputs; it does not establish that evidence is complete or that a project is compliant. See [docs/samples/evidence-sample.md](docs/samples/evidence-sample.md) for a rendered example.

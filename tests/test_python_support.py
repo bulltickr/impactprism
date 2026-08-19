@@ -69,6 +69,29 @@ def test_python_import_parser_covers_static_dynamic_and_malformed():
     assert parse_imports("def broken(:\n") == []
 
 
+def test_python_import_parser_covers_importlib_imported_alias():
+    records = parse_imports(
+        "from importlib import import_module as load_module\n"
+        "load_module('runtime_pkg')\n"
+    )
+
+    assert [(record.kind, record.specifier) for record in records] == [
+        ("static", "importlib"),
+        ("dynamic", "runtime_pkg"),
+    ]
+
+
+def test_python_non_literal_dynamic_module_names_are_not_guessed():
+    records = parse_imports(
+        "from importlib import import_module\n"
+        "import_module(module_name)\n"
+    )
+
+    assert [(record.kind, record.specifier) for record in records] == [
+        ("static", "importlib")
+    ]
+
+
 def test_python_import_scan_enforces_budgets(tmp_path):
     (tmp_path / "app.py").write_text("import requests\n")
     with pytest.raises(budgets.ScannerBudgetError):

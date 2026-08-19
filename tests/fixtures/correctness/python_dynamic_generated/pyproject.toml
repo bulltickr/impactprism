@@ -1,0 +1,7 @@
+[project]
+name = "impactprism-correctness-python-dynamic-generated"
+version = "1.0.0"
+dependencies = [
+  "generated-pkg==1.0.0",
+  "runtime-pkg==1.0.0",
+]

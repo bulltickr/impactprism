@@ -1,0 +1,8 @@
+{
+  "name": "dynamic-generated-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "generated-runtime": "1.0.0",
+    "runtime-loader": "1.0.0"
+  }
+}

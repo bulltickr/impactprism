@@ -54,6 +54,13 @@ def parse_imports(source: str) -> list[ImportRecord]:
         return []
 
     records = []
+    dynamic_import_names = {"__import__"}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ImportFrom) or node.module != "importlib":
+            continue
+        for alias in node.names:
+            if alias.name == "import_module":
+                dynamic_import_names.add(alias.asname or alias.name)
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             start, end = _offsets(source, node)
@@ -68,7 +75,7 @@ def parse_imports(source: str) -> list[ImportRecord]:
                 records.append(ImportRecord("static", specifier, start, end))
         elif isinstance(node, ast.Call):
             dynamic = False
-            if isinstance(node.func, ast.Name) and node.func.id == "__import__":
+            if isinstance(node.func, ast.Name) and node.func.id in dynamic_import_names:
                 dynamic = True
             elif isinstance(node.func, ast.Attribute) and node.func.attr == "import_module":
                 dynamic = True

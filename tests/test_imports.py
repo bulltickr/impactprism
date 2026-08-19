@@ -119,6 +119,16 @@ def test_dynamic_import_and_await():
     assert kinds(records) == ["dynamic"] * 5
 
 
+def test_non_literal_dynamic_module_names_are_not_guessed():
+    records = parse_imports(
+        "const name = 'pkg-a';\n"
+        "import(name);\n"
+        "require(name);\n"
+    )
+
+    assert records == []
+
+
 def test_false_positives_in_comments_strings_templates_ignored():
     src = (
         "// import a from 'a';\n"

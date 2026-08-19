@@ -14,6 +14,12 @@
       "expected_counts": {}
     },
     {
+      "id": "npm-dynamic-generated-clean",
+      "path": "tests/fixtures/correctness/npm_dynamic_generated",
+      "ecosystem": "npm",
+      "expected_counts": {}
+    },
+    {
       "id": "python-requirements-clean",
       "path": "tests/fixtures/correctness/python_requirements",
       "ecosystem": "python",
@@ -28,6 +34,12 @@
     {
       "id": "python-uv-clean",
       "path": "tests/fixtures/correctness/python_uv",
+      "ecosystem": "python",
+      "expected_counts": {}
+    },
+    {
+      "id": "python-dynamic-generated-clean",
+      "path": "tests/fixtures/correctness/python_dynamic_generated",
       "ecosystem": "python",
       "expected_counts": {}
     },

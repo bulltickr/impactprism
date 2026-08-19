@@ -3,9 +3,11 @@
   "cases": {
     "npm-workspace-clean": {"findings": []},
     "npm-pnpm-clean": {"findings": []},
+    "npm-dynamic-generated-clean": {"findings": []},
     "python-requirements-clean": {"findings": []},
     "python-pipenv-clean": {"findings": []},
     "python-uv-clean": {"findings": []},
+    "python-dynamic-generated-clean": {"findings": []},
     "python-optional-clean": {
       "findings": [
         {

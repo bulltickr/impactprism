@@ -8,14 +8,14 @@ portable automation.
 
 - Stabilize versioned report, evidence, delta, diagnostic, SARIF, and SBOM
   contracts.
-- Expand pinned correctness fixtures for real manifest, lockfile, workspace,
-  and optional-dependency shapes.
+- Maintain reviewed correctness fixtures for real manifest, lockfile,
+  workspace, dynamic-import, generated-source, and optional-dependency shapes.
 - Improve incremental scanning and repository-local policy ergonomics.
 
 ## Next
 
-- Add more reviewed fixtures for dynamic imports, generated code, and supported
-  monorepo layouts.
+- Add additional reviewed fixtures for bundler-specific resolution and
+  supported monorepo layouts beyond the current npm and Go workspace cases.
 - Improve remediation guidance for each finding family without applying edits
   implicitly.
 - Add portable examples for GitHub, self-hosted runners, and other CI systems
