@@ -2,9 +2,42 @@
   "schema_version": 1,
   "cases": {
     "npm-workspace-clean": {"findings": []},
+    "npm-pnpm-clean": {"findings": []},
     "python-requirements-clean": {"findings": []},
     "python-pipenv-clean": {"findings": []},
     "python-uv-clean": {"findings": []},
+    "python-optional-clean": {
+      "findings": [
+        {
+          "finding_id": "dd9a1d30bb0d0536",
+          "finding_type": "DECLARED_UNUSED_CANDIDATE",
+          "package": "pytest",
+          "file": null,
+          "line": null,
+          "column": null,
+          "manifest": "pyproject.toml",
+          "lockfile": "requirements.txt",
+          "scope": "devDependencies",
+          "severity": "LOW",
+          "confidence": "MEDIUM",
+          "status": "ADVISORY"
+        },
+        {
+          "finding_id": "3a6e23eed0b14ead",
+          "finding_type": "DECLARED_UNUSED_CANDIDATE",
+          "package": "sphinx",
+          "file": null,
+          "line": null,
+          "column": null,
+          "manifest": "pyproject.toml",
+          "lockfile": "requirements.txt",
+          "scope": "optionalDependencies",
+          "severity": "LOW",
+          "confidence": "MEDIUM",
+          "status": "ADVISORY"
+        }
+      ]
+    },
     "python-poetry-findings": {
       "findings": [
         {

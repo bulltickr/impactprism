@@ -1,7 +1,7 @@
 # Governed correctness fixtures
 
 This suite exercises supported manifest and lockfile formats using versioned,
-small fixtures. It is intentionally separate from the six-case local
+small fixtures. It is intentionally separate from the local
 conformance suite so format coverage can grow without turning either suite
 into an unsupported accuracy claim.
 
@@ -11,7 +11,9 @@ Current matrix:
 - Python requirements files;
 - Python Pipenv manifests and locks;
 - Python `pyproject.toml` with `uv.lock`;
+- Python `pyproject.toml` optional dependency groups;
 - Python Poetry findings;
+- npm pnpm lockfiles;
 - Go vendoring through `vendor/modules.txt`; and
 - Go workspace/replacement findings.
 

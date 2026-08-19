@@ -1,0 +1,8 @@
+[project]
+name = "impactprism-correctness-optional"
+version = "1.0.0"
+dependencies = ["requests==2.31.0"]
+
+[project.optional-dependencies]
+test = ["pytest==8.0.0"]
+docs = ["sphinx==7.0.0"]

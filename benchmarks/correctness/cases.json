@@ -8,6 +8,12 @@
       "expected_counts": {}
     },
     {
+      "id": "npm-pnpm-clean",
+      "path": "tests/fixtures/correctness/npm_pnpm",
+      "ecosystem": "npm",
+      "expected_counts": {}
+    },
+    {
       "id": "python-requirements-clean",
       "path": "tests/fixtures/correctness/python_requirements",
       "ecosystem": "python",
@@ -24,6 +30,14 @@
       "path": "tests/fixtures/correctness/python_uv",
       "ecosystem": "python",
       "expected_counts": {}
+    },
+    {
+      "id": "python-optional-clean",
+      "path": "tests/fixtures/correctness/python_optional",
+      "ecosystem": "python",
+      "expected_counts": {
+        "DECLARED_UNUSED_CANDIDATE": 2
+      }
     },
     {
       "id": "python-poetry-findings",
