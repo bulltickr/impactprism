@@ -16,7 +16,7 @@ Your lockfile is a lie. Trivy scans what you declared — ImpactPrism checks wha
 
 ImpactPrism analyzes npm, Python, and Go repositories offline. It compares manifests, lockfiles, and source imports to find dependency drift, undeclared direct imports, transitive use, scope mismatches, and lockfile mismatches. It is not a vulnerability scanner and it is not trying to replace a general-purpose SBOM generator.
 
-One command produces a CycloneDX SBOM, a dependency-integrity report, and a CRA-grounded evidence pack covering the project’s mapped Art 13(1)(a/b), Art 14(1), Annex I, and Annex VII references. The GitHub Action can also produce SARIF and a PR evidence comment.
+One local scan after installation produces a CycloneDX SBOM, a dependency-integrity report, and a review-oriented evidence pack with contextual references to the project’s mapped Art 13(1)(a/b), Annex I, and Annex VII material. The GitHub Action can also produce SARIF and a PR evidence comment.
 
 The wedge is the three failure modes I kept seeing around manifest-based inventory:
 

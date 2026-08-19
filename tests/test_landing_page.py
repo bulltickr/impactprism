@@ -4,6 +4,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LANDING_PAGE = REPO_ROOT / "site" / "index.html"
 README = REPO_ROOT / "README.md"
+ACTION_README = REPO_ROOT / "action" / "README.md"
+TRUST_DOC = REPO_ROOT / "docs" / "TRUST_AND_VERIFICATION.md"
 
 
 def _public_docs():
@@ -59,3 +61,20 @@ def test_public_docs_omit_superseded_unqualified_claims():
     for document_name, content in docs.items():
         for claim in superseded_claims:
             assert claim not in content, f"superseded claim {claim!r} found in {document_name}"
+
+
+def test_public_docs_state_maturity_and_offline_boundary():
+    readme = README.read_text(encoding="utf-8")
+    action_readme = ACTION_README.read_text(encoding="utf-8")
+    trust = TRUST_DOC.read_text(encoding="utf-8")
+    landing = LANDING_PAGE.read_text(encoding="utf-8")
+
+    assert "early-stage" in readme
+    assert "no independent security audit" in readme
+    assert "Scan execution is offline after installation" in readme
+    assert "managed" in action_readme and "package index" in action_readme
+    assert "early-stage OSS" in action_readme
+    assert "Current maturity boundary" in trust
+    assert "Offline boundary" in trust
+    assert "early-stage OSS" in landing
+    assert "offline scan after installation" in landing

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ImpactPrism — offline dependency-integrity analysis</title>
-  <meta name="description" content="ImpactPrism performs offline dependency-integrity analysis and release-evidence preflight for selected npm, Python, and Go supply-chain controls.">
+  <meta name="description" content="ImpactPrism performs offline-after-installation dependency-integrity analysis and release-evidence preflight for selected npm, Python, and Go supply-chain controls.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b1220'/%3E%3Cpath d='M16 4 28 10v12L16 28 4 22V10z' fill='none' stroke='%2356d364' stroke-width='2'/%3E%3Cpath d='M16 10 22 13v6l-6 3-6-3v-6z' fill='%2356d364' opacity='0.85'/%3E%3C/svg%3E">
   <style>
     :root {
@@ -420,7 +420,7 @@
 
   <header class="hero" id="top">
     <div class="container">
-      <div class="badge"><span class="dot"></span> fully offline · npm · Python · Go · MIT</div>
+      <div class="badge"><span class="dot"></span> offline scan after installation · npm · Python · Go · MIT</div>
       <h1>Offline dependency-integrity analysis and release-evidence preflight for selected npm, Python, and Go supply-chain controls — <span class="hl">drift, undeclared, transitive</span> and lockfile-mismatch checks with a CycloneDX SBOM.</h1>
 
       <div class="hero-cta">
@@ -428,6 +428,7 @@
         <pre class="code"><span class="prompt">$</span> impactprism scan <span class="arg">.</span></pre>
       </div>
       <p class="hero-sub">from shell to a review-oriented preflight pack in one command</p>
+      <p class="hero-sub">early-stage OSS · no independent audit or external accuracy claim</p>
     </div>
   </header>
 
@@ -446,8 +447,8 @@
         </div>
         <div class="card">
           <div class="icon">⇄</div>
-          <h3>Zero setup, zero exfil</h3>
-          <p>One local command, no account, no API key, no vulnerability database. The scanner is fully offline and never sends your source anywhere.</p>
+          <h3>No hosted service required</h3>
+          <p>One local scan needs no account, API key, or vulnerability database. Installation and managed CI bootstrap may need package artifacts; scan execution never sends your source anywhere.</p>
         </div>
       </div>
     </section>
@@ -624,7 +625,7 @@
 
   <footer>
     <div class="container">
-      <p>ImpactPrism is fully offline and never sends your source code anywhere.</p>
+      <p>ImpactPrism scan execution is offline after installation and never sends your source code anywhere.</p>
       <p class="license">MIT License — Copyright (c) 2026 ImpactPrism contributors</p>
     </div>
   </footer>

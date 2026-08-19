@@ -22,6 +22,12 @@ portable automation.
   around the existing provider-neutral commands.
 - Document compatibility expectations for Python versions and package-manager
   formats.
+- Invite external users to contribute sanitized fixtures and compatibility
+  reports without presenting them as accuracy scores or adoption claims.
+- Reduce maintainer bus factor through an additional reviewer or maintainer
+  before making stronger project-maturity claims.
+- Complete the governed real-repository benchmark only when its frozen corpus,
+  labels, environment, and adjudication records actually exist.
 
 ## Principles
 

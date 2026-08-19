@@ -1,6 +1,6 @@
 # ImpactPrism
 
-Offline dependency-integrity analysis and release-evidence preflight for selected npm, Python, and Go supply-chain controls. ImpactPrism compares supported manifests, lockfiles, and source imports, then produces a CycloneDX SBOM and review-oriented evidence outputs.
+ImpactPrism is an early-stage, open-source dependency-integrity analysis and release-evidence preflight tool for selected npm, Python, and Go supply-chain controls. It compares supported manifests, lockfiles, and source imports, then produces a CycloneDX SBOM and review-oriented evidence outputs. Scan execution is offline after installation; dependency installation and the managed GitHub Action bootstrap may require access to configured package artifacts.
 
 [![CI](https://github.com/bulltickr/impactprism/actions/workflows/ci.yml/badge.svg)](https://github.com/bulltickr/impactprism/actions/workflows/ci.yml)
 
@@ -58,8 +58,23 @@ the delta. Scanner errors still return exit code `2`. See
 evidence, delta, and CLI-error contracts.
 
 GitHub Releases provide the official CLI wheel, source archive, and
-`SHA256SUMS`. The project’s distribution source is GitHub, while the scanner
-itself remains an offline local tool.
+`SHA256SUMS`. The project’s distribution source is GitHub. Verify release
+integrity and provenance before installing; see
+[Trust and verification](docs/TRUST_AND_VERIFICATION.md). Scan execution
+remains offline after installation.
+
+## Project status and trust boundaries
+
+ImpactPrism is early-stage software maintained by a small public project. It
+has meaningful local regression coverage and a validated release process, but
+it has no independent security audit, no claim of broad external accuracy, and
+no claim of significant external adoption. Treat it as a focused engineering
+tool to evaluate and review, not as a sole security control.
+
+The project is intentionally narrow. A clean result covers only the supported
+inputs and rules. The evidence output provides review context, not a legal
+conclusion, CRA certification, audit opinion, or proof that every runtime or
+generated dependency was discovered.
 
 ## What this checks / What it does not
 
@@ -128,7 +143,37 @@ Add ImpactPrism to your pull requests in four lines:
     fail-on: finding
 ```
 
-The composite action’s scan is offline (no hosted account or API key), produces `findings.json`, `bom.json`, `impactprism.sarif`, `evidence.json`/`evidence.md` and `summary.md`, uploads a SARIF report to code scanning, and exits per the `fail-on` policy (`never` | `finding` | `all`). Its default `managed` bootstrap may install Python dependencies from the configured package index; use `install-mode: offline` when the caller supplies the runtime and dependencies. The Action and CLI support selected npm, Python, and Go checks. See [action/README.md](action/README.md) for inputs, outputs and required workflow permissions.
+The composite action’s analysis step is offline once its dependencies are
+available: it requires no hosted account or API key, produces `findings.json`,
+`bom.json`, `impactprism.sarif`, `evidence.json`/`evidence.md` and `summary.md`,
+uploads a SARIF report to code scanning, and exits per the `fail-on` policy
+(`never` | `finding` | `all`). Its default `managed` bootstrap may install
+Python dependencies from the configured package index; use
+`install-mode: offline` when the caller supplies the runtime and dependencies.
+The Action and CLI support selected npm, Python, and Go checks. See
+[action/README.md](action/README.md) for inputs, outputs and required workflow
+permissions.
+
+## Verify a release
+
+Download the wheel, source archive, and `SHA256SUMS` from the same GitHub
+Release. Verify the checksums before installation:
+
+```bash
+sha256sum -c SHA256SUMS
+```
+
+When the GitHub CLI and artifact attestations are available, verify the wheel’s
+build provenance as well:
+
+```bash
+gh attestation verify impactprism-0.4.0-py3-none-any.whl \
+  -R bulltickr/impactprism
+```
+
+Checksums verify that downloaded files match the release manifest. Attestation
+verification adds provenance evidence for the GitHub-built artifact; neither
+is a substitute for reviewing scanner scope, limitations, or findings.
 
 ## Supported ecosystems
 
@@ -234,7 +279,7 @@ for running the same contract outside GitHub Actions.
 ## License, security, contributing, feedback
 
 - **License** — [MIT](LICENSE), Copyright (c) 2026 ImpactPrism contributors.
-- **Security** — see [SECURITY.md](SECURITY.md); the scanner itself is offline and never sends source code anywhere.
+- **Security** — see [SECURITY.md](SECURITY.md); scan execution is offline after installation and never sends source code anywhere.
 - **Contributing** — see [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); run the full test suite before opening a PR.
 - **Threat model** — see [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) for assets, controls, and explicit limits.
 - **Feedback** — found a dependency your SBOM tool can't see? [Open an issue](https://github.com/bulltickr/impactprism/issues) or join the discussion. ImpactPrism is free and MIT — stars, issues and PRs are the funnel.

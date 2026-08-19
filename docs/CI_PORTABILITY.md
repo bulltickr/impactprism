@@ -48,7 +48,8 @@ repositories; its `run.py` command is offline after preparation. See
 
 The GitHub Action is an adapter for GitHub workflow execution, SARIF upload,
 and optional artifact upload. The scanner itself remains the normal Python CLI
-and can be invoked directly by any CI provider.
+and can be invoked directly by any CI provider. Analysis is offline after the
+runtime and dependencies are available.
 
 The Action supports two installation modes:
 

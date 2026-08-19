@@ -1,24 +1,30 @@
 # ImpactPrism Action
 
 A reusable composite GitHub Action that runs the ImpactPrism dependency-drift
-scan on the checked-out repository and produces a CRA-grounded evidence pack:
+scan on the checked-out repository and produces a review-oriented evidence pack
+with contextual CRA references:
 `findings.json` (the canonical scan report plus Action metadata), `bom.json` (a CycloneDX 1.6 SBOM),
 `impactprism.sarif` (SARIF 2.1.0 for code scanning), `evidence.json` /
-`evidence.md` (each finding annotated with its CRA clause mapping and
+`evidence.md` (each finding annotated with its contextual clause mapping and
 rationale), and `summary.md` (the human-readable outcome summary, also
-appended to the job's step summary). The scan itself is offline — it makes no
-source-analysis network requests, requires no hosted ImpactPrism account and no API key, and
-operates only on the checked-out commit. Only the generated reports under the
-output directory are ever uploaded; source file contents are never embedded
-in the reports or uploaded.
+appended to the job's step summary). The analysis step is offline once its
+dependencies are available: it makes no source-analysis network requests,
+requires no hosted ImpactPrism account or API key, and operates only on the
+checked-out commit. The default managed bootstrap may access the configured
+Python package index to install dependencies; use `install-mode: offline` when
+the caller supplies the runtime and dependencies. Only generated reports under
+the output directory are ever uploaded; source file contents are never
+embedded in the reports or uploaded.
 
 ## Usage
 
 The calling workflow must set the required permissions (see below) and
 check out the repository before invoking the action. By default, the action
-sets up its own Python 3.12 environment, installs its dependencies, runs the scan, and
-uploads the generated reports as an artifact (14-day retention) unless
-`artifact-name` is empty.
+sets up its own Python 3.12 environment, installs its dependencies, runs the
+scan, and uploads the generated reports as an artifact (14-day retention)
+unless `artifact-name` is empty. Managed setup may require access to the
+configured package index; offline mode skips installation and requires the
+caller to provide compatible dependencies.
 
 ```yaml
 name: Dependency drift scan
@@ -143,3 +149,14 @@ consuming workflows. The existing `v0.2.0` tag is historical and remains
 unchanged. The package and generated artifacts read their runtime version from
 `src/impactprism/version.py`; the synchronized release prepared by this tree
 is `v0.4.0`, and its release tag must match that value.
+
+## Trust and verification
+
+ImpactPrism is early-stage OSS with local regression coverage but no independent
+security audit or broad external accuracy claim. Treat the Action as a focused
+analysis and review aid, not as a sole security control or a CRA certification.
+
+For a tagged release, verify the downloaded files against `SHA256SUMS`. When
+available, verify the wheel’s GitHub artifact attestation as described in
+[Trust and verification](../docs/TRUST_AND_VERIFICATION.md). Review the finding
+scope and limitations for the ecosystem and repository shape being scanned.

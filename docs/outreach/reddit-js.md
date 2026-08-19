@@ -18,7 +18,7 @@ The useful distinction is between an inventory of declarations and an inventory 
 - production code using a dev dependency; and
 - lockfile or scope mismatches.
 
-It then writes a CycloneDX SBOM, a report, and a CRA-grounded evidence pack. The relevant mapped references include Art 13(1)(b), Art 14(1), Annex I, and Annex VII. It is not a CVE scanner; it is meant to catch dependency-integrity gaps before another tool reports a vulnerability in a component you did not realize you shipped.
+It then writes a CycloneDX SBOM, a report, and a review-oriented evidence pack with contextual CRA references. The mapped references include Art 13(1)(b), Art 14(1), Annex I, and Annex VII. It is not a CVE scanner; it is meant to surface dependency-integrity gaps that a component-only inventory may not explain.
 
 Try the local demo:
 
@@ -26,7 +26,7 @@ Try the local demo:
 impactprism scan demo/npm-app
 ```
 
-The source demo is [demo/npm-app/](../../demo/npm-app/) and a sample evidence pack is [docs/samples/evidence-sample.md](../samples/evidence-sample.md). It runs offline, with no account or API key.
+The source demo is [demo/npm-app/](../../demo/npm-app/) and a sample evidence pack is [docs/samples/evidence-sample.md](../samples/evidence-sample.md). Scan execution is offline after installation, with no account or API key.
 
 Primary CTA: install from GitHub, then run `impactprism scan .` on a real Node repository and see whether declared equals used.
 

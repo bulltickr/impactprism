@@ -8,7 +8,7 @@
 
 ## Three-sentence pitch
 
-ImpactPrism is an offline open-source tool for npm, Python, and Go that compares manifests, lockfiles, and source imports to find undeclared, transitive, scope, drift, and lockfile-mismatch dependencies—the gap a manifest-only SBOM does not cover. It turns those findings into a CycloneDX SBOM, a machine-readable report, and a CRA-grounded evidence pack mapped to Art 13(1)(b), Art 14(1), Annex I, and Annex VII. The story is a practical look at how small EU software teams can make dependency inventory evidence more faithful without adding an account, API key, or hosted service.
+ImpactPrism is an open-source tool for npm, Python, and Go that performs an offline scan after installation. It compares manifests, lockfiles, and source imports to find undeclared, transitive, scope, drift, and lockfile-mismatch dependencies—a gap manifest-only inventories can leave. It turns those findings into a CycloneDX SBOM, a machine-readable report, and a review-oriented evidence pack with contextual references mapped to Art 13(1)(b), Art 14(1), Annex I, and Annex VII. The story is a practical look at how small EU software teams can make dependency inventory evidence more faithful without requiring an account, API key, or hosted service.
 
 ## Supporting material
 

@@ -12,7 +12,7 @@ Your lockfile is a lie. Trivy scans what you declared — ImpactPrism checks wha
 
 For Go repositories, the tool compares source imports with `go.mod` and `go.sum` and reports dependency drift, undeclared or transitive use, scope problems, and lockfile mismatches. The point is not to replace `govulncheck`, Trivy, or a normal SBOM generator. Those tools answer different questions. ImpactPrism focuses on dependency integrity: is the component inventory aligned with the code?
 
-The output is a CycloneDX SBOM, a machine-readable report, and a CRA-grounded evidence pack with mapped references including Art 13(1)(b), Art 14(1), Annex I, and Annex VII. It is offline and does not require an account or API key.
+The output is a CycloneDX SBOM, a machine-readable report, and a review-oriented evidence pack with contextual references including Art 13(1)(b), Art 14(1), Annex I, and Annex VII. Scan execution is offline after installation and does not require an account or API key.
 
 The repository includes npm, Python, and Go demos; for a real Go repository, run the primary command:
 

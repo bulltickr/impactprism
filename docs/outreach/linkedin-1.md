@@ -13,7 +13,7 @@ An ordinary manifest-based inventory can tell you that a package is declared. It
 - a dev dependency is used by production code; or
 - a declared package is unused and the lockfile no longer reflects intent.
 
-ImpactPrism compares declarations, lockfiles, and source imports for npm, Python, and Go. One offline command produces a CycloneDX SBOM, a drift/undeclared report, and a CRA-grounded evidence pack mapped to Art 13(1)(a/b), Art 14(1), Annex I, and Annex VII.
+ImpactPrism compares declarations, lockfiles, and source imports for npm, Python, and Go. One local scan after installation produces a CycloneDX SBOM, a drift/undeclared report, and a review-oriented evidence pack with contextual references mapped to Art 13(1)(a/b), Annex I, and Annex VII.
 
 It is not a vulnerability scanner. It is not a replacement for your SBOM or SCA tooling. It answers a narrower question: does the dependency inventory match reality?
 

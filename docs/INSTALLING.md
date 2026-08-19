@@ -36,9 +36,14 @@ python -m pip install \
 
 ## Use the GitHub Action
 
-The reusable Action is the preferred CI integration. It installs the checked
-out source tree, runs offline, and produces findings, evidence, SBOM, and
-SARIF artifacts. See [action/README.md](../action/README.md).
+The reusable Action is the preferred CI integration. Its analysis step runs
+offline after dependencies are available and produces findings, evidence, SBOM,
+and SARIF artifacts. Managed setup may access the configured Python package
+index; use `install-mode: offline` when the caller supplies the runtime and
+dependencies. See [action/README.md](../action/README.md).
+
+For release integrity, checksum, provenance, and scope guidance, see
+[TRUST_AND_VERIFICATION.md](TRUST_AND_VERIFICATION.md).
 
 ## Development install
 

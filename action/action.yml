@@ -3,8 +3,9 @@
 
 name: ImpactPrism
 description: |
-  Runs the ImpactPrism dependency-drift scan and produces CRA-grounded
-  evidence, a CycloneDX SBOM and a SARIF report.
+  Runs the ImpactPrism dependency-drift scan and produces a review-oriented
+  evidence pack with contextual CRA references, a CycloneDX SBOM, and a SARIF
+  report.
 
   The calling workflow must grant these permissions:
   contents: read, security-events: write.
