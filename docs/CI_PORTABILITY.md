@@ -9,6 +9,7 @@ The provider-neutral verification contract is:
 ```bash
 python -m pip install -e ".[test]"
 python scripts/ci.py verify
+python scripts/ci.py action-smoke
 python scripts/ci.py build
 python scripts/checksums.py dist
 ```
@@ -29,7 +30,8 @@ The commands are intentionally separated:
 | `python scripts/ci.py conformance` | Local output-conformance fixtures |
 | `python scripts/ci.py correctness` | Governed correctness fixtures |
 | `python scripts/ci.py smoke` | Clean demo CLI smoke test |
-| `python scripts/ci.py verify` | Test, conformance, correctness, and smoke |
+| `python scripts/ci.py action-smoke` | Provider-neutral Action runner contract: clean, finding, scanner-error, output validation, and workspace containment |
+| `python scripts/ci.py verify` | Test, conformance, correctness, CLI smoke, and Action smoke |
 | `python scripts/ci.py build` | Build source and wheel distributions |
 
 The build command intentionally uses `--no-isolation`: the caller must make

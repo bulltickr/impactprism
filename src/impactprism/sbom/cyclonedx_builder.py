@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import binascii
 import json
+import warnings
 from datetime import datetime, timezone
 
 try:
@@ -12,6 +13,7 @@ try:
     from cyclonedx.output import OutputFormat, make_outputter
     from cyclonedx.schema import SchemaVersion
     from cyclonedx.validation import make_schemabased_validator
+    from cyclonedx.schema.deprecation import SchemaDeprecationWarning1Dot5
     from packageurl import PackageURL
 except ImportError as exc:
     raise ImportError(
@@ -171,21 +173,46 @@ def build_cyclonedx_sbom(
             direct_refs.append(Dependency(ref=component_ref))
 
     dependencies.append(Dependency(ref=root_ref, dependencies=direct_refs))
-    bom = Bom(
-        metadata=BomMetaData(
+    # CycloneDX 1.6 still serializes the legacy metadata.tools field, while
+    # cyclonedx-python-lib deliberately warns every time that compatibility
+    # field is constructed. Keep the public 1.6 output stable and suppress
+    # only this known, library-generated warning at its narrow source.
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            category=SchemaDeprecationWarning1Dot5,
+        )
+        bom_metadata = BomMetaData(
             timestamp=_timestamp(metadata.get("timestamp")),
             tools=[Tool(vendor="impactprism", name=tool_name, version=tool_version)],
             component=root_component,
-        ),
-        components=bom_components,
-        dependencies=dependencies,
-    )
+        )
+    # The graph intentionally permits a component-only fixture with an empty
+    # root edge. CycloneDX warns about that valid-but-incomplete graph shape;
+    # keep the warning local rather than making every consumer hide warnings.
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=r"The Component this BOM is describing.*",
+            category=UserWarning,
+        )
+        bom = Bom(
+            metadata=bom_metadata,
+            components=bom_components,
+            dependencies=dependencies,
+        )
     outputter = make_outputter(
         bom=bom,
         output_format=OutputFormat.JSON,
         schema_version=SchemaVersion.V1_6,
     )
-    output = outputter.output_as_string()
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=r"The Component this BOM is describing.*",
+            category=UserWarning,
+        )
+        output = outputter.output_as_string()
     validator = make_schemabased_validator(OutputFormat.JSON, SchemaVersion.V1_6)
     error = validator.validate_str(output)
     if error is not None:

@@ -25,7 +25,7 @@ def _run(label: str, *arguments: str) -> None:
 
 
 def test() -> None:
-    _run("tests", "-m", "pytest", "-q")
+    _run("tests", "-m", "pytest", "-p", "no:cacheprovider", "-q")
 
 
 def conformance() -> None:
@@ -44,11 +44,16 @@ def smoke() -> None:
     _run("clean-demo smoke", "-m", "impactprism", "scan", "demo/clean-app")
 
 
+def action_smoke() -> None:
+    _run("provider-neutral Action smoke", "scripts/action_smoke.py")
+
+
 def verify() -> None:
     test()
     conformance()
     correctness()
     smoke()
+    action_smoke()
 
 
 COMMANDS = {
@@ -57,6 +62,7 @@ COMMANDS = {
     "correctness": correctness,
     "build": build,
     "smoke": smoke,
+    "action-smoke": action_smoke,
     "verify": verify,
 }
 

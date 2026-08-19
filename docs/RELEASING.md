@@ -31,7 +31,8 @@ fixtures, and built artifacts are all part of the release boundary.
    ```
 
 The repository's release-check workflow repeats the important checks whenever
-a `v*` tag is pushed. After the tag is made into an explicitly published
+a `v*` tag is pushed, including exact artifact-set validation, an installed
+wheel smoke test, and strict checksums. After the tag is made into an explicitly published
 GitHub Release, the release-artifacts workflow builds a wheel and source
 archive, writes `SHA256SUMS`, and uploads all three to that GitHub Release.
 The project does not publish to a package registry.

@@ -47,6 +47,7 @@ jobs:
           python scripts/ci.py test
           python scripts/ci.py conformance
           python scripts/ci.py correctness
+          python scripts/ci.py action-smoke
 
       - name: Build release distributions
         run: python -m build --no-isolation --sdist --wheel --outdir dist

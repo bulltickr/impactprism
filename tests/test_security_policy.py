@@ -66,3 +66,13 @@ def test_third_party_workflow_actions_are_pinned_to_full_shas():
             assert separator and re.fullmatch(r"[0-9a-f]{40}", revision), (
                 f"{path.name} uses an unpinned third-party Action: {reference}"
             )
+
+
+def test_action_smoke_covers_provider_neutral_and_composite_boundaries():
+    raw = (WORKFLOWS / "action-smoke.yml").read_text(encoding="utf-8")
+
+    assert "os: [ubuntu-latest, macos-latest, windows-latest]" in raw
+    assert raw.count("os: [ubuntu-latest, macos-latest, windows-latest]") >= 2
+    assert "python scripts/ci.py action-smoke" in raw
+    assert "uses: ./action" in raw
+    assert "shell: pwsh" in raw

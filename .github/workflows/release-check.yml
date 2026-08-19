@@ -35,6 +35,19 @@ jobs:
           python scripts/ci.py test
           python scripts/ci.py conformance
           python scripts/ci.py correctness
+          python scripts/ci.py action-smoke
 
       - name: Build release artifacts
-        run: python -m build --no-isolation
+        run: python -m build --no-isolation --sdist --wheel --outdir dist
+
+      - name: Verify exact release artifact set
+        run: python scripts/verify_release_artifacts.py dist
+
+      - name: Verify installed wheel smoke
+        run: |
+          python -m pip install --no-index --no-deps --target .release-wheel dist/*.whl
+          PYTHONPATH=.release-wheel python -m impactprism --version
+          PYTHONPATH=.release-wheel python -m impactprism scan demo/clean-app
+
+      - name: Generate strict checksums
+        run: python scripts/checksums.py --strict dist
