@@ -36,7 +36,7 @@ Issues = "https://github.com/bulltickr/impactprism/issues"
 Documentation = "https://github.com/bulltickr/impactprism#readme"
 
 [project.optional-dependencies]
-test = ["pytest"]
+test = ["pytest", "jsonschema>=4"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

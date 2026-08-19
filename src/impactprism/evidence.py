@@ -11,6 +11,7 @@ from .version import __version__
 
 
 EVIDENCE_STATUSES = ("PASS", "FAIL", "EVIDENCE_GAP", "NOT_ASSESSED", "REVIEW_REQUIRED")
+EVIDENCE_OUTPUT_SCHEMA_VERSION = 1
 
 _CLAUSE_MAP_DATA = load_cra_clauses()
 
@@ -105,6 +106,7 @@ def _build_findings(report):
         rationale = RATIONALES.get(category, "The finding requires review against the supported evidence controls.")
         findings.append(
             {
+                "finding_id": item.get("finding_id"),
                 "finding_type": finding_type,
                 "category": category,
                 "name": name,
@@ -133,6 +135,7 @@ def _build_evidence(report, source_path, source_report_sha256):
     return {
         "generator": "impactprism-evidence",
         "version": __version__,
+        "output_schema_version": EVIDENCE_OUTPUT_SCHEMA_VERSION,
         "timestamp": _utc_timestamp(),
         "schema_version": _CLAUSE_MAP_DATA["schema_version"],
         "map_version": _CLAUSE_MAP_DATA["map_version"],

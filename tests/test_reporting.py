@@ -127,3 +127,18 @@ def test_canonical_report_matches_published_schema():
     )
     schema_path = Path(__file__).parents[1] / "docs" / "schemas" / "scan-report.schema.json"
     validate(report, json.loads(schema_path.read_text(encoding="utf-8")))
+
+
+def test_evidence_matches_published_schema(tmp_path):
+    from impactprism.evidence import build_evidence
+
+    report = build_scan_report(
+        repo="repo",
+        ecosystem="npm",
+        findings=[_finding("UNDECLARED_DIRECT_USE", "lodash")],
+    )
+    evidence = build_evidence(report, source_path=tmp_path / "report.json", source_report_sha256="a" * 64)
+    schema_path = Path(__file__).parents[1] / "docs" / "schemas" / "evidence-pack.schema.json"
+    validate(evidence, json.loads(schema_path.read_text(encoding="utf-8")))
+    assert evidence["output_schema_version"] == 1
+    assert evidence["findings"][0]["finding_id"] == "undeclared_direct_use-id"

@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 import pytest
 
@@ -148,6 +149,15 @@ def test_json_input_error_is_machine_readable(tmp_path, capsys):
         },
         "exit_code": 2,
     }
+
+
+def test_json_input_error_matches_published_schema(tmp_path, capsys):
+    from jsonschema import validate
+
+    assert main(["scan", str(tmp_path / "missing"), "--json"]) == 2
+    output = json.loads(capsys.readouterr().out)
+    schema_path = Path(ROOT) / "docs" / "schemas" / "cli-error.schema.json"
+    validate(output, json.loads(schema_path.read_text(encoding="utf-8")))
 
 
 def test_scan_json_preserves_manifest_scanner_error_report(tmp_path, monkeypatch, capsys):

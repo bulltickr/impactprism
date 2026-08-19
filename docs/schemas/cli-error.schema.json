@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bulltickr/impactprism/schemas/cli-error.schema.json",
+  "title": "ImpactPrism machine-readable CLI error",
+  "type": "object",
+  "required": ["schema_version", "generator", "error", "exit_code"],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "generator": {"type": "string", "const": "impactprism-cli"},
+    "error": {
+      "type": "object",
+      "required": ["kind", "message"],
+      "properties": {
+        "kind": {"type": "string"},
+        "message": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "exit_code": {"type": "integer", "const": 2}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bulltickr/impactprism/schemas/evidence-pack.schema.json",
+  "title": "ImpactPrism evidence pack",
+  "type": "object",
+  "required": [
+    "generator",
+    "version",
+    "output_schema_version",
+    "timestamp",
+    "schema_version",
+    "map_version",
+    "legal_source",
+    "source_report",
+    "source_report_sha256",
+    "package_name",
+    "package_version",
+    "clause_map",
+    "statuses",
+    "overall_status",
+    "findings",
+    "summary"
+  ],
+  "properties": {
+    "generator": {"type": "string", "const": "impactprism-evidence"},
+    "version": {"type": "string"},
+    "output_schema_version": {"type": "integer", "const": 1},
+    "timestamp": {"type": "string"},
+    "schema_version": {"type": "integer", "const": 2},
+    "map_version": {"type": "string"},
+    "legal_source": {"type": "string"},
+    "source_report": {"type": "string"},
+    "source_report_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "package_name": {"type": "string"},
+    "package_version": {"type": "string"},
+    "clause_map": {"type": "object"},
+    "statuses": {
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1
+    },
+    "overall_status": {
+      "type": "string",
+      "enum": ["PASS", "FAIL", "EVIDENCE_GAP", "NOT_ASSESSED", "REVIEW_REQUIRED"]
+    },
+    "findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "summary": {"$ref": "#/$defs/summary"}
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "required": [
+        "finding_type",
+        "category",
+        "name",
+        "severity",
+        "confidence",
+        "clauses",
+        "rationale",
+        "status"
+      ],
+      "properties": {
+        "finding_id": {"type": ["string", "null"]},
+        "finding_type": {"type": "string"},
+        "category": {"type": "string"},
+        "name": {"type": "string"},
+        "package": {"type": ["string", "null"]},
+        "file": {"type": ["string", "null"]},
+        "line": {"type": ["integer", "null"]},
+        "column": {"type": ["integer", "null"]},
+        "severity": {"type": "string"},
+        "confidence": {"type": "string"},
+        "explanation": {"type": "string"},
+        "clauses": {"type": "array", "items": {"type": "string"}},
+        "rationale": {"type": "string"},
+        "status": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "total_findings",
+        "undeclared_count",
+        "drift_count",
+        "clean",
+        "status_counts"
+      ],
+      "properties": {
+        "total_findings": {"type": "integer", "minimum": 0},
+        "undeclared_count": {"type": "integer", "minimum": 0},
+        "drift_count": {"type": "integer", "minimum": 0},
+        "clean": {"type": "boolean"},
+        "status_counts": {
+          "type": "object",
+          "additionalProperties": {"type": "integer", "minimum": 0}
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
