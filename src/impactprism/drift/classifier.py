@@ -15,6 +15,7 @@ from .. import go_imports, go_manifest as go_manifest_module, python_imports
 from ..python_manifest import canonical_name, is_python_repo
 from .. import imports, manifest as manifest_module
 from ..npm_semver import npm_satisfies, valid_range
+from ..resolution import ResolutionContext
 from .models import Confidence, Finding, FindingType, Severity, Status
 
 __all__ = [
@@ -265,6 +266,7 @@ def _classify_npm_manifests(manifests, imported, *, repo_dir, commit_sha):
                 partition_imports,
                 repo_dir=repo_dir,
                 lockfile=lockfile,
+                resolution_manifests=manifests,
                 commit_sha=commit_sha,
             )
         )
@@ -424,6 +426,7 @@ def classify_npm(
     *,
     repo_dir: str | None = None,
     lockfile=None,
+    resolution_manifests=None,
     commit_sha: str | None = None,
 ) -> list:
     """Classify npm dependency drift.
@@ -450,6 +453,8 @@ def classify_npm(
 
     bare_sites = {}
     relative_sites = {}
+    resolution_sites = {}
+    resolution = ResolutionContext(repo, resolution_manifests or [manifest])
 
     for path in sorted(imports_by_file.keys(), key=lambda item: str(item)):
         records = imports_by_file[path]
@@ -475,6 +480,16 @@ def classify_npm(
                     )
                 continue
             if _is_node_builtin(specifier):
+                continue
+            decision = resolution.classify(
+                file_path, specifier, getattr(record, "kind", "esm")
+            )
+            if decision.kind == "local":
+                continue
+            if decision.kind == "unresolved":
+                resolution_sites.setdefault(
+                    specifier, (specifier, str(file_path), line, column, decision.reason)
+                )
                 continue
             package = _extract_package(specifier)
             if package is None:
@@ -700,6 +715,28 @@ def classify_npm(
                 explanation=(
                     f"Relative import {specifier!r} does not resolve to an existing "
                     "file."
+                ),
+            )
+        )
+
+    for specifier in sorted(resolution_sites):
+        _, file_str, line, column, reason = resolution_sites[specifier]
+        findings.append(
+            Finding(
+                finding_type=FindingType.UNRESOLVED_IMPORT,
+                severity=Severity.HIGH,
+                confidence=Confidence.MEDIUM,
+                status=Status.OPEN,
+                ecosystem="npm",
+                package=specifier,
+                file=file_str,
+                line=line,
+                column=column,
+                commit_sha=commit_sha,
+                scope="dependencies",
+                explanation=(
+                    f"Import {specifier!r} uses a configured local resolution that "
+                    f"could not be verified: {reason}."
                 ),
             )
         )

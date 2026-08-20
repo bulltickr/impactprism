@@ -2,7 +2,12 @@
 
 ## Unreleased
 
-_No unreleased changes._
+### Resolution coverage
+
+- Added bounded, non-executing support for workspace package `exports`,
+  package-local `imports`, and static TypeScript `paths`/`baseUrl` aliases.
+- Added explicit unresolved findings when a configured local target is missing
+  or a workspace package subpath is not exported.
 
 ## 0.4.0 - 2026-08-19
 

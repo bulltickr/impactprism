@@ -4,6 +4,25 @@
     "npm-workspace-clean": {"findings": []},
     "npm-pnpm-clean": {"findings": []},
     "npm-dynamic-generated-clean": {"findings": []},
+    "npm-resolution-clean": {"findings": []},
+    "npm-resolution-boundary": {
+      "findings": [
+        {
+          "finding_id": "a62c2a590ca1bf40",
+          "finding_type": "UNRESOLVED_IMPORT",
+          "package": "@scope/shared/private",
+          "file": "packages/app/src/index.js",
+          "line": 1,
+          "column": 1,
+          "manifest": null,
+          "lockfile": null,
+          "scope": "dependencies",
+          "severity": "HIGH",
+          "confidence": "MEDIUM",
+          "status": "OPEN"
+        }
+      ]
+    },
     "python-requirements-clean": {"findings": []},
     "python-pipenv-clean": {"findings": []},
     "python-uv-clean": {"findings": []},

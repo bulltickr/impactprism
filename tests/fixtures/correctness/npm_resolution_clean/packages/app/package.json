@@ -1,0 +1,7 @@
+{
+  "name": "resolution-app",
+  "version": "1.0.0",
+  "imports": {
+    "#local/*": "./src/*"
+  }
+}

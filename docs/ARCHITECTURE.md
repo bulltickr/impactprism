@@ -15,6 +15,9 @@ repository inputs
 
 - `manifest.py`, `python_manifest.py`, and the Go manifest modules parse inputs.
 - `imports.py`, `python_imports.py`, and `go_imports.py` discover source usage.
+- `resolution.py` interprets only bounded static package metadata and
+  TypeScript configuration to distinguish local aliases and workspace exports
+  from external packages; it never executes repository configuration.
 - `drift/classifier.py` is responsible for finding classification.
 - `reporting.py` normalizes findings and defines report categories and exit
   semantics.

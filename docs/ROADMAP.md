@@ -9,7 +9,8 @@ portable automation.
 - Stabilize versioned report, evidence, delta, diagnostic, SARIF, and SBOM
   contracts.
 - Maintain reviewed correctness fixtures for real manifest, lockfile,
-  workspace, dynamic-import, generated-source, and optional-dependency shapes.
+  workspace, package-export/import, static TypeScript-alias, dynamic-import,
+  generated-source, and optional-dependency shapes.
 - Improve incremental scanning and repository-local policy ergonomics.
 
 ## Next

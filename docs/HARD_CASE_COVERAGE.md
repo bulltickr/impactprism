@@ -7,6 +7,8 @@ the boundary that remains intentionally visible.
 ## Covered in the correctness matrix
 
 - npm workspaces with package-local manifests and a root lockfile;
+- npm workspace package `exports` and package-local `imports` aliases;
+- static TypeScript `paths`/`baseUrl` aliases, including JSONC comments;
 - npm workspaces containing literal dynamic imports;
 - checked-in generated JavaScript that contributes a package import;
 - Python literal `importlib.import_module("package")` and explicitly imported
@@ -31,6 +33,12 @@ Repositories that rely on runtime-only resolution should treat the scan as an
 incomplete dependency-integrity signal and review that gap separately. The
 scanner does not claim that a clean result proves runtime dependency
 completeness.
+
+Static local aliases and workspace package exports are resolved only when the
+configured target can be verified from the checkout. A missing target or a
+workspace subpath excluded by `exports` becomes an `UNRESOLVED_IMPORT` finding.
+Bundler configuration files are not executed, and arbitrary JavaScript alias
+logic remains outside the supported resolution boundary.
 
 ## Generated-source boundary
 

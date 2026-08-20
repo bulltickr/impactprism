@@ -1,0 +1,9 @@
+{
+  // Static JSONC is supported; project configuration is never executed.
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@app/*": ["packages/app/src/*"]
+    }
+  }
+}

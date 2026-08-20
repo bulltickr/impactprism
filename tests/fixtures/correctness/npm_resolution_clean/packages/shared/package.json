@@ -1,0 +1,15 @@
+{
+  "name": "@scope/shared",
+  "version": "1.0.0",
+  "exports": {
+    ".": "./src/index.js",
+    "./feature": {
+      "import": "./src/feature.js",
+      "default": "./src/feature.js"
+    },
+    "./cjs": {
+      "require": "./src/cjs.cjs",
+      "default": "./src/cjs.cjs"
+    }
+  }
+}

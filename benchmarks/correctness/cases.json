@@ -20,6 +20,20 @@
       "expected_counts": {}
     },
     {
+      "id": "npm-resolution-clean",
+      "path": "tests/fixtures/correctness/npm_resolution_clean",
+      "ecosystem": "npm",
+      "expected_counts": {}
+    },
+    {
+      "id": "npm-resolution-boundary",
+      "path": "tests/fixtures/correctness/npm_resolution_boundary",
+      "ecosystem": "npm",
+      "expected_counts": {
+        "UNRESOLVED_IMPORT": 1
+      }
+    },
+    {
       "id": "python-requirements-clean",
       "path": "tests/fixtures/correctness/python_requirements",
       "ecosystem": "python",

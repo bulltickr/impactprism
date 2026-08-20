@@ -23,6 +23,7 @@
 - Path containment checks
 - Deterministic finding IDs and provenance fields
 - Explicit scanner-error findings
+- Non-executing static resolution parsing for package and TypeScript metadata
 - Validated CycloneDX output
 - SARIF and evidence generated from normalized findings
 - Plan-only remediation by default and rollback on apply failure
