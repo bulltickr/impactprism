@@ -1,14 +1,18 @@
 name: Publish GitHub Release artifacts
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      release-tag:
+        description: Existing v* tag to validate and publish as a draft-first release
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-artifacts-${{ github.event.release.tag_name }}
+  group: release-artifacts-${{ inputs.release-tag }}
   cancel-in-progress: false
 
 jobs:
@@ -22,7 +26,7 @@ jobs:
       - name: Checkout release tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ inputs.release-tag }}
           persist-credentials: false
 
       - name: Set up Python
@@ -33,7 +37,7 @@ jobs:
       - name: Verify release metadata
         env:
           GITHUB_REF_TYPE: tag
-          GITHUB_REF_NAME: ${{ github.event.release.tag_name }}
+          GITHUB_REF_NAME: ${{ inputs.release-tag }}
           PYTHONPATH: src
         run: python scripts/check_release.py
 
@@ -69,8 +73,34 @@ jobs:
         with:
           subject-path: dist/*
 
+      - name: Prepare draft GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release-tag }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            is_draft="$(gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft')"
+            if [ "$is_draft" != "true" ]; then
+              echo "Release $RELEASE_TAG is already published; immutable releases cannot be modified." >&2
+              exit 1
+            fi
+            echo "Using existing draft release $RELEASE_TAG"
+          else
+            gh release create "$RELEASE_TAG" \
+              --draft \
+              --verify-tag \
+              --title "ImpactPrism $RELEASE_TAG" \
+              --generate-notes
+          fi
+
       - name: Upload artifacts to the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ inputs.release-tag }}
         run: gh release upload "$RELEASE_TAG" dist/*
+
+      - name: Publish completed GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release-tag }}
+        run: gh release edit "$RELEASE_TAG" --draft=false
