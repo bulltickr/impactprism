@@ -31,8 +31,8 @@ demos and fixtures are not presented as external accuracy evidence.
 ## Verify a GitHub Release
 
 Download the wheel, source archive, and `SHA256SUMS` from the same release. The
-expected v0.4.0 files are available at the
-[v0.4.0 release page](https://github.com/bulltickr/impactprism/releases/tag/v0.4.0).
+expected v0.4.1 files are available at the
+[v0.4.1 release page](https://github.com/bulltickr/impactprism/releases/tag/v0.4.1).
 
 Verify the downloaded files before installation:
 
@@ -47,7 +47,7 @@ When the GitHub CLI and attestations are available, verify the wheel’s build
 provenance:
 
 ```bash
-gh attestation verify impactprism-0.4.0-py3-none-any.whl \
+gh attestation verify impactprism-0.4.1-py3-none-any.whl \
   -R bulltickr/impactprism
 ```
 

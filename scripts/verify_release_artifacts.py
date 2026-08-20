@@ -44,6 +44,8 @@ def verify(directory: str | Path) -> None:
             "impactprism/__init__.py",
             "impactprism/cli.py",
             "impactprism/cra_clauses.yaml",
+            "impactprism/resolution.py",
+            "impactprism/static_config.py",
         }
         missing = sorted(required - names)
         if missing:

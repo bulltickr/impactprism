@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.4.1 - 2026-08-20
+
 ### Resolution coverage
 
 - Added bounded, non-executing support for workspace package `exports`,

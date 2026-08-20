@@ -20,8 +20,8 @@ def test_checksums_are_sorted_and_exclude_the_manifest(tmp_path):
 
 
 def test_strict_release_directory_requires_one_wheel_and_sdist(tmp_path):
-    wheel = tmp_path / "impactprism-0.4.0-py3-none-any.whl"
-    sdist = tmp_path / "impactprism-0.4.0.tar.gz"
+    wheel = tmp_path / "impactprism-0.4.1-py3-none-any.whl"
+    sdist = tmp_path / "impactprism-0.4.1.tar.gz"
     wheel.write_bytes(b"wheel")
     sdist.write_bytes(b"sdist")
 
