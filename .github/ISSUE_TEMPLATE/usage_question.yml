@@ -1,0 +1,27 @@
+name: Usage question or design discussion
+description: Ask about using ImpactPrism or discuss a proposed direction
+title: "question: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please remove secrets, proprietary source, and private repository details.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question or proposal
+      description: What are you trying to do, or what design should be discussed?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Include the ImpactPrism version, ecosystem, package manager, and command when relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: attempted
+    attributes:
+      label: What you tried
+      description: Include a small sanitized fixture or relevant output when useful.

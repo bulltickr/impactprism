@@ -11,10 +11,10 @@ repository or finding family.
 |---|---|
 | Corpus | `impactprism-public-compatibility-2026-08` |
 | Corpus status | Pinned |
-| Scanner version | `0.4.0` |
-| Scanner commit | `8d75e85154cb05dd8d4d9de58ad505bcdd177271` |
-| Remote workflow commit | `0ef5e6e` |
-| Remote workflow | [Run 32267694211](https://github.com/bulltickr/impactprism/actions/runs/32267694211) |
+| Scanner version | `0.4.1` |
+| Scanner commit | `d4f21638cb90f9d5e219c4185b5b2e789bf29013` |
+| Remote workflow commit | `d4f21638cb90f9d5e219c4185b5b2e789bf29013` |
+| Remote workflow | [Run 32324096016](https://github.com/bulltickr/impactprism/actions/runs/32324096016) |
 | Manifest SHA-256 | `16d584d9435aea87ad0d29ab9c86fffd4d55e254c0de922368a9bf57708d077c` |
 | Cases | 7 |
 | Result | 7/7 passed |
@@ -22,13 +22,15 @@ repository or finding family.
 | Repository code executed | No |
 | Repository dependencies installed | No |
 | Repeatability | Two same-context runs; byte-identical JSON |
+| Durable result | [`compatibility-result.json`](https://github.com/bulltickr/impactprism/releases/download/v0.4.1/compatibility-result.json) |
 
 The result was produced by preparing disposable checkouts from the manifest,
 then running `run.py` twice against those unchanged checkouts. Preparation is
 the only network phase. The machine-readable output contains the manifest
 SHA-256, pinned commit and source-tree IDs, counts, and normalized finding
-digests. The linked Ubuntu workflow repeated the run on commit `0ef5e6e` and
-uploaded the machine-readable result; its case digests match the local run.
+digests. The linked Ubuntu workflow repeated the run on the exact v0.4.1
+commit and uploaded the machine-readable result to the v0.4.1 release; its
+case digests match the local run.
 
 ## Case results
 

@@ -24,7 +24,9 @@ The JSON result is the evidence artifact for a run. It includes the scanner
 version, the SHA-256 of the manifest, each pinned commit and source-tree ID,
 the expected and observed finding-family counts, and the normalized output
 digest. The manually triggered GitHub Actions workflow uploads this result as
-`impactprism-compatibility-result` for 14 days.
+`impactprism-compatibility-result` for 90 days. Release baselines should also
+be attached to the corresponding GitHub Release so they remain discoverable
+after workflow-artifact retention expires.
 
 `prepare.py` is the explicit network boundary and only performs Git checkout
 of the pinned public commits. `run.py` never fetches, installs repository

@@ -6,7 +6,8 @@ proprietary source code.
 
 ## Where to ask
 
-- Usage questions and design discussion: [GitHub Discussions](https://github.com/bulltickr/impactprism/discussions)
+- Usage questions and design discussion: use the [usage question template](https://github.com/bulltickr/impactprism/issues/new?template=usage_question.yml)
+- Real repository shapes or unsupported package-manager formats: use the [compatibility report template](https://github.com/bulltickr/impactprism/issues/new?template=compatibility_report.yml)
 - Incorrect or incomplete scanner behavior: use the [bug report template](https://github.com/bulltickr/impactprism/issues/new?template=bug_report.yml)
 - Unexpected findings or suspected false positives: use the [false-positive template](https://github.com/bulltickr/impactprism/issues/new?template=false_positive.yml)
 - Feature proposals: use the [feature request template](https://github.com/bulltickr/impactprism/issues/new?template=feature_request.yml)

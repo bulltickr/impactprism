@@ -11,8 +11,10 @@ The project has:
 - deterministic local tests, conformance fixtures, and correctness fixtures;
 - cross-platform GitHub Action smoke coverage;
 - a Python compatibility matrix and CodeQL workflow;
+- a pinned public compatibility corpus with a v0.4.1 release evidence result;
 - release checks for metadata, wheel/sdist contents, installed-wheel behavior,
-  checksums, and artifact attestation; and
+  checksums, artifact attestation, dependency review, and Scorecard analysis;
+  and
 - explicit threat-model, security, benchmark, and output-contract documents.
 
 The project does not currently claim:
@@ -24,6 +26,9 @@ The project does not currently claim:
   dependencies; or
 - legal compliance, CRA certification, or an audit opinion.
 
+The public compatibility corpus is a regression contract for seven pinned
+repository shapes, not an accuracy score. Its v0.4.1 machine-readable result
+is attached to the [v0.4.1 release](https://github.com/bulltickr/impactprism/releases/tag/v0.4.1).
 The governed real-repository G2 benchmark is intentionally incomplete. Its
 blocker report is public in [BENCHMARK_REPORT.md](BENCHMARK_REPORT.md); local
 demos and fixtures are not presented as external accuracy evidence.

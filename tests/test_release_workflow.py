@@ -22,7 +22,8 @@ def test_release_workflow_uses_explicit_github_release_artifacts():
     assert "python scripts/verify_release_artifacts.py dist" in raw
     assert "python scripts/checksums.py --strict dist" in raw
     assert "python -m pip install --no-index --no-deps --target .release-wheel dist/*.whl" in raw
-    assert 'gh release upload "$RELEASE_TAG" dist/* --clobber' in raw
+    assert 'gh release upload "$RELEASE_TAG" dist/*' in raw
+    assert '--clobber' not in raw
     assert "actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6" in raw
     assert "subject-path: dist/*" in raw
     assert "pypa/gh-action-pypi-publish" not in raw

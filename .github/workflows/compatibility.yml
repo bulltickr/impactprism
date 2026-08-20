@@ -47,4 +47,4 @@ jobs:
           name: impactprism-compatibility-result
           path: ${{ runner.temp }}/compatibility-result.json
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 90

@@ -1,0 +1,55 @@
+name: Compatibility report
+description: Report a real repository shape that needs review or support
+title: "compatibility: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Remove credentials, proprietary source, and private lockfile contents.
+        A small sanitized fixture is preferred over a complete repository.
+  - type: input
+    id: version
+    attributes:
+      label: ImpactPrism version or commit
+    validations:
+      required: true
+  - type: dropdown
+    id: ecosystem
+    attributes:
+      label: Ecosystem
+      options:
+        - npm
+        - Python
+        - Go
+        - Multiple ecosystems
+    validations:
+      required: true
+  - type: input
+    id: package_manager
+    attributes:
+      label: Package manager or workspace format
+      placeholder: pnpm workspace, Poetry, uv, Go workspaces
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Sanitized reproduction
+      description: Include the smallest manifest, lockfile, source, and configuration shape that reproduces the behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: expected_actual
+    attributes:
+      label: Expected and actual behavior
+      description: Include finding type, package/module, provenance, and relevant output.
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Analysis boundary
+      options:
+        - label: The reproduction may involve generated source, dynamic loading, or runtime-only resolution.
+        - label: I have removed secrets and proprietary source.
+          required: true

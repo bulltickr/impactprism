@@ -49,6 +49,12 @@ gh attestation verify impactprism-0.4.1-py3-none-any.whl \
 Checksums remain useful for offline transfer; the attestation adds build
 provenance when the GitHub API is reachable.
 
+For a release with a reviewed public compatibility baseline, attach the
+machine-readable `compatibility-result.json` produced by the pinned corpus
+workflow to the same GitHub Release. Do not overwrite an existing release
+asset; a corrected result belongs to a new release or a clearly versioned
+evidence asset with its own provenance.
+
 ## Installing a release
 
 Install the attached wheel directly from GitHub. Confirm its checksum against
