@@ -23,6 +23,24 @@
         }
       ]
     },
+    "npm-pnpm-resolution-boundary": {
+      "findings": [
+        {
+          "finding_id": "5f49d2cbf59f2881",
+          "finding_type": "UNRESOLVED_IMPORT",
+          "package": "#missing",
+          "file": "apps/app/src/index.js",
+          "line": 3,
+          "column": 1,
+          "manifest": null,
+          "lockfile": null,
+          "scope": "dependencies",
+          "severity": "HIGH",
+          "confidence": "MEDIUM",
+          "status": "OPEN"
+        }
+      ]
+    },
     "python-requirements-clean": {"findings": []},
     "python-pipenv-clean": {"findings": []},
     "python-uv-clean": {"findings": []},

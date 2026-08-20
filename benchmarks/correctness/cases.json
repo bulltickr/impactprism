@@ -34,6 +34,14 @@
       }
     },
     {
+      "id": "npm-pnpm-resolution-boundary",
+      "path": "tests/fixtures/correctness/npm_pnpm_resolution",
+      "ecosystem": "npm",
+      "expected_counts": {
+        "UNRESOLVED_IMPORT": 1
+      }
+    },
+    {
       "id": "python-requirements-clean",
       "path": "tests/fixtures/correctness/python_requirements",
       "ecosystem": "python",

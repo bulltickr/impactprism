@@ -7,8 +7,11 @@ the boundary that remains intentionally visible.
 ## Covered in the correctness matrix
 
 - npm workspaces with package-local manifests and a root lockfile;
+- pnpm workspaces declared in `pnpm-workspace.yaml`, including exclusion globs;
 - npm workspace package `exports` and package-local `imports` aliases;
 - static TypeScript `paths`/`baseUrl` aliases, including JSONC comments;
+- literal Vite and webpack-style `resolve.alias` objects/arrays, including
+  simple `path.resolve(__dirname, ...)` targets;
 - npm workspaces containing literal dynamic imports;
 - checked-in generated JavaScript that contributes a package import;
 - Python literal `importlib.import_module("package")` and explicitly imported
@@ -38,7 +41,10 @@ Static local aliases and workspace package exports are resolved only when the
 configured target can be verified from the checkout. A missing target or a
 workspace subpath excluded by `exports` becomes an `UNRESOLVED_IMPORT` finding.
 Bundler configuration files are not executed, and arbitrary JavaScript alias
-logic remains outside the supported resolution boundary.
+logic remains outside the supported resolution boundary. The supported bundler
+subset is deliberately limited to literal alias data; plugin-provided aliases,
+regular expressions, environment-dependent values, and function-generated
+configuration remain unresolved evidence gaps.
 
 ## Generated-source boundary
 

@@ -8,6 +8,8 @@
   package-local `imports`, and static TypeScript `paths`/`baseUrl` aliases.
 - Added explicit unresolved findings when a configured local target is missing
   or a workspace package subpath is not exported.
+- Added bounded pnpm workspace discovery and non-executing literal Vite/webpack
+  alias coverage, with repository-root containment checks.
 
 ## 0.4.0 - 2026-08-19
 

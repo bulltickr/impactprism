@@ -254,3 +254,31 @@ def test_workspace_match_cap_controlled(tmp_path, monkeypatch):
         impactprism.manifest.discover_workspaces(str(repo))
     assert time.monotonic() - t0 < 10
     assert excinfo.value.budget_name == "workspace_matches"
+
+
+def test_pnpm_workspace_yaml_discovers_included_and_excluded_packages(tmp_path):
+    repo = tmp_path / "repo"
+    write_file(
+        repo,
+        "package.json",
+        json.dumps({"name": "root", "version": "1.0.0"}),
+    )
+    write_file(
+        repo,
+        "pnpm-workspace.yaml",
+        "packages:\n  - 'packages/*'\n  - '!packages/ignored'\n",
+    )
+    write_file(
+        repo,
+        "packages/app/package.json",
+        json.dumps({"name": "app", "version": "1.0.0"}),
+    )
+    write_file(
+        repo,
+        "packages/ignored/package.json",
+        json.dumps({"name": "ignored", "version": "1.0.0"}),
+    )
+
+    discovered = impactprism.manifest.discover_workspaces(str(repo))
+
+    assert [path.name for path in discovered] == ["app"]

@@ -8,6 +8,8 @@ from . import budgets
 from dataclasses import dataclass
 from pathlib import Path
 
+import yaml
+
 __all__ = [
     "Dependency",
     "Manifest",
@@ -156,43 +158,76 @@ def parse_lockfile(repo_dir: str | os.PathLike[str]) -> Lockfile | None:
 
 def discover_workspaces(repo_dir: str | os.PathLike[str]) -> list[Path]:
     repo_path = Path(repo_dir)
-    try:
-        package_data = _read_package_json(repo_path / "package.json")
-    except (OSError, ValueError):
-        return []
-    workspaces = package_data.get("workspaces")
-    patterns: list[object] = []
-    if isinstance(workspaces, list):
-        patterns = workspaces
-    elif isinstance(workspaces, dict):
-        packages = workspaces.get("packages")
-        if isinstance(packages, list):
-            patterns = packages
+    patterns = _workspace_patterns(repo_path)
     matches: list[Path] = []
     match_count = 0
     for pattern in patterns:
         if not isinstance(pattern, str):
             continue
-        normalized = pattern.strip("/")
+        excluded = pattern.startswith("!")
+        normalized = pattern[1:] if excluded else pattern
+        normalized = normalized.strip("/")
         if not normalized:
             continue
-        if "**" in normalized:
-            candidates = repo_path.rglob(normalized)
-        else:
-            candidates = repo_path.glob(normalized)
+        try:
+            candidates = (
+                repo_path.rglob(normalized)
+                if "**" in normalized
+                else repo_path.glob(normalized)
+            )
+        except (OSError, ValueError):
+            continue
         for candidate in candidates:
             match_count += 1
             if match_count > budgets.MAX_WORKSPACE_MATCHES:
                 raise budgets.ScannerBudgetError("workspace_matches", budgets.MAX_WORKSPACE_MATCHES)
+            try:
+                candidate.resolve().relative_to(repo_path.resolve())
+            except ValueError:
+                continue
             if not candidate.is_dir():
                 continue
             if not (candidate / "package.json").is_file():
                 continue
-            matches.append(candidate)
+            if excluded:
+                matches = [match for match in matches if match.resolve() != candidate.resolve()]
+            else:
+                matches.append(candidate)
     unique: dict[str, Path] = {}
     for match in sorted(matches, key=lambda path: str(path)):
         unique[str(match.resolve())] = match
     return list(unique.values())
+
+
+def _workspace_patterns(repo_path: Path) -> list[object]:
+    """Read package-manager workspace globs without running package-manager code."""
+    patterns: list[object] = []
+    try:
+        package_data = _read_package_json(repo_path / "package.json")
+    except (OSError, ValueError):
+        package_data = {}
+    workspaces = package_data.get("workspaces")
+    if isinstance(workspaces, list):
+        patterns.extend(workspaces)
+    elif isinstance(workspaces, dict):
+        packages = workspaces.get("packages")
+        if isinstance(packages, list):
+            patterns.extend(packages)
+
+    workspace_file = repo_path / "pnpm-workspace.yaml"
+    if not workspace_file.is_file():
+        return patterns
+    try:
+        budgets.json_bytes_guard(workspace_file, budgets.MAX_FILE_BYTES)
+        raw = budgets.read_text_limited(workspace_file, budgets.MAX_FILE_BYTES)
+        config = yaml.safe_load(raw)
+    except budgets.ScannerBudgetError:
+        raise
+    except (OSError, RecursionError, yaml.YAMLError, TypeError):
+        return patterns
+    if isinstance(config, dict) and isinstance(config.get("packages"), list):
+        patterns.extend(config["packages"])
+    return patterns
 
 
 def parse_manifests(repo_dir: str | os.PathLike[str]) -> list[Manifest]:

@@ -9,14 +9,16 @@ portable automation.
 - Stabilize versioned report, evidence, delta, diagnostic, SARIF, and SBOM
   contracts.
 - Maintain reviewed correctness fixtures for real manifest, lockfile,
-  workspace, package-export/import, static TypeScript-alias, dynamic-import,
-  generated-source, and optional-dependency shapes.
+  npm/pnpm workspace, package-export/import, static TypeScript-alias,
+  literal bundler-alias, dynamic-import, generated-source, and
+  optional-dependency shapes.
 - Improve incremental scanning and repository-local policy ergonomics.
 
 ## Next
 
 - Add additional reviewed fixtures for bundler-specific resolution and
-  supported monorepo layouts beyond the current npm and Go workspace cases.
+  supported monorepo layouts beyond the current npm, pnpm, and Go workspace
+  cases; keep dynamic bundler configuration outside the execution boundary.
 - Improve remediation guidance for each finding family without applying edits
   implicitly.
 - Add portable examples for GitHub, self-hosted runners, and other CI systems

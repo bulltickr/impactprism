@@ -11,7 +11,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import budgets
+from . import budgets, static_config
 
 
 _SOURCE_SUFFIXES = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".json")
@@ -229,6 +229,7 @@ class ResolutionContext:
         }
         self._json_cache: dict[Path, dict | None] = {}
         self._tsconfig_cache: dict[Path, dict | None] = {}
+        self._bundler_cache: dict[Path, list] = {}
 
     def classify(
         self, file_path: Path, specifier: str, kind: str = "esm"
@@ -240,9 +241,21 @@ class ResolutionContext:
         package = _package_name(specifier)
         if package in self.local_packages:
             return self._workspace_export(package, specifier, kind)
+        unresolved: list[str] = []
         alias = self._tsconfig_alias(file_path, specifier)
         if alias is not None:
-            return alias
+            if alias.kind == "local":
+                return alias
+            unresolved.append(alias.reason)
+        bundler_kind, bundler_reason = static_config.resolve_alias(
+            self.repo, file_path, specifier, cache=self._bundler_cache
+        )
+        if bundler_kind == "local":
+            return ResolutionDecision("local")
+        if bundler_kind == "unresolved":
+            unresolved.append(bundler_reason)
+        if unresolved:
+            return ResolutionDecision("unresolved", unresolved[0])
         return ResolutionDecision("external")
 
     def _json(self, path: Path) -> dict | None:
