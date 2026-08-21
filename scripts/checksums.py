@@ -17,10 +17,15 @@ def checksum_lines(directory: str | Path) -> list[str]:
     files = sorted(
         path for path in root.iterdir() if path.is_file() and path.name != "SHA256SUMS"
     )
-    return [
-        f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}"
-        for path in files
-    ]
+    return [checksum_line(path) for path in files]
+
+
+def checksum_line(path: str | Path, display_name: str | None = None) -> str:
+    """Return one portable checksum-manifest line for a file."""
+
+    source = Path(path).resolve()
+    name = display_name or source.name
+    return f"{hashlib.sha256(source.read_bytes()).hexdigest()}  {name}"
 
 
 def write_checksums(directory: str | Path) -> Path:
@@ -28,6 +33,20 @@ def write_checksums(directory: str | Path) -> Path:
     output = root / "SHA256SUMS"
     output.write_text("\n".join(checksum_lines(root)) + "\n", encoding="utf-8")
     return output
+
+
+def write_file_checksum(file_path: str | Path, output: str | Path | None = None) -> Path:
+    """Write a checksum sidecar next to one file and return its path."""
+
+    source = Path(file_path).resolve()
+    target = (
+        Path(output).resolve()
+        if output is not None
+        else source.with_name(source.name + ".sha256")
+    )
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(checksum_line(source) + "\n", encoding="utf-8")
+    return target
 
 
 def validate_release_directory(directory: str | Path) -> list[Path]:
@@ -53,9 +72,21 @@ def validate_release_directory(directory: str | Path) -> list[Path]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("directory")
+    parser.add_argument("directory", nargs="?")
+    parser.add_argument("--file", dest="file_path", help="write a checksum sidecar for one file")
+    parser.add_argument("--output", help="sidecar path when using --file")
     parser.add_argument("--strict", action="store_true", help="require the exact wheel and sdist release set")
     args = parser.parse_args(argv)
+    if args.file_path:
+        if args.directory or args.strict:
+            parser.error("--file cannot be combined with a directory or --strict")
+        output = write_file_checksum(args.file_path, args.output)
+        print(f"Wrote {output}")
+        return 0
+    if not args.directory:
+        parser.error("a directory is required unless --file is used")
+    if args.output:
+        parser.error("--output requires --file")
     if args.strict:
         try:
             validate_release_directory(args.directory)

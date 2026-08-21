@@ -27,7 +27,9 @@ def test_release_workflow_uses_explicit_github_release_artifacts():
     assert "benchmarks/compatibility/prepare.py" in raw
     assert "benchmarks/compatibility/run.py" in raw
     assert '"$RUNNER_TEMP/compatibility-result.json"' in raw
-    assert 'gh release upload "$RELEASE_TAG" dist/* "$RUNNER_TEMP/compatibility-result.json"' in raw
+    assert "--file \"$RUNNER_TEMP/compatibility-result.json\"" in raw
+    assert '"$RUNNER_TEMP/compatibility-result.json.sha256"' in raw
+    assert 'gh release upload "$RELEASE_TAG" dist/*' in raw
     assert '--clobber' not in raw
     assert "actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6" in raw
     assert "subject-path: dist/*" in raw
@@ -66,6 +68,7 @@ def test_release_workflow_is_draft_first_and_refuses_published_release_mutation(
     assert "isDraft" in raw[prepare:upload]
     assert "already published; immutable releases cannot be modified" in raw[prepare:upload]
     assert 'gh release upload "$RELEASE_TAG" dist/*' in raw[upload:publish]
+    assert '"$RUNNER_TEMP/compatibility-result.json.sha256"' in raw[upload:publish]
     assert 'gh release edit "$RELEASE_TAG" --draft=false' in raw[publish:]
     assert prepare < upload < publish
     assert "types: [published]" not in raw
