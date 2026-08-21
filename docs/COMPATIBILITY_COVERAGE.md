@@ -1,16 +1,16 @@
-# Current compatibility coverage
+# Ten-case compatibility coverage
 
-This document records the current ten-case compatibility selection and its
+This document records the ten-case compatibility selection and its pre-release
 local verification. It is deliberately separate from the historical
 [v0.4.1 release report](COMPATIBILITY_REPORT.md): the v0.4.1 machine-readable
 release asset contains the original seven-case baseline and does not claim to
 contain these later additions.
 
-## Current local run
+## Recorded local run
 
 | Field | Value |
 |---|---|
-| Scanner version | `0.4.1` |
+| Scanner version at recording | `0.4.1` |
 | Corpus | `impactprism-public-compatibility-2026-08` |
 | Manifest SHA-256 | `d409c105766d18207a7affa9eda93e049f6a3538d3c8efe02f41e175084ce459` |
 | Cases | 10 |
@@ -53,11 +53,11 @@ The existing baseline remains:
 - `go-cobra`
 - `go-logrus`
 
-The three additions above bring the public manifest to ten cases across npm,
-Python, and Go. This remains a regression contract for pinned repository
-shapes, not a precision, recall, or broad accuracy benchmark.
+The three additions above bring the public manifest to ten cases: three npm,
+four Python, and three Go cases. This remains a regression contract for pinned
+repository shapes, not a precision, recall, or broad accuracy benchmark.
 
-Before the next release, the compatibility workflow should repeat this exact
-ten-case run on the merged main commit. The resulting machine-readable JSON
-should be attached to that release; until then, this expanded run is not a
-release asset.
+The v0.4.2 release-artifacts workflow repeats this exact ten-case run from the
+release tag and uploads the resulting machine-readable JSON with the release
+assets. Until that release is published, this expanded run is not a release
+asset.

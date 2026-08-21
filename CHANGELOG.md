@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## 0.4.2 - 2026-08-21
+
+### Compatibility evidence
+
+- Expanded the pinned public compatibility corpus from seven to ten reviewed
+  real-repository shapes across npm, Python, and Go.
+- Made the release-artifacts workflow run the pinned compatibility corpus from
+  the exact release tag and attach its machine-readable result to the GitHub
+  Release.
+
+### Documentation
+
+- Published the expanded compatibility selection and its evidence boundaries.
+- Corrected the public corpus coverage counts to match the ten-case manifest.
+
 ## 0.4.1 - 2026-08-20
 
 ### Resolution coverage

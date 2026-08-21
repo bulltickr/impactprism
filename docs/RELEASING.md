@@ -8,8 +8,8 @@ fixtures, and built artifacts are all part of the release boundary.
 
 1. Update `CHANGELOG.md` and move the intended entries out of `Unreleased`.
 2. Update `src/impactprism/version.py` to the release version. Because the
-   repository already has published `v0.4.0` and historical `v0.2.0` tags, the
-   next synchronized package/Action release is `v0.4.1`; never move an existing
+   repository already has published `v0.4.1` and historical `v0.2.0` tags, the
+   next synchronized package/Action release is `v0.4.2`; never move an existing
    tag.
 3. Run the local checks from the repository root:
 
@@ -51,6 +51,11 @@ gh attestation verify impactprism-0.4.1-py3-none-any.whl \
 Checksums remain useful for offline transfer; the attestation adds build
 provenance when the GitHub API is reachable.
 
+The release-artifacts workflow also runs the pinned public compatibility corpus
+from the exact release tag and uploads `compatibility-result.json` with the
+other release assets. That result is a compatibility regression contract, not
+an accuracy benchmark.
+
 The draft-first sequence is intentional. It keeps all assets attached before
 publication, so the process remains compatible with GitHub immutable releases.
 If the selected tag already has a published release, the workflow stops rather
@@ -58,11 +63,8 @@ than attempting to mutate it. A failed run may leave a draft release or partial
 assets; inspect that draft before retrying and do not overwrite a published
 asset.
 
-For a release with a reviewed public compatibility baseline, attach the
-machine-readable `compatibility-result.json` produced by the pinned corpus
-workflow to the same GitHub Release. Do not overwrite an existing release
-asset; a corrected result belongs to a new release or a clearly versioned
-evidence asset with its own provenance.
+Do not overwrite an existing release asset; a corrected result belongs to a new
+release or a clearly versioned evidence asset with its own provenance.
 
 ## Installing a release
 

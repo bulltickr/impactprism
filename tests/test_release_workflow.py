@@ -24,7 +24,10 @@ def test_release_workflow_uses_explicit_github_release_artifacts():
     assert "python scripts/verify_release_artifacts.py dist" in raw
     assert "python scripts/checksums.py --strict dist" in raw
     assert "python -m pip install --no-index --no-deps --target .release-wheel dist/*.whl" in raw
-    assert 'gh release upload "$RELEASE_TAG" dist/*' in raw
+    assert "benchmarks/compatibility/prepare.py" in raw
+    assert "benchmarks/compatibility/run.py" in raw
+    assert '"$RUNNER_TEMP/compatibility-result.json"' in raw
+    assert 'gh release upload "$RELEASE_TAG" dist/* "$RUNNER_TEMP/compatibility-result.json"' in raw
     assert '--clobber' not in raw
     assert "actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6" in raw
     assert "subject-path: dist/*" in raw
@@ -38,6 +41,7 @@ def test_release_workflow_verifies_before_building_and_uploading():
     metadata = raw.index("- name: Verify release metadata")
     tests = raw.index("- name: Run release tests")
     build = raw.index("- name: Build release distributions")
+    compatibility = raw.index("- name: Run release compatibility corpus")
     checksums = raw.index("- name: Generate SHA-256 checksums")
     upload = raw.index("- name: Upload artifacts to the GitHub Release")
 
@@ -46,7 +50,7 @@ def test_release_workflow_verifies_before_building_and_uploading():
     assert "python scripts/check_release.py" in raw[metadata:tests]
     assert "python scripts/ci.py conformance" in raw[tests:build]
     assert "python scripts/ci.py correctness" in raw[tests:build]
-    assert metadata < tests < build < checksums < upload
+    assert metadata < tests < build < compatibility < checksums < upload
 
 
 def test_release_workflow_is_draft_first_and_refuses_published_release_mutation():

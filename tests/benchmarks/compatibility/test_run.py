@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from benchmarks.compatibility.run import _digest, _validate_manifest
+from benchmarks.compatibility.run import _digest, _manifest_sha256, _validate_manifest
 
 
 MANIFEST = Path("benchmarks/compatibility/manifest.json")
@@ -47,6 +47,16 @@ def test_digest_is_canonical_for_normalized_rows():
     rows = [{"finding_type": "B", "line": 2}, {"finding_type": "A", "line": 1}]
 
     assert _digest(rows) == _digest(json.loads(json.dumps(rows)))
+
+
+def test_manifest_hash_is_stable_across_checkout_line_endings(tmp_path):
+    content = MANIFEST.read_bytes().replace(b"\r\n", b"\n")
+    lf_manifest = tmp_path / "manifest-lf.json"
+    crlf_manifest = tmp_path / "manifest-crlf.json"
+    lf_manifest.write_bytes(content)
+    crlf_manifest.write_bytes(content.replace(b"\n", b"\r\n"))
+
+    assert _manifest_sha256(lf_manifest) == _manifest_sha256(crlf_manifest)
 
 
 def test_manifest_records_real_repository_identity_and_evidence_contract():
