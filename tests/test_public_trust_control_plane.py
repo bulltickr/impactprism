@@ -7,27 +7,29 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 
 
-def test_compatibility_report_preserves_the_historical_release_baseline():
+def test_compatibility_report_tracks_the_published_release_baseline():
     raw = (ROOT / "docs" / "COMPATIBILITY_REPORT.md").read_text(encoding="utf-8")
 
-    assert "| Scanner version | `0.4.1` |" in raw
+    assert f"| Scanner version | `{__version__}` |" in raw
     assert "| Cases | 10 |" in raw
     assert "| Result | 10/10 passed |" in raw
     assert "Network during scan | No" in raw
     assert "Repository code executed | No" in raw
     assert "Repository dependencies installed | No" in raw
+    assert "releases/download/v0.4.2/compatibility-result.json" in raw
+    assert "Run 32434860733" in raw
     assert "releases/download/v0.4.1/compatibility-result.json" in raw
-    assert "Run 32433536443" in raw
     assert "0.4.0" not in raw
-    assert f"| Scanner version | `{__version__}` |" not in raw
+    assert "not yet attached to a versioned" not in raw
 
 
-def test_expanded_compatibility_coverage_is_explicitly_local_until_next_release():
+def test_expanded_compatibility_coverage_links_the_durable_release_result():
     raw = (ROOT / "docs" / "COMPATIBILITY_COVERAGE.md").read_text(encoding="utf-8")
 
     assert "10/10 passed" in raw
     assert "d409c105766d18207a7affa9eda93e049f6a3538d3c8efe02f41e175084ce459" in raw
-    assert "not a release asset" in raw
+    assert "releases/download/v0.4.2/compatibility-result.json" in raw
+    assert "not a release asset" not in raw
     assert "npm-chalk" in raw
     assert "python-httpx" in raw
     assert "go-chi" in raw

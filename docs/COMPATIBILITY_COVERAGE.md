@@ -1,10 +1,10 @@
 # Ten-case compatibility coverage
 
 This document records the ten-case compatibility selection and its pre-release
-local verification. It is deliberately separate from the historical
-[v0.4.1 release report](COMPATIBILITY_REPORT.md): the v0.4.1 machine-readable
-release asset contains the original seven-case baseline and does not claim to
-contain these later additions.
+local verification. It is a supplementary view of the published
+[v0.4.2 compatibility report](COMPATIBILITY_REPORT.md). The v0.4.1
+machine-readable release asset remains the original seven-case baseline and
+does not claim to contain these later additions.
 
 ## Recorded local run
 
@@ -19,7 +19,7 @@ contain these later additions.
 | Network during scan | No |
 | Repository code executed | No |
 | Repository dependencies installed | No |
-| Durable release result | Not yet; this is not a release asset |
+| Durable release result | [`v0.4.2 compatibility-result.json`](https://github.com/bulltickr/impactprism/releases/download/v0.4.2/compatibility-result.json) |
 
 The run was performed after disposable snapshots were prepared from the exact
 manifest commits. The scan phase did not fetch repositories, install their
@@ -57,7 +57,7 @@ The three additions above bring the public manifest to ten cases: three npm,
 four Python, and three Go cases. This remains a regression contract for pinned
 repository shapes, not a precision, recall, or broad accuracy benchmark.
 
-The v0.4.2 release-artifacts workflow repeats this exact ten-case run from the
-release tag and uploads the resulting machine-readable JSON with the release
-assets. Until that release is published, this expanded run is not a release
-asset.
+The v0.4.2 release-artifacts workflow repeated this exact ten-case run from the
+release tag and uploaded the resulting machine-readable JSON with the release
+assets. The durable result is linked above; the recorded local run remains
+explicitly identified as pre-release evidence.
