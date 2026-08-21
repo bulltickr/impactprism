@@ -8,9 +8,9 @@ fixtures, and built artifacts are all part of the release boundary.
 
 1. Update `CHANGELOG.md` and move the intended entries out of `Unreleased`.
 2. Update `src/impactprism/version.py` to the release version. Because the
-   repository already has published `v0.4.1` and historical `v0.2.0` tags, the
-   current synchronized package/Action release is `v0.4.3`; never move an existing
-   tag.
+   repository already has published `v0.4.1` and historical `v0.2.0` tags, this
+   preparation targets the next synchronized package/Action release, `v0.4.4`;
+   never move an existing tag.
 3. Run the local checks from the repository root:
 
    ```bash
@@ -44,7 +44,7 @@ the built release files. When GitHub is available, verify a downloaded wheel
 with:
 
 ```bash
-gh attestation verify impactprism-0.4.3-py3-none-any.whl \
+gh attestation verify impactprism-0.4.4-py3-none-any.whl \
   -R bulltickr/impactprism
 ```
 

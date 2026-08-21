@@ -1,16 +1,16 @@
 from pathlib import Path
 
-from impactprism.version import __version__
-
-
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
+PUBLISHED_COMPATIBILITY_VERSION = "0.4.3"
 
 
 def test_compatibility_report_tracks_the_published_release_baseline():
     raw = (ROOT / "docs" / "COMPATIBILITY_REPORT.md").read_text(encoding="utf-8")
 
-    assert f"| Scanner version | `{__version__}` |" in raw
+    # This report is durable evidence from the published v0.4.3 release. It
+    # must remain stable while the working tree prepares a later release.
+    assert f"| Scanner version | `{PUBLISHED_COMPATIBILITY_VERSION}` |" in raw
     assert "| Cases | 10 |" in raw
     assert "| Result | 10/10 passed |" in raw
     assert "Network during scan | No" in raw
