@@ -19,6 +19,8 @@ For source installation and development setup, see
 [docs/INSTALLING.md](docs/INSTALLING.md). The GitHub Action requires no local
 CLI installation.
 
+For a first-time walkthrough, see [Getting started](docs/GETTING_STARTED.md).
+
 If the command fails before scanning, run the offline diagnostic first:
 
 ```text
@@ -124,7 +126,7 @@ Two further findings are emitted but are not part of the core six: `UNRESOLVED_I
 
 ## Demo and screenshots
 
-Ready-made fixture apps with planted findings live in [demo/README.md](demo/README.md): `demo/npm-app` demonstrates drift and an undeclared dependency, `demo/clean-app` demonstrates a clean pass.
+Ready-made fixture apps with planted findings live in [demo/README.md](demo/README.md): `demo/npm-app` demonstrates drift and an undeclared dependency, while the npm, Python, and Go clean demos demonstrate successful scans. The provider-neutral verification also runs the complete demo matrix.
 
 - [impactprism-scan-terminal.png](docs/screenshots/impactprism-scan-terminal.png) — `impactprism scan` terminal output with findings
 - [evidence-pack-markdown.png](docs/screenshots/evidence-pack-markdown.png) — rendered Markdown evidence pack

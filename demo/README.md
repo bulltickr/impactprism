@@ -14,11 +14,26 @@ and locks `requests`, then imports it from `src/app.py`.
 `go-clean` demonstrates the equivalent clean pass for Go with only a standard
 library import.
 
-From the repository root, scan either app with:
+From an installed checkout, scan the demos with the canonical CLI:
 
 ```text
-python main.py analyze demo\npm-app --json
-python main.py analyze demo\clean-app --json
-python main.py analyze demo\python-clean --json
-python main.py analyze demo\go-clean --json
+impactprism scan demo/npm-app --json
+impactprism scan demo/clean-app --json
+impactprism scan demo/python-clean --json
+impactprism scan demo/go-clean --json
 ```
+
+The finding-bearing npm demo intentionally exits with code `1`; it should
+report `DECLARED_UNUSED_CANDIDATE`, `MISSING_LOCKFILE`, and
+`UNDECLARED_DIRECT_USE`. The three clean demos exit `0` with no findings. On
+Windows, use forward slashes as shown or replace them with PowerShell-
+compatible paths.
+
+To validate every demo without leaving output files in the repository, run:
+
+```text
+python scripts/ci.py validate-demos
+```
+
+For a complete contributor gate, see
+[Adding sanitized fixtures](../docs/ADDING_FIXTURES.md).
