@@ -13,7 +13,9 @@ def _workflow_text() -> str:
 def test_release_workflow_uses_explicit_github_release_artifacts():
     raw = _workflow_text()
 
-    assert "on:\n  release:\n    types: [published]" in raw
+    assert "on:\n  workflow_dispatch:" in raw
+    assert "release-tag:" in raw
+    assert "type: string" in raw
     assert "permissions:\n  contents: read" in raw
     assert "    permissions:\n      contents: write" in raw
     assert "      id-token: write" in raw
@@ -40,11 +42,29 @@ def test_release_workflow_verifies_before_building_and_uploading():
     upload = raw.index("- name: Upload artifacts to the GitHub Release")
 
     assert "GITHUB_REF_TYPE: tag" in raw[metadata:tests]
-    assert "GITHUB_REF_NAME: ${{ github.event.release.tag_name }}" in raw[metadata:tests]
+    assert "GITHUB_REF_NAME: ${{ inputs.release-tag }}" in raw[metadata:tests]
     assert "python scripts/check_release.py" in raw[metadata:tests]
     assert "python scripts/ci.py conformance" in raw[tests:build]
     assert "python scripts/ci.py correctness" in raw[tests:build]
     assert metadata < tests < build < checksums < upload
+
+
+def test_release_workflow_is_draft_first_and_refuses_published_release_mutation():
+    raw = _workflow_text()
+
+    prepare = raw.index("- name: Prepare draft GitHub Release")
+    upload = raw.index("- name: Upload artifacts to the GitHub Release")
+    publish = raw.index("- name: Publish completed GitHub Release")
+
+    assert 'gh release create "$RELEASE_TAG"' in raw[prepare:upload]
+    assert "--draft" in raw[prepare:upload]
+    assert "--verify-tag" in raw[prepare:upload]
+    assert "isDraft" in raw[prepare:upload]
+    assert "already published; immutable releases cannot be modified" in raw[prepare:upload]
+    assert 'gh release upload "$RELEASE_TAG" dist/*' in raw[upload:publish]
+    assert 'gh release edit "$RELEASE_TAG" --draft=false' in raw[publish:]
+    assert prepare < upload < publish
+    assert "types: [published]" not in raw
 
 
 def test_action_manifest_keeps_ecosystem_input_nested():

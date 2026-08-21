@@ -32,10 +32,12 @@ fixtures, and built artifacts are all part of the release boundary.
 
 The repository's release-check workflow repeats the important checks whenever
 a `v*` tag is pushed, including exact artifact-set validation, an installed
-wheel smoke test, and strict checksums. After the tag is made into an explicitly published
-GitHub Release, the release-artifacts workflow builds a wheel and source
-archive, writes `SHA256SUMS`, and uploads all three to that GitHub Release.
-The project does not publish to a package registry.
+wheel smoke test, and strict checksums. After those checks pass, manually run
+the `Publish GitHub Release artifacts` workflow with the existing tag as its
+`release-tag` input. The workflow builds a wheel and source archive, writes
+`SHA256SUMS`, creates or reuses a draft GitHub Release, uploads all assets, and
+only then publishes the release. The project does not publish to a package
+registry.
 
 The release-artifacts workflow also creates a GitHub artifact attestation for
 the built release files. When GitHub is available, verify a downloaded wheel
@@ -48,6 +50,13 @@ gh attestation verify impactprism-0.4.1-py3-none-any.whl \
 
 Checksums remain useful for offline transfer; the attestation adds build
 provenance when the GitHub API is reachable.
+
+The draft-first sequence is intentional. It keeps all assets attached before
+publication, so the process remains compatible with GitHub immutable releases.
+If the selected tag already has a published release, the workflow stops rather
+than attempting to mutate it. A failed run may leave a draft release or partial
+assets; inspect that draft before retrying and do not overwrite a published
+asset.
 
 For a release with a reviewed public compatibility baseline, attach the
 machine-readable `compatibility-result.json` produced by the pinned corpus
