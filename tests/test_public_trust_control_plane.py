@@ -11,12 +11,13 @@ def test_compatibility_report_tracks_current_release_and_durable_result():
     raw = (ROOT / "docs" / "COMPATIBILITY_REPORT.md").read_text(encoding="utf-8")
 
     assert f"| Scanner version | `{__version__}` |" in raw
-    assert "| Cases | 7 |" in raw
-    assert "| Result | 7/7 passed |" in raw
+    assert "| Cases | 10 |" in raw
+    assert "| Result | 10/10 passed |" in raw
     assert "Network during scan | No" in raw
     assert "Repository code executed | No" in raw
     assert "Repository dependencies installed | No" in raw
     assert "releases/download/v0.4.1/compatibility-result.json" in raw
+    assert "Run 32433536443" in raw
     assert "0.4.0" not in raw
 
 

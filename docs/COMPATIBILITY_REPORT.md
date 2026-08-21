@@ -12,25 +12,27 @@ repository or finding family.
 | Corpus | `impactprism-public-compatibility-2026-08` |
 | Corpus status | Pinned |
 | Scanner version | `0.4.1` |
-| Scanner commit | `d4f21638cb90f9d5e219c4185b5b2e789bf29013` |
-| Remote workflow commit | `d4f21638cb90f9d5e219c4185b5b2e789bf29013` |
-| Remote workflow | [Run 32324096016](https://github.com/bulltickr/impactprism/actions/runs/32324096016) |
-| Manifest SHA-256 | `16d584d9435aea87ad0d29ab9c86fffd4d55e254c0de922368a9bf57708d077c` |
-| Cases | 7 |
-| Result | 7/7 passed |
+| Scanner commit | `b73b55c1c6f7336f0741b3b1e529debb440417ad` |
+| Remote workflow commit | `b73b55c1c6f7336f0741b3b1e529debb440417ad` |
+| Remote workflow | [Run 32433536443](https://github.com/bulltickr/impactprism/actions/runs/32433536443) |
+| Manifest SHA-256 | `d409c105766d18207a7affa9eda93e049f6a3538d3c8efe02f41e175084ce459` |
+| Cases | 10 |
+| Result | 10/10 passed |
 | Network during scan | No |
 | Repository code executed | No |
 | Repository dependencies installed | No |
 | Repeatability | Two same-context runs; byte-identical JSON |
-| Durable result | [`compatibility-result.json`](https://github.com/bulltickr/impactprism/releases/download/v0.4.1/compatibility-result.json) |
+| Remote result artifact | Uploaded by [Run 32433536443](https://github.com/bulltickr/impactprism/actions/runs/32433536443); retained for 90 days |
+| Historical release result | [`v0.4.1 compatibility-result.json`](https://github.com/bulltickr/impactprism/releases/download/v0.4.1/compatibility-result.json) contains the original seven-case baseline |
 
 The result was produced by preparing disposable checkouts from the manifest,
 then running `run.py` twice against those unchanged checkouts. Preparation is
 the only network phase. The machine-readable output contains the manifest
 SHA-256, pinned commit and source-tree IDs, counts, and normalized finding
-digests. The linked Ubuntu workflow repeated the run on the exact v0.4.1
-commit and uploaded the machine-readable result to the v0.4.1 release; its
-case digests match the local run.
+digests. The linked Ubuntu workflow repeated the run on the exact merged main
+commit and uploaded the machine-readable result; its case digests match both
+local runs. The expanded ten-case result is not yet attached to a versioned
+release asset and must not be described as part of v0.4.1.
 
 ## Case results
 
@@ -43,6 +45,9 @@ case digests match the local run.
 | `python-click` | Python | `61b69e96` | `9a54368b` | PASS | 77 | `DECLARED_UNUSED_CANDIDATE=16`, `DIRECT_DEPENDENCY_USED_TRANSITIVELY=2`, `LOCKFILE_MANIFEST_MISMATCH=57`, `SCOPE_MISMATCH=1`, `UNDECLARED_DIRECT_USE=1` |
 | `go-cobra` | Go | `adbc8813` | `5a3b2c8e` | PASS | 0 | clean |
 | `go-logrus` | Go | `134c80f8` | `a81865d2` | PASS | 0 | clean |
+| `npm-chalk` | npm | `661317e6` | `ff76edd5` | PASS | 12 | `DECLARED_UNUSED_CANDIDATE=11`, `MISSING_LOCKFILE=1` |
+| `python-httpx` | Python | `b5addb64` | `31ba9451` | PASS | 33 | `DIRECT_DEPENDENCY_USED_TRANSITIVELY=6`, `LOCKFILE_MANIFEST_MISMATCH=21`, `SCOPE_MISMATCH=1`, `UNDECLARED_DIRECT_USE=5` |
+| `go-chi` | Go | `735ae2b8` | `ec73f018` | PASS | 0 | clean |
 
 The short hashes above are for readability only. The complete 40-character
 identities and normalized output digests remain in
@@ -51,7 +56,7 @@ and the uploaded JSON result from the workflow.
 
 ## What this demonstrates
 
-- The scanner can process these seven pinned npm, Python, and Go repository
+- The scanner can process these ten pinned npm, Python, and Go repository
   shapes without emitting `SCANNER_ERROR`.
 - The normalized outputs are stable across two same-context runs.
 - The harness can distinguish expected clean cases from expected finding cases.
