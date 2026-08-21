@@ -1,0 +1,63 @@
+# Current compatibility coverage
+
+This document records the current ten-case compatibility selection and its
+local verification. It is deliberately separate from the historical
+[v0.4.1 release report](COMPATIBILITY_REPORT.md): the v0.4.1 machine-readable
+release asset contains the original seven-case baseline and does not claim to
+contain these later additions.
+
+## Current local run
+
+| Field | Value |
+|---|---|
+| Scanner version | `0.4.1` |
+| Corpus | `impactprism-public-compatibility-2026-08` |
+| Manifest SHA-256 | `d409c105766d18207a7affa9eda93e049f6a3538d3c8efe02f41e175084ce459` |
+| Cases | 10 |
+| Result | 10/10 passed |
+| Repeated same-context run | PASS |
+| Network during scan | No |
+| Repository code executed | No |
+| Repository dependencies installed | No |
+| Durable release result | Not yet; this is not a release asset |
+
+The run was performed after disposable snapshots were prepared from the exact
+manifest commits. The scan phase did not fetch repositories, install their
+dependencies, execute their code, or contact a package registry. The expected
+finding-family counts and normalized digests are stored in the manifest.
+
+## Selection additions
+
+| Case | Ecosystem | Shape represented | Result | Findings |
+|---|---|---|---|---:|
+| `npm-chalk` | npm | Single package, manifest without lockfile | PASS | 12 |
+| `python-httpx` | Python | `pyproject.toml` plus requirements-based development layout | PASS | 33 |
+| `go-chi` | Go | `go.mod` without `go.sum` | PASS | 0 |
+
+These cases were selected because they add repository shapes rather than merely
+another popular project in an already-covered shape. `npm-yargs` was evaluated
+but not promoted: its pinned tree produced a large unresolved/build-path-heavy
+output that needs a separate boundary contract. `nestjs/nest` was not promoted
+because its monorepo scan exceeded a reasonable candidate runtime. Those are
+selection decisions, not claims that either project is unsupported in general.
+
+## Full case set
+
+The existing baseline remains:
+
+- `npm-express`
+- `npm-p-map`
+- `python-requests`
+- `python-flask`
+- `python-click`
+- `go-cobra`
+- `go-logrus`
+
+The three additions above bring the public manifest to ten cases across npm,
+Python, and Go. This remains a regression contract for pinned repository
+shapes, not a precision, recall, or broad accuracy benchmark.
+
+Before the next release, the compatibility workflow should repeat this exact
+ten-case run on the merged main commit. The resulting machine-readable JSON
+should be attached to that release; until then, this expanded run is not a
+release asset.

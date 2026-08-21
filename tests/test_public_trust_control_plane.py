@@ -20,6 +20,17 @@ def test_compatibility_report_tracks_current_release_and_durable_result():
     assert "0.4.0" not in raw
 
 
+def test_expanded_compatibility_coverage_is_explicitly_local_until_next_release():
+    raw = (ROOT / "docs" / "COMPATIBILITY_COVERAGE.md").read_text(encoding="utf-8")
+
+    assert "10/10 passed" in raw
+    assert "d409c105766d18207a7affa9eda93e049f6a3538d3c8efe02f41e175084ce459" in raw
+    assert "not a release asset" in raw
+    assert "npm-chalk" in raw
+    assert "python-httpx" in raw
+    assert "go-chi" in raw
+
+
 def test_compatibility_artifact_retention_is_longer_than_default_short_lived_runs():
     raw = (WORKFLOWS / "compatibility.yml").read_text(encoding="utf-8")
 

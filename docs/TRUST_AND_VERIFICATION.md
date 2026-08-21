@@ -11,7 +11,8 @@ The project has:
 - deterministic local tests, conformance fixtures, and correctness fixtures;
 - cross-platform GitHub Action smoke coverage;
 - a Python compatibility matrix and CodeQL workflow;
-- a pinned public compatibility corpus with a v0.4.1 release evidence result;
+- a pinned public compatibility corpus with ten reviewed repository shapes; the
+  v0.4.1 release asset is the historical seven-case baseline;
 - release checks for metadata, wheel/sdist contents, installed-wheel behavior,
   checksums, artifact attestation, dependency review, and Scorecard analysis;
   and

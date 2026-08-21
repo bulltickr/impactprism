@@ -14,7 +14,7 @@ def test_public_manifest_is_valid_and_score_free():
 
     cases = _validate_manifest(document)
 
-    assert len(cases) == 7
+    assert len(cases) == 10
     assert document["accuracy_claim"] is False
     assert all(len(case["expected_digest"]) == 64 for case in cases)
 

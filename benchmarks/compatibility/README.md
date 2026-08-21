@@ -1,6 +1,6 @@
 # Public compatibility corpus
 
-This is a small, pinned integration corpus for real repository shapes. It is
+This is a small, pinned integration corpus for ten real repository shapes. It is
 not an accuracy benchmark, vulnerability study, ranking, or claim about the
 quality of any repository or finding family.
 
@@ -39,7 +39,10 @@ with different Git versions and operating systems.
 The manifest records license identifiers and pinned license-file URLs for
 selection traceability. It does not redistribute repository source or license
 files. Changes to the corpus require a reviewed manifest and golden-digest
-update; results must not be presented as precision, recall, or broad accuracy.
+update. The current selection covers three npm, five Python, and three Go
+shapes across single-package, lockfile-mismatch, development-heavy, and
+lockfile-absent layouts; results must not be presented as precision, recall, or
+broad accuracy.
 
 On Windows, prepare and run the corpus under the same user context. Git may
 reject a checkout created by another Windows identity as a dubious repository;
