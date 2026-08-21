@@ -19,8 +19,8 @@ portable automation.
 - Add additional reviewed fixtures for bundler-specific resolution and
   supported monorepo layouts beyond the current npm, pnpm, and Go workspace
   cases; keep dynamic bundler configuration outside the execution boundary.
-- Improve remediation guidance for each finding family without applying edits
-  implicitly.
+- Extend the remediation guidance contract with feedback from real sanitized
+  reproductions without applying edits implicitly.
 - Add portable examples for GitHub, self-hosted runners, and other CI systems
   around the existing provider-neutral commands.
 - Document compatibility expectations for Python versions and package-manager

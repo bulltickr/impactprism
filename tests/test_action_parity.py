@@ -99,6 +99,23 @@ def test_cli_and_action_share_canonical_report_and_evidence_contract(tmp_path, m
     assert action["bom_validated"] is True
 
 
+def test_action_exposes_remediation_guidance_in_all_finding_outputs(tmp_path, monkeypatch):
+    repo = _write_npm_repo(tmp_path, 'import missing from "missing-package";\n')
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    assert _run_action(repo, workspace, monkeypatch) == 1
+    report = _load(workspace / "reports" / "findings.json")
+    finding = report["findings"][0]
+    assert finding["remediation_guidance"]["steps"]
+
+    sarif = _load(workspace / "reports" / "impactprism.sarif")
+    result = sarif["runs"][0]["results"][0]
+    assert result["properties"]["remediation_guidance"]["steps"]
+    summary = (workspace / "reports" / "summary.md").read_text(encoding="utf-8")
+    assert "next step" in summary
+
+
 def test_action_baseline_gates_only_new_findings(tmp_path, monkeypatch):
     repo = _write_npm_repo(tmp_path, 'import React from "react";\n')
     workspace = tmp_path / "workspace"
@@ -236,4 +253,5 @@ def test_action_unsupported_input_is_not_an_empty_evidence_pass(tmp_path, monkey
     evidence = _load(workspace / "reports" / "evidence.json")
     assert report["outcome"] == "unsupported-ecosystem"
     assert report["findings"][0]["finding_type"] == "SCANNER_ERROR"
+    assert report["findings"][0]["remediation_guidance"]["summary"]
     assert evidence["overall_status"] == "REVIEW_REQUIRED"

@@ -56,6 +56,10 @@ def test_canonical_report_preserves_every_finding_type_and_exit_policy():
     assert report["unresolved"] == ["missing"]
     assert report["counts"]["total"] == len(findings)
     assert scan_exit_code(report) == 1
+    assert all(
+        set(item["remediation_guidance"]) == {"summary", "steps", "caution"}
+        for item in report["findings"]
+    )
 
 
 def test_evidence_adapter_includes_modern_finding_types():
@@ -77,6 +81,9 @@ def test_evidence_adapter_includes_modern_finding_types():
     }
     assert all(item["clauses"] for item in evidence)
     assert all(item["status"] == "REVIEW_REQUIRED" for item in evidence)
+    assert all(
+        item["remediation_guidance"]["steps"] for item in evidence
+    )
 
 
 def test_baseline_delta_only_gates_new_findings():

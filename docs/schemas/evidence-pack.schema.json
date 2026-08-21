@@ -74,11 +74,22 @@
         "severity": {"type": "string"},
         "confidence": {"type": "string"},
         "explanation": {"type": "string"},
+        "remediation_guidance": {"$ref": "#/$defs/remediation_guidance"},
         "clauses": {"type": "array", "items": {"type": "string"}},
         "rationale": {"type": "string"},
         "status": {"type": "string"}
       },
       "additionalProperties": true
+    },
+    "remediation_guidance": {
+      "type": "object",
+      "required": ["summary", "steps", "caution"],
+      "properties": {
+        "summary": {"type": "string"},
+        "steps": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "caution": {"type": "string"}
+      },
+      "additionalProperties": false
     },
     "summary": {
       "type": "object",
