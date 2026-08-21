@@ -12,6 +12,10 @@ the boundary that remains intentionally visible.
 - static TypeScript `paths`/`baseUrl` aliases, including JSONC comments;
 - literal Vite and webpack-style `resolve.alias` objects/arrays, including
   simple `path.resolve(__dirname, ...)` targets;
+- a Vite alias array in a standalone app and a webpack alias wildcard inside
+  an npm workspace with nested `apps/` and `packages/` roots;
+- a clean Go `go.work` repository with two independently managed modules and a
+  local workspace dependency;
 - npm workspaces containing literal dynamic imports;
 - checked-in generated JavaScript that contributes a package import;
 - Python literal `importlib.import_module("package")` and explicitly imported

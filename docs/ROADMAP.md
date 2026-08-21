@@ -16,7 +16,7 @@ portable automation.
 
 ## Next
 
-- Add additional reviewed fixtures for bundler-specific resolution and
+- Continue adding reviewed fixtures for bundler-specific resolution and
   supported monorepo layouts beyond the current npm, pnpm, and Go workspace
   cases; keep dynamic bundler configuration outside the execution boundary.
 - Extend the remediation guidance contract with feedback from real sanitized

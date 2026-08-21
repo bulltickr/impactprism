@@ -15,6 +15,13 @@
 - Added a public example, CI coverage, and maintainer review guidance without
   presenting reproductions as accuracy or adoption evidence.
 
+### Resolution coverage
+
+- Added governed fixtures for Vite alias arrays, nested webpack aliases in an
+  npm workspace, and a clean two-module Go workspace.
+- Kept the coverage limited to literal, repository-contained targets; dynamic
+  bundler configuration remains an explicit boundary.
+
 ### Adoption
 
 - Added a provider-neutral demo matrix covering the npm finding example and

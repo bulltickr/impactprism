@@ -41,6 +41,8 @@
         }
       ]
     },
+    "npm-vite-alias-clean": {"findings": []},
+    "npm-webpack-monorepo-clean": {"findings": []},
     "python-requirements-clean": {"findings": []},
     "python-pipenv-clean": {"findings": []},
     "python-uv-clean": {"findings": []},
@@ -141,6 +143,7 @@
           "status": "OPEN"
         }
       ]
-    }
+    },
+    "go-workspace-clean": {"findings": []}
   }
 }
