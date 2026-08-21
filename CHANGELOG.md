@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.4.4 - 2026-08-22
+
 ### Remediation guidance
 
 - Added deterministic, review-first `remediation_guidance` to canonical
