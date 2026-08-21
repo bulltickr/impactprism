@@ -79,7 +79,11 @@ jobs:
             --json > "$RUNNER_TEMP/compatibility-result.json"
 
       - name: Generate SHA-256 checksums
-        run: python scripts/checksums.py --strict dist
+        run: |
+          python scripts/checksums.py --strict dist
+          python scripts/checksums.py \
+            --file "$RUNNER_TEMP/compatibility-result.json" \
+            --output "$RUNNER_TEMP/compatibility-result.json.sha256"
 
       - name: Attest release artifacts
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
@@ -110,7 +114,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.release-tag }}
-        run: gh release upload "$RELEASE_TAG" dist/* "$RUNNER_TEMP/compatibility-result.json"
+        run: >-
+          gh release upload "$RELEASE_TAG" dist/*
+          "$RUNNER_TEMP/compatibility-result.json"
+          "$RUNNER_TEMP/compatibility-result.json.sha256"
 
       - name: Publish completed GitHub Release
         env:

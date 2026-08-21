@@ -56,6 +56,12 @@ from the exact release tag and uploads `compatibility-result.json` with the
 other release assets. That result is a compatibility regression contract, not
 an accuracy benchmark.
 
+The compatibility result is accompanied by `compatibility-result.json.sha256`.
+It is a standard single-file checksum manifest, so a downloaded result can be
+checked offline with `sha256sum -c compatibility-result.json.sha256` when both
+files are in the same directory. The distribution `SHA256SUMS` file continues
+to cover the wheel and source archive.
+
 The draft-first sequence is intentional. It keeps all assets attached before
 publication, so the process remains compatible with GitHub immutable releases.
 If the selected tag already has a published release, the workflow stops rather

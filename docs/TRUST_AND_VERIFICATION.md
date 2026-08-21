@@ -49,6 +49,16 @@ Verify the downloaded files before installation:
 sha256sum -c SHA256SUMS
 ```
 
+For releases that include the durable compatibility result, verify its
+sidecar separately:
+
+```bash
+sha256sum -c compatibility-result.json.sha256
+```
+
+The v0.4.2 release predates this sidecar; its compatibility asset can still be
+checked against the GitHub release asset digest shown on the release page.
+
 On Windows PowerShell, compare each file’s `Get-FileHash -Algorithm SHA256`
 value with the corresponding line in `SHA256SUMS`.
 
