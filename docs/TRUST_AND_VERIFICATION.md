@@ -12,7 +12,8 @@ The project has:
 - cross-platform GitHub Action smoke coverage;
 - a Python compatibility matrix and CodeQL workflow;
 - a pinned public compatibility corpus with ten reviewed repository shapes; the
-  v0.4.1 release asset is the historical seven-case baseline;
+  v0.4.1 release asset remains the historical seven-case baseline until the
+  next synchronized release attaches the ten-case result;
 - release checks for metadata, wheel/sdist contents, installed-wheel behavior,
   checksums, artifact attestation, dependency review, and Scorecard analysis;
   and
@@ -27,9 +28,11 @@ The project does not currently claim:
   dependencies; or
 - legal compliance, CRA certification, or an audit opinion.
 
-The public compatibility corpus is a regression contract for seven pinned
+The public compatibility corpus is a regression contract for ten pinned
 repository shapes, not an accuracy score. Its v0.4.1 machine-readable result
-is attached to the [v0.4.1 release](https://github.com/bulltickr/impactprism/releases/tag/v0.4.1).
+is attached to the [v0.4.1 release](https://github.com/bulltickr/impactprism/releases/tag/v0.4.1)
+as the historical seven-case baseline. The next synchronized release will
+attach the ten-case result produced from its own exact tag.
 The governed real-repository G2 benchmark is intentionally incomplete. Its
 blocker report is public in [BENCHMARK_REPORT.md](BENCHMARK_REPORT.md); local
 demos and fixtures are not presented as external accuracy evidence.

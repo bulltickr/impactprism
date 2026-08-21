@@ -142,13 +142,13 @@ scanner failure is not a finding and must not be mistaken for a clean result.
 
 ## Versioning
 
-The workflow examples in this README install the action as
+The workflow examples in this README install the last published action as
 `bulltickr/impactprism@v0.4.1`. Action releases use git tags matching
 `vX.Y.Z`, so pin to a full release tag or a major tag (e.g. `@v0`) in
 consuming workflows. The existing `v0.2.0` tag is historical and remains
 unchanged. The package and generated artifacts read their runtime version from
-`src/impactprism/version.py`; the synchronized release prepared by this tree
-is `v0.4.1`, and its release tag must match that value.
+`src/impactprism/version.py`; this tree prepares the next synchronized release
+as `v0.4.2`, and its release tag must match that value.
 
 ## Trust and verification
 

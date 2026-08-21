@@ -65,6 +65,19 @@ jobs:
           PYTHONPATH=.release-wheel python -m impactprism --version
           PYTHONPATH=.release-wheel python -m impactprism scan demo/clean-app
 
+      - name: Prepare pinned public compatibility repositories
+        run: |
+          python benchmarks/compatibility/prepare.py \
+            benchmarks/compatibility/manifest.json \
+            "$RUNNER_TEMP/impactprism-compatibility"
+
+      - name: Run release compatibility corpus
+        run: |
+          python benchmarks/compatibility/run.py \
+            benchmarks/compatibility/manifest.json \
+            "$RUNNER_TEMP/impactprism-compatibility" \
+            --json > "$RUNNER_TEMP/compatibility-result.json"
+
       - name: Generate SHA-256 checksums
         run: python scripts/checksums.py --strict dist
 
@@ -97,7 +110,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.release-tag }}
-        run: gh release upload "$RELEASE_TAG" dist/*
+        run: gh release upload "$RELEASE_TAG" dist/* "$RUNNER_TEMP/compatibility-result.json"
 
       - name: Publish completed GitHub Release
         env:

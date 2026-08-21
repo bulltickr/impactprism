@@ -143,6 +143,12 @@ def _digest(findings: list[dict[str, Any]]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _manifest_sha256(manifest: Path) -> str:
+    """Hash the manifest's canonical LF representation across checkouts."""
+    canonical = manifest.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return hashlib.sha256(canonical).hexdigest()
+
+
 def _diagnostic(diagnostics: list[str], message: str) -> None:
     diagnostics.append(message)
 
@@ -246,7 +252,7 @@ def run_corpus(manifest_path: str | Path, snapshot_root: str | Path) -> dict[str
     snapshots = Path(snapshot_root).resolve()
     document = json.loads(manifest.read_text(encoding="utf-8"))
     cases = _validate_manifest(document)
-    manifest_sha256 = hashlib.sha256(manifest.read_bytes()).hexdigest()
+    manifest_sha256 = _manifest_sha256(manifest)
     results = [_run_case(case, snapshots) for case in cases]
     return {
         "schema_version": 1,
