@@ -42,6 +42,18 @@
       }
     },
     {
+      "id": "npm-vite-alias-clean",
+      "path": "tests/fixtures/correctness/npm_vite_alias_clean",
+      "ecosystem": "npm",
+      "expected_counts": {}
+    },
+    {
+      "id": "npm-webpack-monorepo-clean",
+      "path": "tests/fixtures/correctness/npm_webpack_monorepo_clean",
+      "ecosystem": "npm",
+      "expected_counts": {}
+    },
+    {
       "id": "python-requirements-clean",
       "path": "tests/fixtures/correctness/python_requirements",
       "ecosystem": "python",
@@ -96,6 +108,12 @@
       "expected_counts": {
         "UNRESOLVED_IMPORT": 1
       }
+    },
+    {
+      "id": "go-workspace-clean",
+      "path": "tests/fixtures/correctness/go_workspace_clean",
+      "ecosystem": "go",
+      "expected_counts": {}
     }
   ]
 }
