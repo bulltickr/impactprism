@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "npm-undeclared-direct-use",
+  "provenance": "synthetic",
+  "ecosystem": "npm",
+  "package_manager": "npm",
+  "scan": {
+    "command": "impactprism scan . --ecosystem npm --json",
+    "expected_result": "findings",
+    "expected_finding_types": ["UNDECLARED_DIRECT_USE"]
+  },
+  "sanitization": {
+    "secrets_removed": true,
+    "proprietary_source_removed": true,
+    "private_urls_removed": true,
+    "customer_identifiers_removed": true
+  },
+  "files": [
+    {"path": "package.json", "role": "manifest"},
+    {"path": "package-lock.json", "role": "lockfile"},
+    {"path": "src/index.js", "role": "source"}
+  ]
+}

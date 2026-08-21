@@ -41,6 +41,9 @@ jobs:
       - name: Run governed correctness fixtures
         run: python scripts/ci.py correctness
 
+      - name: Validate sanitized reproduction bundles
+        run: python scripts/ci.py validate-reproductions
+
       - name: Build package
         run: python -m build
 

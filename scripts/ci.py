@@ -56,6 +56,14 @@ def validate_ci_examples() -> None:
     _run("provider-neutral CI examples", "scripts/validate_ci_examples.py")
 
 
+def validate_reproductions() -> None:
+    _run(
+        "sanitized reproduction bundles",
+        "scripts/validate_reproduction.py",
+        "tests/fixtures/reproduction_intake",
+    )
+
+
 def verify() -> None:
     test()
     conformance()
@@ -64,6 +72,7 @@ def verify() -> None:
     validate_demos()
     action_smoke()
     validate_ci_examples()
+    validate_reproductions()
 
 
 COMMANDS = {
@@ -75,6 +84,7 @@ COMMANDS = {
     "validate-demos": validate_demos,
     "action-smoke": action_smoke,
     "validate-ci-examples": validate_ci_examples,
+    "validate-reproductions": validate_reproductions,
     "verify": verify,
 }
 
