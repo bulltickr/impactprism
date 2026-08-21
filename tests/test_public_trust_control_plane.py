@@ -7,10 +7,10 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
 
 
-def test_compatibility_report_tracks_the_published_release_baseline():
+def test_compatibility_report_preserves_the_previous_published_release_baseline():
     raw = (ROOT / "docs" / "COMPATIBILITY_REPORT.md").read_text(encoding="utf-8")
 
-    assert f"| Scanner version | `{__version__}` |" in raw
+    assert "| Scanner version | `0.4.2` |" in raw
     assert "| Cases | 10 |" in raw
     assert "| Result | 10/10 passed |" in raw
     assert "Network during scan | No" in raw
@@ -19,6 +19,7 @@ def test_compatibility_report_tracks_the_published_release_baseline():
     assert "releases/download/v0.4.2/compatibility-result.json" in raw
     assert "Run 32434860733" in raw
     assert "releases/download/v0.4.1/compatibility-result.json" in raw
+    assert f"| Scanner version | `{__version__}` |" not in raw
     assert "0.4.0" not in raw
     assert "not yet attached to a versioned" not in raw
 
