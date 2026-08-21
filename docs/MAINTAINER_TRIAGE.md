@@ -9,7 +9,8 @@ every package manager or runtime pattern.
 1. Remove secrets or proprietary data from the report and issue comments.
 2. Confirm the report identifies a commit/version, ecosystem, command, and
    minimal reproduction.
-3. Reproduce with the smallest available fixture.
+3. Run `python scripts/validate_reproduction.py` when a reproduction bundle is
+   provided, then reproduce with the smallest available fixture.
 4. Classify the report as behavior, documentation, feature request, security,
    or duplicate.
 5. Add an ecosystem label (`ecosystem:npm`, `ecosystem:python`, or
@@ -22,6 +23,11 @@ Recommended labels are:
 - `needs-reproduction`, `good-first-issue`, `breaking-change`.
 
 Labels are triage aids, not severity or compliance determinations.
+
+The validator checks bundle structure and basic hygiene only. It is not a
+secret scanner, does not execute submitted code, and does not establish that a
+reported expectation is correct. A `sanitized-external` bundle must still be
+reviewed by a maintainer before it becomes public regression coverage.
 
 ## Scanner findings
 

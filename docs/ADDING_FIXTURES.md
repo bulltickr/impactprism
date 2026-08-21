@@ -4,6 +4,10 @@ Fixtures are the preferred way to improve ImpactPrism. They make a behavior
 reviewable without sharing a private repository and keep a parser change tied
 to a reproducible contract.
 
+For a report derived from a real repository, start with the
+[sanitized reproduction intake contract](REPRODUCTION_INTAKE.md). Validate the
+small bundle before converting it into a governed correctness fixture.
+
 ## Choose the smallest public shape
 
 Start with only the files needed to express the behavior:

@@ -8,6 +8,13 @@
   findings, evidence output, Action findings, and SARIF properties.
 - Documented the guidance contract and its non-automatic safety boundary.
 
+### Reproduction intake
+
+- Added a read-only metadata contract and validator for small, explicitly
+  declared sanitized reproduction bundles.
+- Added a public example, CI coverage, and maintainer review guidance without
+  presenting reproductions as accuracy or adoption evidence.
+
 ### Adoption
 
 - Added a provider-neutral demo matrix covering the npm finding example and

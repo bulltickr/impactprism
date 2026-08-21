@@ -21,6 +21,8 @@ portable automation.
   cases; keep dynamic bundler configuration outside the execution boundary.
 - Extend the remediation guidance contract with feedback from real sanitized
   reproductions without applying edits implicitly.
+- Use the sanitized reproduction intake contract to collect and promote
+  external cases into reviewed correctness fixtures.
 - Add portable examples for GitHub, self-hosted runners, and other CI systems
   around the existing provider-neutral commands.
 - Document compatibility expectations for Python versions and package-manager
