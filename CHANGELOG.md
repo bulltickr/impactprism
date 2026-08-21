@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.4.3 - 2026-08-21
+
+### Release integrity
+
+- Added an offline checksum sidecar for the durable compatibility result so
+  evidence assets can be verified independently from the distribution files.
+- Documented the release-evidence verification path alongside wheel and source
+  archive checksums.
+
 ## 0.4.2 - 2026-08-21
 
 ### Compatibility evidence
