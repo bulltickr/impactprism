@@ -12,8 +12,8 @@ The project has:
 - cross-platform GitHub Action smoke coverage;
 - a Python compatibility matrix and CodeQL workflow;
 - a pinned public compatibility corpus with ten reviewed repository shapes; the
-  v0.4.1 release asset remains the historical seven-case baseline until the
-  next synchronized release attaches the ten-case result;
+  v0.4.2 release asset contains the ten-case result and the v0.4.1 asset remains
+  the historical seven-case baseline;
 - release checks for metadata, wheel/sdist contents, installed-wheel behavior,
   checksums, artifact attestation, dependency review, and Scorecard analysis;
   and
@@ -29,10 +29,10 @@ The project does not currently claim:
 - legal compliance, CRA certification, or an audit opinion.
 
 The public compatibility corpus is a regression contract for ten pinned
-repository shapes, not an accuracy score. Its v0.4.1 machine-readable result
-is attached to the [v0.4.1 release](https://github.com/bulltickr/impactprism/releases/tag/v0.4.1)
-as the historical seven-case baseline. The next synchronized release will
-attach the ten-case result produced from its own exact tag.
+repository shapes, not an accuracy score. Its ten-case machine-readable result
+is attached to the [v0.4.2 release](https://github.com/bulltickr/impactprism/releases/tag/v0.4.2),
+produced from that exact tag. The v0.4.1 result remains attached as the
+historical seven-case baseline.
 The governed real-repository G2 benchmark is intentionally incomplete. Its
 blocker report is public in [BENCHMARK_REPORT.md](BENCHMARK_REPORT.md); local
 demos and fixtures are not presented as external accuracy evidence.
@@ -40,8 +40,8 @@ demos and fixtures are not presented as external accuracy evidence.
 ## Verify a GitHub Release
 
 Download the wheel, source archive, and `SHA256SUMS` from the same release. The
-expected v0.4.1 files are available at the
-[v0.4.1 release page](https://github.com/bulltickr/impactprism/releases/tag/v0.4.1).
+expected v0.4.2 files are available at the
+[v0.4.2 release page](https://github.com/bulltickr/impactprism/releases/tag/v0.4.2).
 
 Verify the downloaded files before installation:
 
@@ -56,7 +56,7 @@ When the GitHub CLI and attestations are available, verify the wheel’s build
 provenance:
 
 ```bash
-gh attestation verify impactprism-0.4.1-py3-none-any.whl \
+gh attestation verify impactprism-0.4.2-py3-none-any.whl \
   -R bulltickr/impactprism
 ```
 

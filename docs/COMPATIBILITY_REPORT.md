@@ -11,28 +11,29 @@ repository or finding family.
 |---|---|
 | Corpus | `impactprism-public-compatibility-2026-08` |
 | Corpus status | Pinned |
-| Scanner version | `0.4.1` |
-| Scanner commit | `b73b55c1c6f7336f0741b3b1e529debb440417ad` |
-| Remote workflow commit | `b73b55c1c6f7336f0741b3b1e529debb440417ad` |
-| Remote workflow | [Run 32433536443](https://github.com/bulltickr/impactprism/actions/runs/32433536443) |
+| Release tag | `v0.4.2` |
+| Scanner version | `0.4.2` |
+| Scanner commit | `a1b0901a5da93114cb53eb45441446c3a1aae529` |
+| Remote workflow commit | `a1b0901a5da93114cb53eb45441446c3a1aae529` |
+| Remote workflow | [Run 32434860733](https://github.com/bulltickr/impactprism/actions/runs/32434860733) |
 | Manifest SHA-256 | `d409c105766d18207a7affa9eda93e049f6a3538d3c8efe02f41e175084ce459` |
 | Cases | 10 |
 | Result | 10/10 passed |
 | Network during scan | No |
 | Repository code executed | No |
 | Repository dependencies installed | No |
-| Repeatability | Two same-context runs; byte-identical JSON |
-| Remote result artifact | Uploaded by [Run 32433536443](https://github.com/bulltickr/impactprism/actions/runs/32433536443); retained for 90 days |
-| Historical release result | [`v0.4.1 compatibility-result.json`](https://github.com/bulltickr/impactprism/releases/download/v0.4.1/compatibility-result.json) contains the original seven-case baseline |
+| Repeatability | Pre-release local runs and exact-tag run; normalized case digests match |
+| Durable result | [`compatibility-result.json`](https://github.com/bulltickr/impactprism/releases/download/v0.4.2/compatibility-result.json) attached to the v0.4.2 release |
+| Historical baseline result | [`v0.4.1 compatibility-result.json`](https://github.com/bulltickr/impactprism/releases/download/v0.4.1/compatibility-result.json) contains the original seven-case baseline |
 
 The result was produced by preparing disposable checkouts from the manifest,
 then running `run.py` twice against those unchanged checkouts. Preparation is
 the only network phase. The machine-readable output contains the manifest
 SHA-256, pinned commit and source-tree IDs, counts, and normalized finding
-digests. The linked Ubuntu workflow repeated the run on the exact merged main
-commit and uploaded the machine-readable result; its case digests match both
-local runs. The expanded ten-case result is not yet attached to a versioned
-release asset and must not be described as part of v0.4.1.
+digests. The linked Ubuntu workflow repeated the run from the exact v0.4.2 tag
+and attached the machine-readable result to the published release. Its case
+digests match the pre-release local runs. The v0.4.1 asset remains a historical
+seven-case baseline and is not the source of the v0.4.2 claim.
 
 ## Case results
 
