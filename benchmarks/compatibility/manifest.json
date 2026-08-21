@@ -140,6 +140,65 @@
       "expected_result": "clean",
       "expected_counts": {},
       "expected_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "id": "npm-chalk",
+      "url": "https://github.com/chalk/chalk.git",
+      "commit_sha": "661317e6f91fe7c90306c2c48ea9354562ee9146",
+      "source_tree_sha": "ff76edd5a4d5f70bc0a83259aec26686a43c27f7",
+      "license_spdx": "MIT",
+      "license_path": "license",
+      "license_evidence_url": "https://github.com/chalk/chalk/blob/661317e6f91fe7c90306c2c48ea9354562ee9146/license",
+      "ecosystem": "npm",
+      "scan_subpath": ".",
+      "required_paths": ["package.json", "license"],
+      "exclude": ["examples", "test"],
+      "shape_notes": "Single-package npm repository with a package manifest and no lockfile.",
+      "expected_result": "findings",
+      "expected_counts": {
+        "DECLARED_UNUSED_CANDIDATE": 11,
+        "MISSING_LOCKFILE": 1
+      },
+      "expected_digest": "6afe696c8b7ea7b8023a3e98e09f65c30e3fa7900eae4ba9e17d2735de2cc751"
+    },
+    {
+      "id": "python-httpx",
+      "url": "https://github.com/encode/httpx.git",
+      "commit_sha": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+      "source_tree_sha": "31ba94512339180efacceacc0646b56ee15eba63",
+      "license_spdx": "BSD-3-Clause",
+      "license_path": "LICENSE.md",
+      "license_evidence_url": "https://github.com/encode/httpx/blob/b5addb64f0161ff6bfe94c124ef76f6a1fba5254/LICENSE.md",
+      "ecosystem": "python",
+      "scan_subpath": ".",
+      "required_paths": ["pyproject.toml", "requirements.txt", "LICENSE.md"],
+      "exclude": ["docs"],
+      "shape_notes": "Python project with pyproject.toml plus a requirements.txt development-oriented layout.",
+      "expected_result": "findings",
+      "expected_counts": {
+        "DIRECT_DEPENDENCY_USED_TRANSITIVELY": 6,
+        "LOCKFILE_MANIFEST_MISMATCH": 21,
+        "SCOPE_MISMATCH": 1,
+        "UNDECLARED_DIRECT_USE": 5
+      },
+      "expected_digest": "074fe1be632ae1b95afb98eed04f366d29d0bb55152c55148f858e473448f4a7"
+    },
+    {
+      "id": "go-chi",
+      "url": "https://github.com/go-chi/chi.git",
+      "commit_sha": "735ae2b87f8c733d616e809ae86e0985c1bc3350",
+      "source_tree_sha": "ec73f018c524d5fed5e84b29ff989b33c693506e",
+      "license_spdx": "MIT",
+      "license_path": "LICENSE",
+      "license_evidence_url": "https://github.com/go-chi/chi/blob/735ae2b87f8c733d616e809ae86e0985c1bc3350/LICENSE",
+      "ecosystem": "go",
+      "scan_subpath": ".",
+      "required_paths": ["go.mod", "LICENSE"],
+      "exclude": ["_examples"],
+      "shape_notes": "Go module with go.mod but no go.sum in the pinned tree.",
+      "expected_result": "clean",
+      "expected_counts": {},
+      "expected_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
     }
   ]
 }
