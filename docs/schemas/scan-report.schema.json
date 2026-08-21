@@ -65,10 +65,21 @@
         "commit_sha": {"type": ["string", "null"]},
         "scope": {"type": ["string", "null"]},
         "explanation": {"type": "string"},
+        "remediation_guidance": {"$ref": "#/$defs/remediation_guidance"},
         "status": {"type": "string"},
         "category": {"type": "string"}
       },
       "additionalProperties": true
+    },
+    "remediation_guidance": {
+      "type": "object",
+      "required": ["summary", "steps", "caution"],
+      "properties": {
+        "summary": {"type": "string"},
+        "steps": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "caution": {"type": "string"}
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": true

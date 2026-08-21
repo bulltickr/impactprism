@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .cra_clauses import load_cra_clauses
+from .guidance import get_remediation_guidance
 from .reporting import findings_from_report
 from .version import __version__
 
@@ -117,6 +118,8 @@ def _build_findings(report):
                 "severity": str(item.get("severity") or "info").lower(),
                 "confidence": str(item.get("confidence") or "medium").lower(),
                 "explanation": item.get("explanation") or "",
+                "remediation_guidance": item.get("remediation_guidance")
+                or get_remediation_guidance(finding_type),
                 "clauses": CLAUSE_MAP.get(category, []),
                 "rationale": rationale,
                 "status": _classify_status(category),
@@ -218,6 +221,9 @@ def _markdown(evidence):
                     "Status: " + finding["status"],
                     "CRA clauses: " + ", ".join(finding["clauses"]),
                     "Rationale: " + finding["rationale"],
+                    "Recommended next step: "
+                    + finding["remediation_guidance"]["summary"],
+                    "Caution: " + finding["remediation_guidance"]["caution"],
                     "",
                 ]
             )

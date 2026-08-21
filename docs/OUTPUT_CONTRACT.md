@@ -23,6 +23,11 @@ Action-only fields such as `outcome`, `policy`, `error`, `bom_validated`, and
 the findings, buckets, counts, package metadata, and embedded SBOM come from
 the same scan service as the CLI.
 
+Each current finding includes an additive `remediation_guidance` object with a
+summary, ordered review steps, and a caution. The guidance is also carried into
+the evidence adapter and Action SARIF properties. It is review context, not an
+instruction to mutate a repository.
+
 The schemas are also regression-tested against generated outputs. They are
 documentation and validation artifacts; the normal runtime does not require
 the `jsonschema` package.

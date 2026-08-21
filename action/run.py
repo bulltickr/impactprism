@@ -23,6 +23,7 @@ from enum import Enum
 from pathlib import Path
 
 from impactprism import __version__
+from impactprism.guidance import get_remediation_guidance
 
 SEVERITY_ORDER = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 
@@ -231,7 +232,11 @@ def _build_sarif(repo_path, findings, outcome, commit_sha, ecosystem, repository
             "ruleId": finding.get("finding_type") or "UNKNOWN",
             "level": _SARIF_LEVELS[_normalize_severity(finding.get("severity"))],
             "message": {"text": finding.get("explanation") or ""},
-            "properties": {"outcome": outcome, "commit_sha": commit_sha or ""},
+            "properties": {
+                "outcome": outcome,
+                "commit_sha": commit_sha or "",
+                "remediation_guidance": finding.get("remediation_guidance") or {},
+            },
         }
         relative = _relative_file(repo_path, finding.get("file"))
         if relative is not None:
@@ -395,6 +400,7 @@ def _diagnostic_finding(kind, message, ecosystem=None):
         "commit_sha": None,
         "scope": None,
         "explanation": str(message),
+        "remediation_guidance": get_remediation_guidance("SCANNER_ERROR"),
         "status": "OPEN",
     }
 
@@ -509,16 +515,19 @@ def _build_summary(
             "",
             "### Top findings",
             "",
-            "| finding_type | package | severity | file:line |",
-            "| --- | --- | --- | --- |",
+            "| finding_type | package | severity | file:line | next step |",
+            "| --- | --- | --- | --- | --- |",
         ]
     )
     for finding in _sorted_findings(findings)[:25]:
+        guidance = finding.get("remediation_guidance") or {}
+        summary = str(guidance.get("summary") or "Review the finding.").replace("|", "\\|")
         lines.append(
             "| " + str(finding.get("finding_type") or "")
             + " | " + str(finding.get("package") or "")
             + " | " + str(finding.get("severity") or "")
-            + " | " + _file_line(repo_path, finding) + " |"
+            + " | " + _file_line(repo_path, finding)
+            + " | " + summary + " |"
         )
     if error_message:
         lines.extend(["", "> Scanner detail: " + error_message])

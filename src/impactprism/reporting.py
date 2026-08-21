@@ -11,6 +11,7 @@ from collections import Counter
 from typing import Iterable
 
 from .drift.models import FindingType
+from .guidance import get_remediation_guidance
 
 REPORT_SCHEMA_VERSION = 1
 
@@ -56,6 +57,9 @@ def _normalise_finding(value: dict, *, category: str | None = None) -> dict:
         finding["confidence"] = "medium"
     if finding.get("package") is None and finding.get("name") is not None:
         finding["package"] = finding["name"]
+    finding["remediation_guidance"] = get_remediation_guidance(
+        finding_type
+    )
     return finding
 
 

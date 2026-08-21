@@ -46,6 +46,10 @@ additional exclusions, baseline/delta paths, output paths, and the local
 | `bom.json`      | CycloneDX SBOM — pass `--sbom bom.json` to write it |
 | `report.json`   | Raw scan report — pass `--report report.json` to write it |
 
+Each canonical finding also includes deterministic `remediation_guidance` with
+review steps and a boundary caution. See
+[the remediation guidance contract](docs/REMEDIATION_GUIDANCE.md).
+
 For pull-request workflows, compare against a previously accepted report:
 
 ```bash

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Remediation guidance
+
+- Added deterministic, review-first `remediation_guidance` to canonical
+  findings, evidence output, Action findings, and SARIF properties.
+- Documented the guidance contract and its non-automatic safety boundary.
+
 ### Adoption
 
 - Added a provider-neutral demo matrix covering the npm finding example and

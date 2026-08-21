@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
+from ..guidance import get_remediation_guidance
+
 __all__ = ["FindingType", "Severity", "Confidence", "Status", "Finding"]
 
 
@@ -111,5 +113,6 @@ class Finding:
             "commit_sha": self.commit_sha,
             "scope": self.scope,
             "explanation": self.explanation,
+            "remediation_guidance": get_remediation_guidance(self.finding_type.name),
             "status": self.status.name,
         }
