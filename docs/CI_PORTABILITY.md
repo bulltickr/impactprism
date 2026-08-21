@@ -36,6 +36,7 @@ The commands are intentionally separated:
 | `python scripts/ci.py conformance` | Local output-conformance fixtures |
 | `python scripts/ci.py correctness` | Governed correctness fixtures |
 | `python scripts/ci.py smoke` | Clean demo CLI smoke test |
+| `python scripts/ci.py validate-demos` | All public npm, Python, and Go demo scans, including the intentional finding case |
 | `python scripts/ci.py action-smoke` | Provider-neutral Action runner contract: clean, finding, scanner-error, output validation, and workspace containment |
 | `python scripts/ci.py validate-ci-examples` | Static validation of the checked-in GitLab, Azure, Jenkins, and self-hosted examples |
 | `python scripts/ci.py verify` | Test, conformance, correctness, CLI smoke, Action smoke, and CI-example validation |

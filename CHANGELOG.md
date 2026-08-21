@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Adoption
+
+- Added a provider-neutral demo matrix covering the npm finding example and
+  clean npm, Python, and Go examples.
+- Added first-run and sanitized-fixture contribution guides for external users
+  and contributors.
+
 ## 0.4.3 - 2026-08-21
 
 ### Release integrity

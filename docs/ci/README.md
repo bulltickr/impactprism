@@ -22,6 +22,9 @@ Every example runs the same contract:
 4. build with `python scripts/ci.py build`; and
 5. generate strict release-directory checksums.
 
+`verify` also runs the checked-in npm, Python, and Go demo matrix. To run that
+adoption smoke independently, use `python scripts/ci.py validate-demos`.
+
 The repository also checks these templates with
 `python scripts/ci.py validate-ci-examples` so required commands and key
 provider syntax cannot silently drift.

@@ -4,6 +4,19 @@ Thank you for helping improve ImpactPrism. The project is intentionally
 narrow: it analyzes dependency integrity from manifests, lockfiles, and source
 imports, then produces review-oriented artifacts.
 
+## Ten-minute contributor path
+
+Start with [Getting started](docs/GETTING_STARTED.md), then run the public demo
+matrix from an installed development checkout:
+
+```text
+python scripts/ci.py validate-demos
+```
+
+For parser or finding changes, read [Adding sanitized fixtures](docs/ADDING_FIXTURES.md)
+before editing a classifier. A small fixture and focused assertion are more
+useful to reviewers than a large private repository reproduction.
+
 ## Before opening a pull request
 
 1. Read the relevant architecture and limitation notes in `docs/`.

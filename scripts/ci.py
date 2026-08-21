@@ -44,6 +44,10 @@ def smoke() -> None:
     _run("clean-demo smoke", "-m", "impactprism", "scan", "demo/clean-app")
 
 
+def validate_demos() -> None:
+    _run("public demo matrix", "scripts/validate_demos.py")
+
+
 def action_smoke() -> None:
     _run("provider-neutral Action smoke", "scripts/action_smoke.py")
 
@@ -57,6 +61,7 @@ def verify() -> None:
     conformance()
     correctness()
     smoke()
+    validate_demos()
     action_smoke()
     validate_ci_examples()
 
@@ -67,6 +72,7 @@ COMMANDS = {
     "correctness": correctness,
     "build": build,
     "smoke": smoke,
+    "validate-demos": validate_demos,
     "action-smoke": action_smoke,
     "validate-ci-examples": validate_ci_examples,
     "verify": verify,
