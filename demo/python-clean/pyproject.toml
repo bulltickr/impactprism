@@ -1,5 +1,5 @@
 [project]
 name = "impactprism-python-clean-demo"
 version = "1.0.0"
-dependencies = ["requests==2.31.0"]
+dependencies = ["requests==2.33.0"]
 
