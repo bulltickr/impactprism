@@ -19,7 +19,7 @@ Current matrix:
 - Python Poetry findings;
 - npm pnpm lockfiles;
 - Go vendoring through `vendor/modules.txt`; and
-- Go workspace/replacement findings.
+- Go workspace/replacement findings, including explicit module-root scope.
 
 Each case checks finding counts and normalized finding signatures, including
 provenance, severity, confidence, status, and stable finding IDs. The

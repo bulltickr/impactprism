@@ -56,7 +56,10 @@ def run_cases() -> dict:
     results = []
     for case in definition["cases"]:
         repo_path = REPOSITORY_ROOT / case["path"]
-        findings = analyze_repo(str(repo_path), ecosystem=case["ecosystem"])
+        analysis_options = {"ecosystem": case["ecosystem"]}
+        if "roots" in case:
+            analysis_options["roots"] = case["roots"]
+        findings = analyze_repo(str(repo_path), **analysis_options)
         counts = dict(
             sorted(Counter(finding.finding_type.value for finding in findings).items())
         )
@@ -66,19 +69,20 @@ def run_cases() -> dict:
         expected_case = expected_cases.get(case["id"], {})
         expected_findings = expected_case.get("findings", [])
         expected_counts = case["expected_counts"]
-        results.append(
-            {
-                "id": case["id"],
-                "path": case["path"],
-                "ecosystem": case["ecosystem"],
-                "expected_counts": expected_counts,
-                "actual_counts": counts,
-                "expected_findings": expected_findings,
-                "actual_findings": actual_findings,
-                "passed": counts == expected_counts
-                and actual_findings == expected_findings,
-            }
-        )
+        result = {
+            "id": case["id"],
+            "path": case["path"],
+            "ecosystem": case["ecosystem"],
+            "expected_counts": expected_counts,
+            "actual_counts": counts,
+            "expected_findings": expected_findings,
+            "actual_findings": actual_findings,
+            "passed": counts == expected_counts
+            and actual_findings == expected_findings,
+        }
+        if "roots" in case:
+            result["roots"] = case["roots"]
+        results.append(result)
     return {
         "schema_version": 1,
         "runner": "impactprism-governed-correctness",

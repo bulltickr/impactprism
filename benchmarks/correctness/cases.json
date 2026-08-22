@@ -114,6 +114,21 @@
       "path": "tests/fixtures/correctness/go_workspace_clean",
       "ecosystem": "go",
       "expected_counts": {}
+    },
+    {
+      "id": "go-workspace-roots-clean",
+      "path": "tests/fixtures/correctness/go_workspace_roots",
+      "ecosystem": "go",
+      "roots": ["apps/app"],
+      "expected_counts": {}
+    },
+    {
+      "id": "go-workspace-roots-unscoped",
+      "path": "tests/fixtures/correctness/go_workspace_roots",
+      "ecosystem": "go",
+      "expected_counts": {
+        "DECLARED_UNUSED_CANDIDATE": 1
+      }
     }
   ]
 }
