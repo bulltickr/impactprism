@@ -12,10 +12,9 @@ from typing import Iterable
 
 from .drift.models import FindingType
 from .guidance import get_remediation_guidance
+from .policy import SEVERITY_ORDER, evaluate_policy
 
 REPORT_SCHEMA_VERSION = 1
-
-SEVERITY_ORDER = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 
 FINDING_CATEGORIES = {
     FindingType.UNDECLARED_DIRECT_USE.name: "undeclared",
@@ -191,15 +190,8 @@ def policy_exit_code(
     """Apply the shared local finding gate without hiding scanner errors."""
 
     findings = findings_from_report(report) if findings is None else list(findings)
-    if any(item.get("finding_type") == FindingType.SCANNER_ERROR.name for item in findings):
-        return 2
-    if fail_on == "never":
-        return 0
-    threshold = str(severity_threshold).lower()
-    if threshold not in SEVERITY_ORDER:
-        raise ValueError("severity threshold must be one of: " + ", ".join(SEVERITY_ORDER))
-    return 1 if any(
-        SEVERITY_ORDER.get(str(item.get("severity") or "info").lower(), 0)
-        >= SEVERITY_ORDER[threshold]
-        for item in findings
-    ) else 0
+    return evaluate_policy(
+        findings,
+        fail_on=fail_on,
+        severity_threshold=severity_threshold,
+    ).exit_code

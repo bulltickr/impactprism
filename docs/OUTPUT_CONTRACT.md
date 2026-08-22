@@ -35,6 +35,14 @@ anywhere in the repository; an exclusion containing slashes matches that
 relative directory prefix. This makes the boundary of a scan visible to
 downstream consumers instead of leaving it implicit in local configuration.
 
+Reports produced by `scan` and `analyze` also include an additive `policy`
+object. It records the configured `fail_on` value, severity threshold, the
+finding set used for gating (`findings` or `baseline-new-findings`), the
+normalized outcome, exit code, and counts of considered and threshold-triggering
+findings. When a baseline is configured, the report retains all current
+findings for review while the policy counts only newly introduced findings.
+The Action emits the same object inside its additive output envelope.
+
 The schemas are also regression-tested against generated outputs. They are
 documentation and validation artifacts; the normal runtime does not require
 the `jsonschema` package.

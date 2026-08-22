@@ -20,8 +20,9 @@ repository inputs
   exports from external packages; `static_config.py` tokenizes only literal
   alias data and never executes repository configuration.
 - `drift/classifier.py` is responsible for finding classification.
-- `reporting.py` normalizes findings and defines report categories and exit
-  semantics.
+- `reporting.py` normalizes findings and defines report categories.
+- `policy.py` applies the shared severity, baseline-gate, unsupported-input,
+  and scanner-error decision contract used by the CLI and Action adapters.
 - `scan_service.py` is the provider-neutral orchestration boundary shared by
   the CLI and GitHub Action. It resolves the selected ecosystem, collects
   compatibility metadata, builds the canonical report, and generates the

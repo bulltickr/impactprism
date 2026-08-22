@@ -24,8 +24,15 @@ from pathlib import Path
 
 from impactprism import __version__
 from impactprism.guidance import get_remediation_guidance
-
-SEVERITY_ORDER = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
+from impactprism.policy import (
+    SEVERITY_ORDER,
+    evaluate_policy,
+    normalize_severity,
+    normalize_threshold,
+    policy_exit_code_for_outcome,
+    validate_fail_on,
+    validate_threshold,
+)
 
 _SARIF_LEVELS = {
     "critical": "error",
@@ -51,48 +58,30 @@ class Policy:
 
 
 def _normalize_severity(value):
-    severity = str(value).lower() if value is not None else "info"
-    if severity not in SEVERITY_ORDER:
-        return "info"
-    return severity
+    return normalize_severity(value)
 
 
 def _normalize_threshold(value):
-    threshold = str(value).lower() if value is not None else "low"
-    if threshold not in SEVERITY_ORDER:
-        return "low"
-    return threshold
+    return normalize_threshold(value)
 
 
 def classify_outcome(findings, error_kind="none", policy=None):
     """Classify the overall action outcome from findings and error state."""
     policy = policy if policy is not None else Policy()
-    if error_kind == "scanner_error":
-        return Outcome.SCANNER_ERROR
-    if error_kind == "unsupported":
-        return Outcome.UNSUPPORTED_ECOSYSTEM
-    threshold = _normalize_threshold(policy.severity_threshold)
-    threshold_rank = SEVERITY_ORDER[threshold]
-    for finding in findings or []:
-        if SEVERITY_ORDER[_normalize_severity(finding.get("severity"))] >= threshold_rank:
-            return Outcome.POLICY_FAILURE
-    if findings:
-        return Outcome.FINDING
-    return Outcome.CLEAN
+    decision = evaluate_policy(
+        findings,
+        error_kind=error_kind,
+        fail_on=policy.fail_on,
+        severity_threshold=_normalize_threshold(policy.severity_threshold),
+    )
+    return Outcome(decision.outcome)
 
 
 def exit_code(outcome, policy):
     """Map an outcome to a process exit code under the given policy."""
     policy = policy if policy is not None else Policy()
-    if outcome in (Outcome.CLEAN, Outcome.FINDING):
-        return 0
-    if outcome == Outcome.POLICY_FAILURE:
-        return 0 if policy.fail_on == "never" else 1
-    if outcome == Outcome.UNSUPPORTED_ECOSYSTEM:
-        return 1 if policy.fail_on == "all" else 0
-    if outcome == Outcome.SCANNER_ERROR:
-        return 2
-    return 0
+    value = outcome.value if isinstance(outcome, Outcome) else str(outcome)
+    return policy_exit_code_for_outcome(value, fail_on=policy.fail_on)
 
 
 def _env(name, default):
@@ -133,12 +122,14 @@ def _resolve_repo_path():
 def _read_policy():
     fail_on = _env("INPUT_FAIL_ON", "finding").lower()
     threshold = _env("INPUT_SEVERITY_THRESHOLD", "low").lower()
-    if fail_on not in ("never", "finding", "all"):
-        raise ValueError("fail-on must be never, finding, or all")
-    if threshold not in SEVERITY_ORDER:
-        raise ValueError(
-            "severity-threshold must be one of: " + ", ".join(SEVERITY_ORDER)
-        )
+    try:
+        fail_on = validate_fail_on(fail_on)
+        threshold = validate_threshold(threshold)
+    except ValueError as error:
+        message = str(error)
+        if message.startswith("severity threshold"):
+            message = message.replace("severity threshold", "severity-threshold", 1)
+        raise ValueError(message) from error
     return Policy(fail_on=fail_on, severity_threshold=threshold)
 
 
@@ -436,22 +427,23 @@ def _sorted_findings(findings):
     )
 
 
-def _explanation(outcome, policy):
+def _explanation(outcome, policy, decision=None):
+    subject = "new baseline findings" if decision and decision.gate_source == "baseline-new-findings" else "findings"
     if outcome == Outcome.CLEAN:
-        return "No findings were produced, so the step succeeds (exit 0)."
+        return "No " + subject + " were produced, so the step succeeds (exit 0)."
     if outcome == Outcome.FINDING:
         return (
-            "Findings were produced but none reach the severity threshold, "
+            subject.capitalize() + " were produced but none reach the severity threshold, "
             "so the step succeeds (exit 0)."
         )
     if outcome == Outcome.POLICY_FAILURE:
         if policy.fail_on == "never":
             return (
-                'Findings reach the severity threshold but fail-on is "never", '
+                subject.capitalize() + ' reach the severity threshold but fail-on is "never", '
                 "so the step succeeds (exit 0)."
             )
         return (
-            'Findings reach the severity threshold and fail-on is "' + policy.fail_on + '", '
+            subject.capitalize() + ' reach the severity threshold and fail-on is "' + policy.fail_on + '", '
             "so the step fails (exit 1)."
         )
     if outcome == Outcome.UNSUPPORTED_ECOSYSTEM:
@@ -484,15 +476,19 @@ def _build_summary(
     output_dir,
     artifact_name,
     repo_path,
+    decision,
 ):
     lines = [
         "## ImpactPrism outcome: " + outcome,
         "",
         "- Fail-on: " + policy.fail_on,
         "- Severity threshold: " + policy.severity_threshold,
+        "- Gate source: " + decision.gate_source,
         "- Ecosystem: " + str(ecosystem or "none"),
         "- Commit: " + _short_sha(commit_sha),
         "- Findings: " + str(counts["total"]),
+        "- Findings considered by policy: " + str(decision.finding_count),
+        "- Findings at or above threshold: " + str(decision.triggered_count),
         "- Exit code: " + str(code),
         "",
         "### Counts by severity",
@@ -534,7 +530,7 @@ def _build_summary(
         )
     if error_message:
         lines.extend(["", "> Scanner detail: " + error_message])
-    lines.extend(["", _explanation(outcome, policy), "", "### Artifacts", ""])
+    lines.extend(["", _explanation(outcome, policy, decision), "", "### Artifacts", ""])
     for path in sorted(output_dir.iterdir()):
         lines.append("- " + str(path.resolve()))
     if artifact_name:
@@ -728,8 +724,15 @@ def main(argv=None) -> int:
     if error_kind != "none" and not findings:
         findings = [_diagnostic_finding(error_kind, error_message, resolved_ecosystem)]
         gated_findings = findings
-    outcome = classify_outcome(gated_findings, error_kind, policy)
-    code = exit_code(outcome, policy)
+    decision = evaluate_policy(
+        gated_findings,
+        error_kind=error_kind,
+        fail_on=policy.fail_on,
+        severity_threshold=policy.severity_threshold,
+        gate_source="baseline-new-findings" if delta is not None else "findings",
+    )
+    outcome = Outcome(decision.outcome)
+    code = decision.exit_code
 
     bom_path_str = ""
     bom_validated = False
@@ -756,10 +759,7 @@ def main(argv=None) -> int:
             "timestamp": _utc_timestamp(),
             "commit_sha": commit_sha,
             "outcome": outcome.value,
-            "policy": {
-                "fail_on": policy.fail_on,
-                "severity_threshold": policy.severity_threshold,
-            },
+            "policy": decision.as_dict(),
             "counts": counts,
             "findings": findings,
             "error": (
@@ -810,6 +810,7 @@ def main(argv=None) -> int:
         output_dir,
         artifact_name,
         repo_path,
+        decision,
     )
     (output_dir / "summary.md").write_text(summary_markdown, encoding="utf-8")
     _append_step_summary(summary_markdown)

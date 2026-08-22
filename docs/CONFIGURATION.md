@@ -38,7 +38,10 @@ Supported keys are deliberately limited:
 - `scan.baseline` and `scan.delta` enable incremental comparison.
 - `outputs.report`, `outputs.evidence`, and `outputs.sbom` select default output
   paths.
-- `policy.fail_on` is `finding` (the default) or `never`.
+- `policy.fail_on` is `finding` (the default) or `never` for local scans. The
+  reusable Action additionally accepts `all` for failing on an unsupported
+  ecosystem. Severity thresholds are supplied by the CLI or Action inputs and
+  are recorded in the emitted policy metadata.
 
 Paths from the configuration file are relative to the scanned repository. CLI
 flags override configured values. Unknown sections and keys are errors rather

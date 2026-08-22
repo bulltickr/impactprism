@@ -232,6 +232,15 @@ def test_scan_baseline_gates_only_new_findings(tmp_path, monkeypatch, capsys):
     delta = json.loads(delta_path.read_text(encoding="utf-8"))
     assert report["delta"]["counts"]["new"] == 0
     assert delta["counts"]["existing"] >= 1
+    assert report["policy"] == {
+        "fail_on": "finding",
+        "severity_threshold": "low",
+        "gate_source": "baseline-new-findings",
+        "outcome": "clean",
+        "exit_code": 0,
+        "finding_count": 0,
+        "triggered_count": 0,
+    }
 
 
 def test_scan_uses_strict_local_configuration(tmp_path, monkeypatch, capsys):
