@@ -144,6 +144,25 @@
         }
       ]
     },
-    "go-workspace-clean": {"findings": []}
+    "go-workspace-clean": {"findings": []},
+    "go-workspace-roots-clean": {"findings": []},
+    "go-workspace-roots-unscoped": {
+      "findings": [
+        {
+          "finding_id": "08ae9537f74bd99d",
+          "finding_type": "DECLARED_UNUSED_CANDIDATE",
+          "package": "example.com/shared-only",
+          "file": null,
+          "line": null,
+          "column": null,
+          "manifest": null,
+          "lockfile": null,
+          "scope": null,
+          "severity": "LOW",
+          "confidence": "MEDIUM",
+          "status": "ADVISORY"
+        }
+      ]
+    }
   }
 }
