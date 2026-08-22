@@ -4,10 +4,12 @@ Thank you for helping improve ImpactPrism. The project is intentionally
 narrow: it analyzes dependency integrity from manifests, lockfiles, and source
 imports, then produces review-oriented artifacts.
 
-## Ten-minute contributor path
+## Contributor path
 
-Start with [Getting started](docs/GETTING_STARTED.md), then run the public demo
-matrix from an installed development checkout:
+Start with the [contributor quickstart](docs/CONTRIBUTOR_QUICKSTART.md) for the
+fresh-checkout setup, change-type decision table, verification loop, and public
+reproduction boundary. If the development environment is already installed,
+run the public demo matrix:
 
 ```text
 python scripts/ci.py validate-demos

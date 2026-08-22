@@ -308,6 +308,6 @@ for running the same contract outside GitHub Actions.
 
 - **License** — [MIT](LICENSE), Copyright (c) 2026 ImpactPrism contributors.
 - **Security** — see [SECURITY.md](SECURITY.md); scan execution is offline after installation and never sends source code anywhere.
-- **Contributing** — see [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); run the full test suite before opening a PR.
+- **Contributing** — start with the [contributor quickstart](docs/CONTRIBUTOR_QUICKSTART.md), then read [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before opening a PR.
 - **Threat model** — see [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) for assets, controls, and explicit limits.
 - **Feedback** — found a dependency your SBOM tool can't see? [Open an issue](https://github.com/bulltickr/impactprism/issues) using the compatibility or false-positive template. ImpactPrism is free and MIT — issues and PRs are the feedback funnel.
