@@ -11,11 +11,11 @@ repository or finding family.
 |---|---|
 | Corpus | `impactprism-public-compatibility-2026-08` |
 | Corpus status | Pinned |
-| Release tag | `v0.4.7` |
-| Scanner version | `0.4.7` |
-| Scanner commit | `5bf99a02321a9aba7a01effe241b47e39634010` |
-| Remote workflow commit | `5bf99a02321a9aba7a01effe241b47e39634010` |
-| Remote workflow | [Run 32553499413](https://github.com/bulltickr/impactprism/actions/runs/32553499413) |
+| Release tag | `v0.4.8` |
+| Scanner version | `0.4.8` |
+| Scanner commit | `0d66d19163a2b496fc3b4bd972cce62592430e1a` |
+| Remote workflow commit | `0d66d19163a2b496fc3b4bd972cce62592430e1a` |
+| Remote workflow | [Run 32556871118](https://github.com/bulltickr/impactprism/actions/runs/32556871118) |
 | Manifest SHA-256 | `d409c105766d18207a7affa9eda93e049f6a3538d3c8efe02f41e175084ce459` |
 | Cases | 10 |
 | Result | 10/10 passed |
@@ -23,8 +23,10 @@ repository or finding family.
 | Repository code executed | No |
 | Repository dependencies installed | No |
 | Repeatability | Exact-tag workflow run; normalized case digests match manifest expectations |
-| Durable result | [`compatibility-result.json`](https://github.com/bulltickr/impactprism/releases/download/v0.4.7/compatibility-result.json) attached to the v0.4.7 release |
-| Evidence checksum | [`compatibility-result.json.sha256`](https://github.com/bulltickr/impactprism/releases/download/v0.4.7/compatibility-result.json.sha256) |
+| Durable result | [`compatibility-result.json`](https://github.com/bulltickr/impactprism/releases/download/v0.4.8/compatibility-result.json) attached to the v0.4.8 release |
+| Result SHA-256 | `8aa41bf8e3b12bb8fe4b3777a727d94abdf217a466a0dec057900cf1314dd51d` |
+| Evidence checksum | [`compatibility-result.json.sha256`](https://github.com/bulltickr/impactprism/releases/download/v0.4.8/compatibility-result.json.sha256) |
+| Historical prior result | [`v0.4.7 compatibility-result.json`](https://github.com/bulltickr/impactprism/releases/download/v0.4.7/compatibility-result.json) contains the prior ten-case result |
 | Historical prior result | [`v0.4.6 compatibility-result.json`](https://github.com/bulltickr/impactprism/releases/download/v0.4.6/compatibility-result.json) contains the prior ten-case result |
 | Historical earlier result | [`v0.4.4 compatibility-result.json`](https://github.com/bulltickr/impactprism/releases/download/v0.4.4/compatibility-result.json) contains the earlier ten-case result |
 | Historical older result | [`v0.4.3 compatibility-result.json`](https://github.com/bulltickr/impactprism/releases/download/v0.4.3/compatibility-result.json) contains the earlier ten-case result |
@@ -35,9 +37,9 @@ The result was produced by preparing disposable checkouts from the manifest,
 then running `run.py` against those unchanged checkouts. Preparation is the
 only network phase. The machine-readable output contains the manifest
 SHA-256, pinned commit and source-tree IDs, counts, and normalized finding
-digests. The linked Ubuntu workflow repeated the run from the exact v0.4.7 tag
+digests. The linked Ubuntu workflow repeated the run from the exact v0.4.8 tag
 and attached the machine-readable result to the published release. Its case
-digests match the governed manifest expectations. The v0.4.6, v0.4.4, and
+digests match the governed manifest expectations. The v0.4.7, v0.4.6, v0.4.4, and
 v0.4.3 assets remain historical ten-case results, while the v0.4.1 asset remains the
 historical seven-case baseline.
 
