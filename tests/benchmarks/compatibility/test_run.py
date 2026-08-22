@@ -1,4 +1,5 @@
 import json
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,18 @@ def test_public_manifest_is_valid_and_score_free():
     assert len(cases) == 10
     assert document["accuracy_claim"] is False
     assert all(len(case["expected_digest"]) == 64 for case in cases)
+
+
+def test_public_manifest_ecosystem_counts_match_documented_corpus():
+    document = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    readme = Path("benchmarks/compatibility/README.md").read_text(encoding="utf-8")
+
+    assert Counter(case["ecosystem"] for case in _validate_manifest(document)) == {
+        "go": 3,
+        "npm": 3,
+        "python": 4,
+    }
+    assert "three npm, four Python, and three Go" in readme
 
 
 def test_manifest_validation_rejects_unpinned_digest():
