@@ -94,7 +94,8 @@ def test_dependency_review_is_read_only_and_immutably_pinned():
 def test_scorecard_publishes_sarif_with_minimal_explicit_permissions():
     raw = (WORKFLOWS / "scorecard.yml").read_text(encoding="utf-8")
 
-    assert "permissions: read-all" in raw
+    assert "permissions:\n  contents: read" in raw
+    assert "permissions: read-all" not in raw
     assert "ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4" in raw
     assert "github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4" in raw
     assert "publish_results: true" in raw

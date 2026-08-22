@@ -9,6 +9,7 @@ from impactprism.drift import FindingType, analyze_repo, classify_python
 from impactprism.manifest import parse_lockfile, parse_manifest
 from impactprism.remediation.remediate import _detect_ecosystem
 from impactprism.python_imports import ImportRecord, parse_imports, scan_imports
+from impactprism.python_package_names import distribution_for_import
 
 
 def _copy_fixture(tmp_path):
@@ -22,7 +23,7 @@ def test_python_manifests_and_poetry_lockfile_use_existing_models(tmp_path):
     repo = _copy_fixture(tmp_path)
     manifest = parse_manifest(repo)
     assert manifest.name == "fixture-python-app"
-    assert manifest.by_name("requests").locked_version == "2.32.3"
+    assert manifest.by_name("requests").locked_version == "2.33.0"
     assert manifest.by_name("pytest").kind == "devDependencies"
     lockfile = parse_lockfile(repo)
     assert lockfile.kind == "poetry"
@@ -81,6 +82,44 @@ def test_python_import_parser_covers_importlib_imported_alias():
     ]
 
 
+def test_python_distribution_import_aliases_are_curated_and_shared():
+    assert distribution_for_import("dotenv") == "python-dotenv"
+    assert distribution_for_import("dotenv.main") is None
+
+
+def test_python_dotenv_distribution_alias_is_clean(tmp_path):
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "alias-app"\ndependencies = ["python-dotenv==1.0.1"]\n'
+    )
+    (tmp_path / "requirements.txt").write_text("python-dotenv==1.0.1\n")
+    (tmp_path / "app.py").write_text("from dotenv import load_dotenv\n")
+
+    assert list(analyze_repo(tmp_path, ecosystem="python")) == []
+
+
+def test_python_import_alias_without_declared_distribution_stays_undeclared(tmp_path):
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "alias-app"\ndependencies = []\n'
+    )
+    (tmp_path / "app.py").write_text("from dotenv import load_dotenv\n")
+
+    findings = list(analyze_repo(tmp_path, ecosystem="python"))
+    assert [finding.finding_type for finding in findings] == [FindingType.UNDECLARED_DIRECT_USE]
+
+
+def test_declared_python_dotenv_without_import_is_unused(tmp_path):
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "alias-app"\ndependencies = ["python-dotenv==1.0.1"]\n'
+    )
+    (tmp_path / "requirements.txt").write_text("python-dotenv==1.0.1\n")
+    (tmp_path / "app.py").write_text("print('no third-party imports')\n")
+
+    findings = list(analyze_repo(tmp_path, ecosystem="python"))
+    assert [finding.finding_type for finding in findings] == [
+        FindingType.DECLARED_UNUSED_CANDIDATE
+    ]
+
+
 def test_python_non_literal_dynamic_module_names_are_not_guessed():
     records = parse_imports(
         "from importlib import import_module\n"
@@ -121,7 +160,7 @@ def test_python_sbom_uses_pypi_purls(tmp_path):
     repo = _copy_fixture(tmp_path)
     sbom = generate_sbom(repo)
     purls = {component["purl"] for component in sbom["components"]}
-    assert "pkg:pypi/requests@2.32.3" in purls
+    assert "pkg:pypi/requests@2.33.0" in purls
     assert "pkg:pypi/beautifulsoup4@4.12.3" in purls
 
 

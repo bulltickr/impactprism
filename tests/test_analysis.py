@@ -185,7 +185,7 @@ def test_generate_sbom_fixture_contains_all_declared_components_and_root_edges(
         for component in sbom["components"]
     } == {
         ("@fixture", "core", "2.3.1"),
-        (None, "lodash", "4.17.21"),
+        (None, "lodash", "4.18.1"),
         (None, "tap", "18.2.0"),
     }
 
@@ -196,7 +196,7 @@ def test_generate_sbom_fixture_contains_all_declared_components_and_root_edges(
     )
     assert root_dependency["dependsOn"] == [
         "pkg:npm/%40fixture/core@2.3.1",
-        "pkg:npm/lodash@4.17.21",
+        "pkg:npm/lodash@4.18.1",
         "pkg:npm/tap@18.2.0",
     ]
 

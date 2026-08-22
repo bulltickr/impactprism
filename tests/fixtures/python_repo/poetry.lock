@@ -1,6 +1,6 @@
 [[package]]
 name = "requests"
-version = "2.32.3"
+version = "2.33.0"
 
 [[package]]
 name = "beautifulsoup4"
@@ -8,4 +8,4 @@ version = "4.12.3"
 
 [[package]]
 name = "pytest"
-version = "8.3.2"
+version = "9.0.3"

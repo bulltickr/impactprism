@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "python-dotenv-alias",
+  "provenance": "synthetic",
+  "ecosystem": "python",
+  "package_manager": "pip",
+  "scan": {
+    "command": "impactprism scan . --ecosystem python --json",
+    "expected_result": "clean",
+    "expected_finding_types": []
+  },
+  "sanitization": {
+    "secrets_removed": true,
+    "proprietary_source_removed": true,
+    "private_urls_removed": true,
+    "customer_identifiers_removed": true
+  },
+  "files": [
+    {"path": "pyproject.toml", "role": "manifest"},
+    {"path": "requirements.txt", "role": "lockfile"},
+    {"path": "app.py", "role": "source"}
+  ]
+}

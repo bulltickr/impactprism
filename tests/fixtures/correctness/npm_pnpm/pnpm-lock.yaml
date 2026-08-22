@@ -1,11 +1,11 @@
 lockfileVersion: 5.4
 
 specifiers:
-  lodash: ^4.17.21
+  lodash: ^4.18.1
 
 dependencies:
-  lodash: 4.17.21
+  lodash: 4.18.1
 
 packages:
-  /lodash@4.17.21:
+  /lodash@4.18.1:
     resolution: {integrity: sha512-example}

@@ -1,0 +1,4 @@
+[project]
+name = "python-dotenv-alias"
+version = "1.0.0"
+dependencies = ["python-dotenv==1.0.1"]

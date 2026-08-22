@@ -18,6 +18,7 @@ from .manifest import (
 from .python_imports import scan_imports as _python_scan_imports
 from .scope import normalize_excludes
 from .python_manifest import canonical_name, is_python_repo
+from .python_package_names import distribution_for_import
 
 
 SOURCE_EXTENSIONS = {".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"}
@@ -30,17 +31,6 @@ BUILTIN_MODULES = {
     "readline/promises", "repl", "constants", "domain", "inspector", "punycode",
     "async_hooks", "v8", "wasi", "test", "node:test",
 }
-_PYTHON_IMPORT_TO_DIST = {
-    "bs4": "beautifulsoup4",
-    "sklearn": "scikit-learn",
-    "dateutil": "python-dateutil",
-    "yaml": "pyyaml",
-    "pil": "pillow",
-    "cv2": "opencv-python",
-    "attr": "attrs",
-}
-
-
 def _load_json(path):
     with path.open(encoding="utf-8") as handle:
         value = json.load(handle)
@@ -426,7 +416,7 @@ def scan_imports(repo_dir: str, excludes=None, ecosystem="npm", roots=None) -> s
                 name = canonical_name(specifier.split(".", 1)[0])
                 if name in getattr(sys, "stdlib_module_names", set()):
                     continue
-                name = _PYTHON_IMPORT_TO_DIST.get(name, name)
+                name = distribution_for_import(name) or name
                 if name:
                     imported.add(name)
         return imported

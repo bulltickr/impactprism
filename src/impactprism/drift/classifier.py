@@ -13,6 +13,10 @@ from pathlib import Path
 
 from .. import go_imports, go_manifest as go_manifest_module, python_imports
 from ..python_manifest import canonical_name, is_python_repo
+from ..python_package_names import (
+    PYTHON_IMPORT_ALIASES,
+    import_aliases_for_distribution,
+)
 from .. import imports, manifest as manifest_module
 from ..npm_semver import npm_satisfies, valid_range
 from ..resolution import ResolutionContext
@@ -77,17 +81,6 @@ _NODE_BUILTINS = {
 _NPM_SUFFIXES = (".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs")
 _LOCKFILE_NAMES = ("package-lock.json", "npm-shrinkwrap.json", "yarn.lock", "pnpm-lock.yaml")
 _TEST_SEGMENTS = {"test", "tests", "__tests__", "__mocks__", "spec"}
-_PYTHON_IMPORT_ALIASES = {
-    "beautifulsoup4": {"bs4"},
-    "scikit-learn": {"sklearn"},
-    "python-dateutil": {"dateutil"},
-    "pyyaml": {"yaml"},
-    "pillow": {"pil"},
-    "opencv-python": {"cv2"},
-    "attrs": {"attr"},
-}
-
-
 class DriftReport:
     """A collection of drift findings for one repository."""
 
@@ -808,13 +801,13 @@ def classify_python(
     for dependency in dependencies:
         declared_name = canonical_name(dependency.name)
         declared_by_name[declared_name] = dependency
-        for alias in _PYTHON_IMPORT_ALIASES.get(declared_name, set()):
+        for alias in import_aliases_for_distribution(declared_name):
             declared_by_name[alias] = dependency
     lockfile_resolved = getattr(lockfile, "resolved_versions", {}) if lockfile is not None else {}
     lockfile_resolved = {
         canonical_name(name): version for name, version in (lockfile_resolved or {}).items()
     }
-    for distribution, aliases in _PYTHON_IMPORT_ALIASES.items():
+    for distribution, aliases in PYTHON_IMPORT_ALIASES.items():
         if distribution in lockfile_resolved:
             for alias in aliases:
                 lockfile_resolved.setdefault(alias, lockfile_resolved[distribution])
@@ -874,7 +867,7 @@ def classify_python(
         package = canonical_name(dependency.name)
         sites = package_sites.get(package, [])
         if not sites:
-            for alias in _PYTHON_IMPORT_ALIASES.get(package, set()):
+            for alias in import_aliases_for_distribution(package):
                 sites.extend(package_sites.get(alias, []))
         if getattr(dependency, "kind", "dependencies") == "devDependencies":
             non_test = [site for site in sites if not site[3]]

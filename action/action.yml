@@ -115,8 +115,8 @@ runs:
       if: ${{ inputs.install-mode == 'managed' }}
       shell: bash
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install "${{ github.action_path }}/.."
+        python -m pip install --require-hashes -r "${{ github.action_path }}/../.github/requirements-ci.txt"
+        python -m pip install --no-deps "${{ github.action_path }}/.."
 
     - name: Verify offline Python runtime
       if: ${{ inputs.install-mode == 'offline' }}
