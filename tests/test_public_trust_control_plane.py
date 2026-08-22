@@ -2,13 +2,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
-PUBLISHED_COMPATIBILITY_VERSION = "0.4.5"
+PUBLISHED_COMPATIBILITY_VERSION = "0.4.6"
 
 
 def test_compatibility_report_tracks_the_published_release_baseline():
     raw = (ROOT / "docs" / "COMPATIBILITY_REPORT.md").read_text(encoding="utf-8")
 
-    # This report is durable evidence from the published v0.4.5 release. Keep
+    # This report is durable evidence from the published v0.4.6 release. Keep
     # its release identity synchronized with the uploaded result asset.
     assert f"| Scanner version | `{PUBLISHED_COMPATIBILITY_VERSION}` |" in raw
     assert "| Cases | 10 |" in raw
@@ -16,9 +16,9 @@ def test_compatibility_report_tracks_the_published_release_baseline():
     assert "Network during scan | No" in raw
     assert "Repository code executed | No" in raw
     assert "Repository dependencies installed | No" in raw
-    assert "releases/download/v0.4.5/compatibility-result.json" in raw
-    assert "releases/download/v0.4.5/compatibility-result.json.sha256" in raw
-    assert "Run 32546119913" in raw
+    assert "releases/download/v0.4.6/compatibility-result.json" in raw
+    assert "releases/download/v0.4.6/compatibility-result.json.sha256" in raw
+    assert "Run 32550236095" in raw
     assert "releases/download/v0.4.4/compatibility-result.json" in raw
     assert "releases/download/v0.4.3/compatibility-result.json" in raw
     assert "releases/download/v0.4.2/compatibility-result.json" in raw
@@ -32,8 +32,8 @@ def test_expanded_compatibility_coverage_links_the_durable_release_result():
 
     assert "10/10 passed" in raw
     assert "d409c105766d18207a7affa9eda93e049f6a3538d3c8efe02f41e175084ce459" in raw
-    assert "releases/download/v0.4.5/compatibility-result.json" in raw
-    assert "releases/download/v0.4.5/compatibility-result.json.sha256" in raw
+    assert "releases/download/v0.4.6/compatibility-result.json" in raw
+    assert "releases/download/v0.4.6/compatibility-result.json.sha256" in raw
     assert "not a release asset" not in raw
     assert "npm-chalk" in raw
     assert "python-httpx" in raw
