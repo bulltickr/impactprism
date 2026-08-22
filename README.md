@@ -10,7 +10,7 @@ Install a tagged GitHub Release wheel, then scan the repository:
 
 ```bash
 python -m pip install \
-  https://github.com/bulltickr/impactprism/releases/download/v0.4.4/impactprism-0.4.4-py3-none-any.whl
+  https://github.com/bulltickr/impactprism/releases/download/v0.4.5/impactprism-0.4.5-py3-none-any.whl
 impactprism scan .
 open evidence.md            # rendered Markdown preflight report
 ```
@@ -143,7 +143,7 @@ Add ImpactPrism to your pull requests in four lines:
 
 ```yaml
 - name: ImpactPrism scan
-  uses: bulltickr/impactprism@v0.4.4
+  uses: bulltickr/impactprism@v0.4.5
   with:
     repo-path: ${{ github.workspace }}
     fail-on: finding
@@ -173,7 +173,7 @@ When the GitHub CLI and artifact attestations are available, verify the wheel’
 build provenance as well:
 
 ```bash
-gh attestation verify impactprism-0.4.4-py3-none-any.whl \
+gh attestation verify impactprism-0.4.5-py3-none-any.whl \
   -R bulltickr/impactprism
 ```
 

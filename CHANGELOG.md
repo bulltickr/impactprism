@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.4.5 - 2026-08-22
+
 ### Scan scope
 
 - Allow `exclude` values to target a repository-relative directory prefix, not
