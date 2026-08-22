@@ -2,7 +2,7 @@
 
 This document records the ten-case compatibility selection and its published
 release verification. It is a supplementary view of the published
-[v0.4.5 compatibility report](COMPATIBILITY_REPORT.md). The v0.4.1
+[v0.4.6 compatibility report](COMPATIBILITY_REPORT.md). The v0.4.1
 machine-readable release asset remains the original seven-case baseline and
 does not claim to contain these later additions.
 
@@ -10,7 +10,7 @@ does not claim to contain these later additions.
 
 | Field | Value |
 |---|---|
-| Scanner version in published result | `0.4.5` |
+| Scanner version in published result | `0.4.6` |
 | Corpus | `impactprism-public-compatibility-2026-08` |
 | Manifest SHA-256 | `d409c105766d18207a7affa9eda93e049f6a3538d3c8efe02f41e175084ce459` |
 | Cases | 10 |
@@ -19,8 +19,8 @@ does not claim to contain these later additions.
 | Network during scan | No |
 | Repository code executed | No |
 | Repository dependencies installed | No |
-| Durable release result | [`v0.4.5 compatibility-result.json`](https://github.com/bulltickr/impactprism/releases/download/v0.4.5/compatibility-result.json) |
-| Evidence checksum | [`compatibility-result.json.sha256`](https://github.com/bulltickr/impactprism/releases/download/v0.4.5/compatibility-result.json.sha256) |
+| Durable release result | [`v0.4.6 compatibility-result.json`](https://github.com/bulltickr/impactprism/releases/download/v0.4.6/compatibility-result.json) |
+| Evidence checksum | [`compatibility-result.json.sha256`](https://github.com/bulltickr/impactprism/releases/download/v0.4.6/compatibility-result.json.sha256) |
 
 The release run was performed after disposable snapshots were prepared from
 the exact manifest commits. The scan phase did not fetch repositories, install
@@ -59,7 +59,7 @@ The three additions above bring the public manifest to ten cases: three npm,
 four Python, and three Go cases. This remains a regression contract for pinned
 repository shapes, not a precision, recall, or broad accuracy benchmark.
 
-The v0.4.5 release-artifacts workflow ran this exact ten-case corpus from the
+The v0.4.6 release-artifacts workflow ran this exact ten-case corpus from the
 release tag and uploaded the resulting machine-readable JSON with the release
 assets. The durable result is linked above. The v0.4.4 and v0.4.3 assets remain
 available as historical ten-case release baselines.
