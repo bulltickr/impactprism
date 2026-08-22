@@ -45,6 +45,47 @@ def test_tsconfig_jsonc_aliases_are_local_and_missing_targets_are_explicit(tmp_p
     assert "tsconfig path alias" in finding.explanation
 
 
+def test_tsconfig_extends_inherits_aliases_and_keeps_base_paths_relative(tmp_path):
+    repo = tmp_path / "tsconfig-extends"
+    _write(repo, "package.json", json.dumps({"name": "extends", "version": "1.0.0"}))
+    _write(
+        repo,
+        "configs/tsconfig.base.json",
+        json.dumps(
+            {
+                "compilerOptions": {
+                    "baseUrl": "..",
+                    "paths": {"@shared/*": ["packages/shared/src/*"]},
+                }
+            }
+        ),
+    )
+    _write(
+        repo,
+        "apps/web/tsconfig.json",
+        json.dumps({"extends": "../../configs/tsconfig.base.json"}),
+    )
+    _write(repo, "packages/shared/src/value.ts", "export default 1;\n")
+    _write(repo, "apps/web/src/index.ts", 'import value from "@shared/value";\n')
+
+    report = analyze_repo(str(repo), ecosystem="npm")
+
+    assert list(report) == []
+
+
+def test_tsconfig_extends_cycle_does_not_execute_or_escape_resolution(tmp_path):
+    repo = tmp_path / "tsconfig-cycle"
+    _write(repo, "package.json", json.dumps({"name": "cycle", "version": "1.0.0"}))
+    _write(repo, "tsconfig.json", json.dumps({"extends": "./configs/child.json"}))
+    _write(repo, "configs/child.json", json.dumps({"extends": "../tsconfig.json"}))
+    _write(repo, "src/index.ts", 'import value from "@cycle/value";\n')
+
+    report = analyze_repo(str(repo), ecosystem="npm")
+
+    assert _finding_types(report) == ["UNDECLARED_DIRECT_USE"]
+    assert report.findings[0].package == "@cycle/value"
+
+
 def test_workspace_exports_and_package_imports_are_local(tmp_path):
     repo = tmp_path / "workspace-resolution"
     _write(

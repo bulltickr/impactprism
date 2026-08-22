@@ -9,6 +9,14 @@
 - Added machine-readable policy metadata to scan reports so consumers can see
   which finding set was gated and why the reported exit code was selected.
 
+### TypeScript config inheritance
+
+- Resolve static `paths` and `baseUrl` aliases inherited through repository-local
+  relative `tsconfig` chains while preserving each option's declaring config
+  directory.
+- Keep package-based, circular, malformed, and executable configuration outside
+  the static resolution boundary.
+
 ## 0.4.7 - 2026-08-22
 
 ### Go workspace scan roots

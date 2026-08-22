@@ -30,6 +30,21 @@ class ResolutionDecision:
     reason: str = ""
 
 
+@dataclass(frozen=True)
+class _TsConfigSetting:
+    """A compiler option together with the config file that declared it."""
+
+    value: object
+    config_dir: Path
+
+
+@dataclass(frozen=True)
+class _TsConfigChain:
+    """The effective static alias settings for one tsconfig file."""
+
+    settings: dict[str, _TsConfigSetting]
+
+
 def _strip_jsonc(source: str) -> str:
     """Remove comments and trailing commas without interpreting strings."""
 
@@ -228,7 +243,7 @@ class ResolutionContext:
             if getattr(manifest, "name", None) and getattr(manifest, "package_path", None)
         }
         self._json_cache: dict[Path, dict | None] = {}
-        self._tsconfig_cache: dict[Path, dict | None] = {}
+        self._tsconfig_cache: dict[Path, _TsConfigChain | None] = {}
         self._bundler_cache: dict[Path, list] = {}
 
     def classify(
@@ -329,16 +344,69 @@ class ResolutionContext:
             "unresolved", f"workspace export {key!r} targets a missing local path"
         )
 
-    def _tsconfig(self, file_path: Path) -> tuple[Path, dict] | None:
+    def _tsconfig_extend_path(self, config_path: Path, extends: object) -> Path | None:
+        """Resolve a repository-local relative ``extends`` target.
+
+        TypeScript also supports Node-style package resolution for ``extends``.
+        Following package code or package-manager resolution would make this
+        scanner execute or guess beyond its static checkout boundary, so this
+        helper deliberately accepts only relative files inside the repository.
+        """
+
+        if not isinstance(extends, str) or not extends or not extends.startswith("."):
+            return None
+        candidate = (config_path.parent / extends).resolve()
+        try:
+            candidate.relative_to(self.repo)
+        except ValueError:
+            return None
+        candidates = [candidate]
+        if candidate.suffix == "":
+            candidates.extend((candidate.with_suffix(".json"), candidate / "tsconfig.json"))
+        for item in candidates:
+            if item.is_file():
+                return item
+        return None
+
+    def _load_tsconfig(self, config_path: Path, stack: frozenset[Path] = frozenset()) -> _TsConfigChain | None:
+        """Load a bounded effective config without executing any project code."""
+
+        config_path = config_path.resolve()
+        if config_path in stack or len(stack) >= budgets.MAX_NESTING_DEPTH:
+            return None
+        if config_path in self._tsconfig_cache:
+            return self._tsconfig_cache[config_path]
+        value = self._json(config_path)
+        if value is None:
+            self._tsconfig_cache[config_path] = None
+            return None
+
+        settings: dict[str, _TsConfigSetting] = {}
+        extends = self._tsconfig_extend_path(config_path, value.get("extends"))
+        if extends is not None:
+            inherited = self._load_tsconfig(extends, stack | {config_path})
+            if inherited is not None:
+                settings.update(inherited.settings)
+
+        options = value.get("compilerOptions")
+        if isinstance(options, dict):
+            config_dir = config_path.parent
+            for name in ("baseUrl", "paths"):
+                if name in options:
+                    settings[name] = _TsConfigSetting(options[name], config_dir)
+
+        result = _TsConfigChain(settings)
+        self._tsconfig_cache[config_path] = result
+        return result
+
+    def _tsconfig(self, file_path: Path) -> _TsConfigChain | None:
         current = Path(file_path).resolve().parent
         while True:
             candidate = current / "tsconfig.json"
             if candidate.is_file():
-                if candidate not in self._tsconfig_cache:
-                    self._tsconfig_cache[candidate] = _read_json(candidate)
-                value = self._tsconfig_cache[candidate]
+                value = self._load_tsconfig(candidate)
                 if value is not None:
-                    return current, value
+                    return value
             if current == self.repo or current.parent == current:
                 return None
             current = current.parent
@@ -347,12 +415,9 @@ class ResolutionContext:
         config = self._tsconfig(file_path)
         if config is None:
             return None
-        config_dir, value = config
-        options = value.get("compilerOptions")
-        if not isinstance(options, dict):
-            return None
-        paths = options.get("paths")
-        if isinstance(paths, dict):
+        paths_setting = config.settings.get("paths")
+        if paths_setting is not None and isinstance(paths_setting.value, dict):
+            paths = paths_setting.value
             matches = []
             for pattern, targets in paths.items():
                 if not isinstance(pattern, str) or not isinstance(targets, list):
@@ -364,7 +429,11 @@ class ResolutionContext:
                     )
             if matches:
                 _exact, _length, pattern, targets, match = max(matches)
-                base = config_dir / str(options.get("baseUrl", "."))
+                base_setting = config.settings.get("baseUrl")
+                if base_setting is None or not isinstance(base_setting.value, str):
+                    base = paths_setting.config_dir
+                else:
+                    base = base_setting.config_dir / base_setting.value
                 for target in targets:
                     if isinstance(target, str) and _resolve_local_target(
                         base, target, match, root=self.repo
@@ -374,7 +443,13 @@ class ResolutionContext:
                     "unresolved",
                     f"tsconfig path alias {pattern!r} has no existing target",
                 )
-        base_url = options.get("baseUrl")
-        if isinstance(base_url, str) and _resolve_candidate((config_dir / base_url / specifier).resolve()):
+        base_setting = config.settings.get("baseUrl")
+        if (
+            base_setting is not None
+            and isinstance(base_setting.value, str)
+            and _resolve_candidate(
+                (base_setting.config_dir / base_setting.value / specifier).resolve()
+            )
+        ):
             return ResolutionDecision("local")
         return None
