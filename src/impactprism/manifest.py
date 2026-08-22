@@ -10,6 +10,8 @@ from pathlib import Path
 
 import yaml
 
+from .scope import is_excluded_directory, normalize_excludes
+
 __all__ = [
     "Dependency",
     "Manifest",
@@ -160,7 +162,7 @@ def discover_workspaces(
     repo_dir: str | os.PathLike[str], *, exclude: set[str] | None = None
 ) -> list[Path]:
     repo_path = Path(repo_dir)
-    excluded = set(exclude or ())
+    excluded = normalize_excludes(exclude or ())
     patterns = _workspace_patterns(repo_path)
     matches: list[Path] = []
     match_count = 0
@@ -181,7 +183,7 @@ def discover_workspaces(
         except (OSError, ValueError):
             continue
         for candidate in candidates:
-            if _path_contains_excluded_directory(repo_path, candidate, excluded):
+            if is_excluded_directory(repo_path, candidate, excluded):
                 continue
             match_count += 1
             if match_count > budgets.MAX_WORKSPACE_MATCHES:
@@ -202,18 +204,6 @@ def discover_workspaces(
     for match in sorted(matches, key=lambda path: str(path)):
         unique[str(match.resolve())] = match
     return list(unique.values())
-
-
-def _path_contains_excluded_directory(
-    repo_root: Path, candidate: Path, exclude: set[str]
-) -> bool:
-    if not exclude:
-        return False
-    try:
-        relative_parts = candidate.resolve().relative_to(repo_root.resolve()).parts
-    except ValueError:
-        return True
-    return any(part in exclude for part in relative_parts)
 
 
 def _workspace_patterns(repo_path: Path) -> list[object]:

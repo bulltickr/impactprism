@@ -28,6 +28,13 @@ summary, ordered review steps, and a caution. The guidance is also carried into
 the evidence adapter and Action SARIF properties. It is review context, not an
 instruction to mutate a repository.
 
+Canonical scan reports also include a `scope` object. It records the effective
+repository-relative exclusions after configuration and command-line values are
+combined. A scope exclusion without a slash matches that directory name
+anywhere in the repository; an exclusion containing slashes matches that
+relative directory prefix. This makes the boundary of a scan visible to
+downstream consumers instead of leaving it implicit in local configuration.
+
 The schemas are also regression-tested against generated outputs. They are
 documentation and validation artifacts; the normal runtime does not require
 the `jsonschema` package.

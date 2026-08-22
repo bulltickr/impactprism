@@ -14,6 +14,7 @@ from pathlib import Path
 
 from . import budgets
 from . import go_mod
+from .scope import is_excluded_directory, normalize_excludes
 
 __all__ = [
     "GoImport",
@@ -245,7 +246,7 @@ def scan_go_imports(
     repo = Path(repo_dir)
     if not repo.is_dir():
         return result
-    exclude = set(exclude or [])
+    exclude = normalize_excludes(exclude or ())
     if max_file_bytes is None:
         max_file_bytes = budgets.MAX_FILE_BYTES
     if max_total_bytes is None:
@@ -279,7 +280,11 @@ def scan_go_imports(
                 is_dir = False
             name = entry.name
             if is_dir:
-                if name == "vendor" or name.startswith(".") or name in exclude:
+                if (
+                    name == "vendor"
+                    or name.startswith(".")
+                    or is_excluded_directory(repo, Path(entry.path), exclude)
+                ):
                     continue
                 stack.append((Path(entry.path), depth + 1))
                 continue

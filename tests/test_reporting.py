@@ -62,6 +62,22 @@ def test_canonical_report_preserves_every_finding_type_and_exit_policy():
     )
 
 
+def test_canonical_report_records_explicit_scope():
+    report = build_scan_report(
+        repo="repo",
+        ecosystem="go",
+        findings=[],
+        scope={
+            "mode": "repository",
+            "root": ".",
+            "exclude": ["cmd/fiximports/testdata"],
+            "exclude_matching": "directory-name-or-relative-prefix",
+        },
+    )
+
+    assert report["scope"]["exclude"] == ["cmd/fiximports/testdata"]
+
+
 def test_evidence_adapter_includes_modern_finding_types():
     report = build_scan_report(
         repo="repo",

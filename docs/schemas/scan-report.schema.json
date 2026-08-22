@@ -34,6 +34,17 @@
       "items": {"$ref": "#/$defs/finding"}
     },
     "diagnostics": {"type": "array", "items": {"type": "object"}},
+    "scope": {
+      "type": "object",
+      "required": ["mode", "root", "exclude", "exclude_matching"],
+      "properties": {
+        "mode": {"type": "string", "const": "repository"},
+        "root": {"type": "string", "const": "."},
+        "exclude": {"type": "array", "items": {"type": "string"}},
+        "exclude_matching": {"type": "string", "const": "directory-name-or-relative-prefix"}
+      },
+      "additionalProperties": false
+    },
     "counts": {
       "type": "object",
       "required": ["total", "by_type", "by_severity"],

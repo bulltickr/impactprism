@@ -163,6 +163,18 @@ def test_generate_sbom_structure(tmp_path):
     assert _component(sbom, "eslint")["scope"] == "optional"
 
 
+def test_legacy_analyze_applies_exclusions_to_python_repositories(tmp_path, capsys):
+    repo = tmp_path / "python-repo"
+    write_file(repo, "pyproject.toml", "[project]\nname = 'python-repo'\nversion = '1.0.0'\n")
+    write_file(repo, "src/main.py", "import requests\n")
+    write_file(repo, "fixtures/case.py", "import hidden_dependency\n")
+
+    assert main([str(repo), "--exclude", "fixtures", "--json"]) == 1
+    report = json.loads(capsys.readouterr().out)
+
+    assert report["imported"] == ["requests"]
+
+
 def test_generate_sbom_fixture_contains_all_declared_components_and_root_edges(
     sbom_fixture_repo,
 ):

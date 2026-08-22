@@ -49,7 +49,7 @@ inputs:
     required: false
     default: python
   exclude:
-    description: Newline-separated directory names to exclude in addition to repository defaults.
+    description: Newline-separated directory names or repository-relative directory prefixes to exclude in addition to repository defaults.
     required: false
     default: ""
   config-path:

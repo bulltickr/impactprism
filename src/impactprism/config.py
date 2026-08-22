@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .scope import normalize_excludes
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 fallback
@@ -57,6 +59,10 @@ def load_config(repo_path, explicit_path=None):
         not isinstance(value, str) or not value for value in scan.get("exclude", [])
     ):
         raise ValueError("[scan].exclude must be a list of non-empty strings")
+    try:
+        normalize_excludes(scan.get("exclude", []))
+    except ValueError as error:
+        raise ValueError("[scan].exclude contains an unsafe path: " + str(error)) from error
     policy = data.get("policy", {})
     if policy.get("fail_on", "finding") not in ("finding", "never"):
         raise ValueError("[policy].fail_on must be 'finding' or 'never'")

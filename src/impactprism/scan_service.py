@@ -21,6 +21,7 @@ from .analysis import generate_sbom, main as analysis_main
 from .drift import FindingType, analyze_repo
 from .python_manifest import is_python_repo
 from .reporting import build_scan_report
+from .scope import normalize_excludes
 
 
 DEFAULT_SCAN_EXCLUDES = frozenset(
@@ -184,7 +185,7 @@ def scan_repository(
     if resolved is None:
         raise ValueError("unsupported or missing ecosystem")
 
-    selected_excludes = set(excludes or ())
+    selected_excludes = normalize_excludes(excludes or ())
     classifier = analyze_repo(
         str(repo), ecosystem=resolved, commit_sha=commit_sha, exclude=selected_excludes
     )
@@ -209,5 +210,11 @@ def scan_repository(
         declared=metadata.get("declared", []),
         imported=metadata.get("imported", []),
         sbom=sbom,
+        scope={
+            "mode": "repository",
+            "root": ".",
+            "exclude": sorted(selected_excludes),
+            "exclude_matching": "directory-name-or-relative-prefix",
+        },
     )
     return ScanResult(report=report, ecosystem=resolved, findings=findings, sbom=sbom)

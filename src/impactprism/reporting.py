@@ -114,6 +114,7 @@ def build_scan_report(
     imported: Iterable[str] = (),
     sbom: dict | None = None,
     diagnostics: Iterable[dict] = (),
+    scope: dict | None = None,
 ) -> dict:
     """Build the canonical JSON report consumed by all output adapters."""
 
@@ -161,6 +162,7 @@ def build_scan_report(
         "unresolved": packages(FindingType.UNRESOLVED_IMPORT.name),
         "findings": normalized,
         "diagnostics": list(diagnostics),
+        **({"scope": scope} if scope is not None else {}),
         "counts": {
             "total": len(normalized),
             "by_type": {key: len(value) for key, value in by_type.items()},
