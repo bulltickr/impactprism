@@ -142,7 +142,7 @@ def analyze_repo(
 
     if ecosystem == "npm":
         try:
-            manifests = manifest_module.parse_manifests(repo_dir)
+            manifests = manifest_module.parse_manifests(repo_dir, exclude=exclude)
         except Exception as exc:
             findings = [_finding_for_manifest_parse_error(repo_dir, "npm", exc, commit_sha=commit_sha)]
             return _finalize_report(findings, repo, commit_sha)

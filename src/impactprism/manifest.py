@@ -156,16 +156,19 @@ def parse_lockfile(repo_dir: str | os.PathLike[str]) -> Lockfile | None:
     return None
 
 
-def discover_workspaces(repo_dir: str | os.PathLike[str]) -> list[Path]:
+def discover_workspaces(
+    repo_dir: str | os.PathLike[str], *, exclude: set[str] | None = None
+) -> list[Path]:
     repo_path = Path(repo_dir)
+    excluded = set(exclude or ())
     patterns = _workspace_patterns(repo_path)
     matches: list[Path] = []
     match_count = 0
     for pattern in patterns:
         if not isinstance(pattern, str):
             continue
-        excluded = pattern.startswith("!")
-        normalized = pattern[1:] if excluded else pattern
+        is_exclusion_pattern = pattern.startswith("!")
+        normalized = pattern[1:] if is_exclusion_pattern else pattern
         normalized = normalized.strip("/")
         if not normalized:
             continue
@@ -178,6 +181,8 @@ def discover_workspaces(repo_dir: str | os.PathLike[str]) -> list[Path]:
         except (OSError, ValueError):
             continue
         for candidate in candidates:
+            if _path_contains_excluded_directory(repo_path, candidate, excluded):
+                continue
             match_count += 1
             if match_count > budgets.MAX_WORKSPACE_MATCHES:
                 raise budgets.ScannerBudgetError("workspace_matches", budgets.MAX_WORKSPACE_MATCHES)
@@ -189,7 +194,7 @@ def discover_workspaces(repo_dir: str | os.PathLike[str]) -> list[Path]:
                 continue
             if not (candidate / "package.json").is_file():
                 continue
-            if excluded:
+            if is_exclusion_pattern:
                 matches = [match for match in matches if match.resolve() != candidate.resolve()]
             else:
                 matches.append(candidate)
@@ -197,6 +202,18 @@ def discover_workspaces(repo_dir: str | os.PathLike[str]) -> list[Path]:
     for match in sorted(matches, key=lambda path: str(path)):
         unique[str(match.resolve())] = match
     return list(unique.values())
+
+
+def _path_contains_excluded_directory(
+    repo_root: Path, candidate: Path, exclude: set[str]
+) -> bool:
+    if not exclude:
+        return False
+    try:
+        relative_parts = candidate.resolve().relative_to(repo_root.resolve()).parts
+    except ValueError:
+        return True
+    return any(part in exclude for part in relative_parts)
 
 
 def _workspace_patterns(repo_path: Path) -> list[object]:
@@ -230,14 +247,16 @@ def _workspace_patterns(repo_path: Path) -> list[object]:
     return patterns
 
 
-def parse_manifests(repo_dir: str | os.PathLike[str]) -> list[Manifest]:
+def parse_manifests(
+    repo_dir: str | os.PathLike[str], *, exclude: set[str] | None = None
+) -> list[Manifest]:
     repo_path = Path(repo_dir)
     if not (repo_path / "package.json").is_file() and _is_python_repo(repo_path):
         from .python_manifest import parse_python_manifests
 
         return parse_python_manifests(repo_path)
     manifests = [parse_manifest(repo_path)]
-    for workspace in discover_workspaces(repo_path):
+    for workspace in discover_workspaces(repo_path, exclude=exclude):
         manifests.append(_parse_workspace_manifest(repo_path, workspace))
     return manifests
 

@@ -282,3 +282,34 @@ def test_pnpm_workspace_yaml_discovers_included_and_excluded_packages(tmp_path):
     discovered = impactprism.manifest.discover_workspaces(str(repo))
 
     assert [path.name for path in discovered] == ["app"]
+
+
+def test_workspace_discovery_applies_directory_excludes_before_budget(tmp_path, monkeypatch):
+    monkeypatch.setattr(budgets, "MAX_WORKSPACE_MATCHES", 2)
+    repo = tmp_path / "repo"
+    write_file(
+        repo,
+        "package.json",
+        json.dumps({"name": "root", "version": "1.0.0"}),
+    )
+    write_file(
+        repo,
+        "pnpm-workspace.yaml",
+        "packages:\n  - 'packages/**'\n",
+    )
+    write_file(
+        repo,
+        "packages/app/package.json",
+        json.dumps({"name": "app", "version": "1.0.0"}),
+    )
+    write_file(
+        repo,
+        "packages/__tests__/fixture/package.json",
+        json.dumps({"name": "fixture", "version": "1.0.0"}),
+    )
+
+    discovered = impactprism.manifest.discover_workspaces(
+        str(repo), exclude={"__tests__"}
+    )
+
+    assert [path.as_posix().split("/")[-1] for path in discovered] == ["app"]

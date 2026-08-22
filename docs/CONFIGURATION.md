@@ -21,7 +21,9 @@ fail_on = "finding"
 
 Supported keys are deliberately limited:
 
-- `scan.exclude` adds directory-name exclusions to the built-in defaults.
+- `scan.exclude` adds directory-name exclusions to the built-in defaults. For
+  npm workspaces, the same names also exclude nested workspace manifests before
+  workspace-discovery limits are applied.
 - `scan.baseline` and `scan.delta` enable incremental comparison.
 - `outputs.report`, `outputs.evidence`, and `outputs.sbom` select default output
   paths.
