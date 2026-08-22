@@ -257,6 +257,35 @@ def test_scan_uses_strict_local_configuration(tmp_path, monkeypatch, capsys):
     assert (repo / "artifacts" / "evidence.json").is_file()
 
 
+def test_scan_uses_configured_npm_roots(tmp_path, monkeypatch, capsys):
+    repo = make_repo(
+        tmp_path,
+        "root-selection",
+        dependencies={"react": "18.2.0"},
+        source='import rootOnly from "root-only";\n',
+    )
+    write_file(
+        repo,
+        "packages/app/package.json",
+        json.dumps(
+            {
+                "name": "selected-app",
+                "version": "1.0.0",
+                "dependencies": {"react": "18.2.0"},
+            }
+        ),
+    )
+    write_file(repo, "packages/app/index.js", 'import React from "react";\n')
+    write_file(repo, ".impactprism.toml", '[scan]\nroots = ["packages/app"]\n')
+
+    report_path = repo / "configured-roots.json"
+    assert main(["scan", str(repo), "--report", str(report_path)]) == 0
+    capsys.readouterr()
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["scope"]["roots"] == ["packages/app"]
+    assert all(finding.get("package") != "root-only" for finding in report["findings"])
+
+
 def test_scan_rejects_unknown_configuration(tmp_path, capsys):
     repo = make_repo(tmp_path, "bad-config", dependencies={"react": "18.2.0"}, source="import React from 'react';\n")
     write_file(repo, ".impactprism.toml", "[unexpected]\nvalue = true\n")

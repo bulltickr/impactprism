@@ -10,7 +10,7 @@ from pathlib import Path
 
 import yaml
 
-from .scope import is_excluded_directory, normalize_excludes
+from .scope import is_excluded_directory, normalize_excludes, normalize_roots
 
 __all__ = [
     "Dependency",
@@ -23,6 +23,7 @@ __all__ = [
     "parse_python_lockfile",
     "parse_python_manifests",
     "discover_workspaces",
+    "validate_package_roots",
     "parse_manifests",
     "manifest_for_file",
 ]
@@ -206,6 +207,38 @@ def discover_workspaces(
     return list(unique.values())
 
 
+def validate_package_roots(
+    repo_dir: str | os.PathLike[str],
+    roots,
+    *,
+    exclude: set[str] | None = None,
+) -> tuple[str, ...]:
+    """Validate explicit npm package roots and return normalized paths.
+
+    Explicit roots are package directories, not arbitrary source directories
+    or workspace globs. The repository root remains the context for workspace
+    and lockfile resolution, while only the selected package manifests and
+    source trees are classified.
+    """
+
+    repo_path = Path(repo_dir).resolve()
+    normalized = normalize_roots(roots)
+    excluded = normalize_excludes(exclude or ())
+    for root in normalized:
+        candidate = (repo_path / root).resolve()
+        try:
+            candidate.relative_to(repo_path)
+        except ValueError as error:
+            raise ValueError("scan root escapes the repository: " + root) from error
+        if not candidate.is_dir():
+            raise ValueError("scan root directory not found: " + root)
+        if is_excluded_directory(repo_path, candidate, excluded):
+            raise ValueError("scan root is excluded by scan.exclude: " + root)
+        if not (candidate / "package.json").is_file():
+            raise ValueError("scan root must contain package.json: " + root)
+    return normalized
+
+
 def _workspace_patterns(repo_path: Path) -> list[object]:
     """Read package-manager workspace globs without running package-manager code."""
     patterns: list[object] = []
@@ -238,13 +271,27 @@ def _workspace_patterns(repo_path: Path) -> list[object]:
 
 
 def parse_manifests(
-    repo_dir: str | os.PathLike[str], *, exclude: set[str] | None = None
+    repo_dir: str | os.PathLike[str],
+    *,
+    exclude: set[str] | None = None,
+    roots=None,
 ) -> list[Manifest]:
     repo_path = Path(repo_dir)
     if not (repo_path / "package.json").is_file() and _is_python_repo(repo_path):
         from .python_manifest import parse_python_manifests
 
         return parse_python_manifests(repo_path)
+    if roots is not None:
+        selected_roots = validate_package_roots(repo_path, roots, exclude=exclude)
+        selected = []
+        for root in selected_roots:
+            root_path = (repo_path / root).resolve()
+            selected.append(
+                parse_manifest(repo_path)
+                if root == "."
+                else _parse_workspace_manifest(repo_path, root_path)
+            )
+        return selected
     manifests = [parse_manifest(repo_path)]
     for workspace in discover_workspaces(repo_path, exclude=exclude):
         manifests.append(_parse_workspace_manifest(repo_path, workspace))

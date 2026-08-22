@@ -169,7 +169,7 @@ def _resolve_ecosystem(repo_path, ecosystem):
     return ecosystem
 
 
-def _run_analysis(repo_path, ecosystem, commit_sha, excludes=None):
+def _run_analysis(repo_path, ecosystem, commit_sha, excludes=None, roots=None):
     _ensure_import_paths()
     from impactprism.scan_service import scan_repository
 
@@ -178,6 +178,7 @@ def _run_analysis(repo_path, ecosystem, commit_sha, excludes=None):
         ecosystem=ecosystem,
         commit_sha=commit_sha,
         excludes=excludes,
+        roots=roots,
     )
 
 
@@ -681,11 +682,15 @@ def main(argv=None) -> int:
                 excludes = set(DEFAULT_SCAN_EXCLUDES)
                 excludes.update(config.get("scan", {}).get("exclude", []))
                 excludes.update(_input_lines("INPUT_EXCLUDE"))
+                input_roots = _input_lines("INPUT_ROOTS")
+                roots = input_roots if input_roots else config.get("scan", {}).get("roots")
+                roots = roots or None
                 scan_result = _run_analysis(
                     repo_path,
                     resolved_ecosystem,
                     commit_sha,
                     excludes=excludes,
+                    roots=roots,
                 )
                 scan_report = dict(scan_result.report)
                 findings = list(scan_result.findings)

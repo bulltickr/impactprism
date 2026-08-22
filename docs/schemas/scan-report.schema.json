@@ -41,7 +41,13 @@
         "mode": {"type": "string", "const": "repository"},
         "root": {"type": "string", "const": "."},
         "exclude": {"type": "array", "items": {"type": "string"}},
-        "exclude_matching": {"type": "string", "const": "directory-name-or-relative-prefix"}
+        "exclude_matching": {"type": "string", "const": "directory-name-or-relative-prefix"},
+        "roots": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 1
+        },
+        "root_selection": {"type": "string", "const": "explicit"}
       },
       "additionalProperties": false
     },

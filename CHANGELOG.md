@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### npm/pnpm scan roots
+
+- Added explicit, repeatable package-root selection for npm/pnpm scans through
+  the CLI, local configuration, and the GitHub Action.
+- Kept the repository as workspace and lockfile resolution context while
+  limiting classification, metadata, SBOM components, and report scope to the
+  selected package directories.
+- Reject missing, overlapping, escaped, excluded, non-package, and
+  non-npm/non-pnpm root selections instead of silently scanning a different
+  boundary.
+
 ## 0.4.5 - 2026-08-22
 
 ### Scan scope

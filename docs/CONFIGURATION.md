@@ -7,6 +7,7 @@ the CLI or Action.
 ```toml
 [scan]
 exclude = ["generated", "vendor-copy"]
+roots = ["apps/web", "packages/shared"]
 baseline = "artifacts/baseline.json"
 delta = "artifacts/delta.json"
 
@@ -26,6 +27,13 @@ Supported keys are deliberately limited:
   exclude nested workspace manifests before workspace-discovery limits are
   applied. For example, `cmd/fiximports/testdata` excludes only that tree,
   while `testdata` excludes every directory with that basename.
+- `scan.roots` is optional and currently applies to npm/pnpm scans. Each value
+  is one repository-relative package directory containing `package.json`; it
+  is a literal path, not a glob. Multiple roots are supported, and only their
+  manifests and source trees are classified. The repository root still
+  provides workspace and lockfile resolution context. If omitted, the scan
+  retains the historical whole-repository scope. An explicit root that is
+  covered by `scan.exclude` is rejected.
 - `scan.baseline` and `scan.delta` enable incremental comparison.
 - `outputs.report`, `outputs.evidence`, and `outputs.sbom` select default output
   paths.
@@ -37,7 +45,7 @@ than being silently ignored. `impactprism doctor .` validates the file without
 running a scan.
 
 The GitHub Action also reads `.impactprism.toml` by default. Its explicit
-`exclude`, `config-path`, `baseline-path`, and `delta-path` inputs override the
+`exclude`, `roots`, `config-path`, `baseline-path`, and `delta-path` inputs override the
 corresponding repository settings. Action paths are resolved relative to the
 scanned repository; the generated report directory remains controlled by the
 Action's `output-dir` input.
