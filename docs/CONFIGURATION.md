@@ -21,9 +21,11 @@ fail_on = "finding"
 
 Supported keys are deliberately limited:
 
-- `scan.exclude` adds directory-name exclusions to the built-in defaults. For
-  npm workspaces, the same names also exclude nested workspace manifests before
-  workspace-discovery limits are applied.
+- `scan.exclude` adds directory-name or repository-relative directory-prefix
+  exclusions to the built-in defaults. For npm workspaces, the same values also
+  exclude nested workspace manifests before workspace-discovery limits are
+  applied. For example, `cmd/fiximports/testdata` excludes only that tree,
+  while `testdata` excludes every directory with that basename.
 - `scan.baseline` and `scan.delta` enable incremental comparison.
 - `outputs.report`, `outputs.evidence`, and `outputs.sbom` select default output
   paths.
@@ -39,3 +41,7 @@ The GitHub Action also reads `.impactprism.toml` by default. Its explicit
 corresponding repository settings. Action paths are resolved relative to the
 scanned repository; the generated report directory remains controlled by the
 Action's `output-dir` input.
+
+Canonical scan reports include the normalized effective scope. This makes an
+excluded tree visible to reviewers instead of making a clean result appear to
+cover files that were intentionally outside the scan.

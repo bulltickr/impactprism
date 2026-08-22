@@ -94,7 +94,7 @@ following, all set before the step that invokes it:
 | `artifact-name`      | Upload artifact name; an empty string disables the upload.                 | false    | `impactprism-reports`   |
 | `install-mode`       | `managed` installs the local package; `offline` uses caller-provided Python dependencies and performs no package installation. | false | `managed` |
 | `python-command`     | Python executable used by `offline` mode.                                  | false    | `python`               |
-| `exclude`            | Newline-separated directory names added to the built-in exclusions.         | false    | empty                  |
+| `exclude`            | Newline-separated directory names or repository-relative directory prefixes added to the built-in exclusions. | false    | empty                  |
 | `config-path`        | Optional TOML configuration path; otherwise `.impactprism.toml` is used.   | false    | empty                  |
 | `baseline-path`      | Previous canonical report, resolved relative to the scanned repository.     | false    | empty                  |
 | `delta-path`         | Baseline delta output path, resolved relative to the scanned repository.    | false    | empty                  |

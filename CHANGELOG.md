@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Scan scope
+
+- Allow `exclude` values to target a repository-relative directory prefix, not
+  only a directory basename, across npm, Python, Go, workspace discovery, the
+  CLI, and the Action.
+- Record the effective normalized exclusions in canonical scan reports so
+  downstream consumers can see the boundary of a scan.
+- Reject absolute and traversal-based exclusion paths before scanning.
+
 ## 0.4.4 - 2026-08-22
 
 ### Remediation guidance

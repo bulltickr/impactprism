@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import budgets, js_ast
+from .scope import is_excluded_directory, normalize_excludes
 
 SOURCE_EXTENSIONS = {".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"}
 SKIPPED_DIRECTORIES = {"node_modules", "build", "dist", "coverage", "public"}
@@ -111,7 +112,7 @@ def scan_imports(
     if not repo.is_dir():
         return result
     if exclude is not None:
-        exclude = set(exclude)
+        exclude = normalize_excludes(exclude)
     if max_file_bytes is None:
         max_file_bytes = budgets.MAX_FILE_BYTES
     if max_total_bytes is None:
@@ -147,7 +148,7 @@ def scan_imports(
             if is_dir:
                 if name in SKIPPED_DIRECTORIES or name.startswith("."):
                     continue
-                if exclude is not None and name in exclude:
+                if exclude is not None and is_excluded_directory(repo, Path(entry.path), exclude):
                     continue
                 stack.append((Path(entry.path), depth + 1))
                 continue

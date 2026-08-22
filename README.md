@@ -274,7 +274,7 @@ impactprism clauses [path]
 | `evidence` | `<scan_report>` — report JSON | `--markdown PATH` (default `evidence.md`), `--json PATH` (default `evidence.json`), `--stdout` |
 | `clauses` | `[path]` — optional clause-map YAML | — |
 
-`--exclude` skips directories by name (defaults: `tests`, `fixtures`, `demo`, `node_modules`, `build`, `dist`, `.git`, `.cache`, `coverage`, `public`). `impactprism scan` runs analyze + evidence in one shot; `python -m impactprism` is equivalent.
+`--exclude` skips directories by name or repository-relative prefix (defaults: `tests`, `fixtures`, `demo`, `node_modules`, `build`, `dist`, `.git`, `.cache`, `coverage`, `public`). A basename such as `testdata` matches everywhere; a prefix such as `cmd/fiximports/testdata` matches only that tree. `impactprism scan` runs analyze + evidence in one shot; `python -m impactprism` is equivalent.
 
 ## Scope and limitations
 

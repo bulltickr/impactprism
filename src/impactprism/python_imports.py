@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import budgets
+from .scope import is_excluded_directory, normalize_excludes
 
 __all__ = ["ImportRecord", "parse_imports", "parse_python_imports", "scan_imports", "scan_python_imports"]
 
@@ -103,7 +104,7 @@ def scan_imports(
     if not repo.is_dir():
         return {}
     if exclude is not None:
-        exclude = set(exclude)
+        exclude = normalize_excludes(exclude)
     max_file_bytes = budgets.MAX_FILE_BYTES if max_file_bytes is None else max_file_bytes
     max_total_bytes = budgets.MAX_TOTAL_BYTES if max_total_bytes is None else max_total_bytes
     max_files = budgets.MAX_FILE_COUNT if max_files is None else max_files
@@ -132,7 +133,7 @@ def scan_imports(
             if is_dir:
                 if name in SKIPPED_DIRECTORIES or name.startswith("."):
                     continue
-                if exclude is not None and name in exclude:
+                if exclude is not None and is_excluded_directory(repo, Path(entry.path), exclude):
                     continue
                 stack.append((Path(entry.path), depth + 1))
                 continue

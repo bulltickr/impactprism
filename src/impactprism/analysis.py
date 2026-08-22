@@ -11,6 +11,7 @@ from .imports import scan_imports as _ast_scan_imports
 from .go_manifest import parse_go_manifest
 from .manifest import LockfileParseError, parse_lockfile, parse_python_manifest
 from .python_imports import scan_imports as _python_scan_imports
+from .scope import normalize_excludes
 from .python_manifest import canonical_name, is_python_repo
 
 
@@ -416,7 +417,7 @@ def main(argv=None) -> int:
         action="append",
         metavar="PAT",
         default=None,
-        help="skip directories with this name (repeatable)",
+        help="skip directories by name or repository-relative prefix (repeatable)",
     )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
@@ -431,10 +432,13 @@ def main(argv=None) -> int:
         return 2
 
     try:
+        excludes = normalize_excludes(args.exclude or ())
         if not package_path.is_file():
             manifest = parse_python_manifest(repo_path)
             declared = {canonical_name(dependency.name) for dependency in manifest.dependencies}
-            imported = scan_imports(str(repo_path), ecosystem="python")
+            imported = scan_imports(
+                str(repo_path), excludes=excludes, ecosystem="python"
+            )
             report = {
                 "repo": str(repo_path),
                 "package_name": manifest.name or "unknown",
@@ -459,7 +463,6 @@ def main(argv=None) -> int:
             return 1 if report["drift"] or report["undeclared"] else 0
         package_json = _load_json(package_path)
         declared = set(_declared_dependencies(package_json))
-        excludes = set(args.exclude) if args.exclude else None
         imported = scan_imports(str(repo_path), excludes=excludes)
         report = _report(repo_path, package_json, declared, imported)
         sbom = generate_sbom(str(repo_path))

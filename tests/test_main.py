@@ -265,6 +265,20 @@ def test_scan_rejects_unknown_configuration(tmp_path, capsys):
     assert output["error"]["kind"] == "input-error"
 
 
+def test_scan_rejects_unsafe_exclusion_path(tmp_path, capsys):
+    repo = make_repo(
+        tmp_path,
+        "unsafe-exclude",
+        dependencies={"react": "18.2.0"},
+        source="import React from 'react';\n",
+    )
+    write_file(repo, ".impactprism.toml", "[scan]\nexclude = ['../outside']\n")
+
+    assert main(["scan", str(repo), "--json"]) == 2
+    output = json.loads(capsys.readouterr().out)
+    assert output["error"]["kind"] == "input-error"
+
+
 def test_diff_command_returns_new_findings(tmp_path, capsys):
     baseline = make_report(tmp_path, undeclared=["lodash"])
     current = make_report(tmp_path, name="current", undeclared=["lodash", "axios"])
