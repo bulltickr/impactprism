@@ -45,6 +45,11 @@ first actionable error in the pull request or issue.
 | CI-provider integration | [`docs/CI_PORTABILITY.md`](CI_PORTABILITY.md) | Provider-neutral command remains the source contract |
 | Unsupported or ambiguous behavior | [`docs/HARD_CASE_COVERAGE.md`](HARD_CASE_COVERAGE.md) | Explicit boundary documentation, not a forced clean result |
 
+For a reproduction bundle, the maintainer review command is
+`python scripts/review_reproduction.py <bundle> --json`. It validates the
+bundle, runs the local scanner without executing repository code, and records
+the expected-versus-observed result for human triage.
+
 Do not begin with the public compatibility corpus for an ordinary pull
 request. It is a maintainer-triggered, pinned regression contract for selected
 upstream trees and has a separate network-bound preparation step.

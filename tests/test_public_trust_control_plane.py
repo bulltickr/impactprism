@@ -113,3 +113,14 @@ def test_feedback_routes_do_not_point_to_disabled_discussions():
     assert "/discussions" not in config
     assert "usage_question.yml" in support
     assert "compatibility_report.yml" in support
+
+
+def test_compatibility_intake_routes_external_reports_through_the_review_contract():
+    raw = (ROOT / ".github" / "ISSUE_TEMPLATE" / "compatibility_report.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "REPRODUCTION_INTAKE.md" in raw
+    assert "sanitized-external" in raw
+    assert "Review-only scan command" in raw
+    assert "not an accuracy score or compliance claim" in raw

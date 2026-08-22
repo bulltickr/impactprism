@@ -70,16 +70,44 @@ The provider-neutral gate runs the same check through:
 python scripts/ci.py validate-reproductions
 ```
 
+## Produce a review record
+
+After validation, a maintainer can run the read-only review command:
+
+```bash
+python scripts/review_reproduction.py tests/fixtures/reproduction_intake --json
+```
+
+The result records the scanner version, bundle provenance, declared expected
+result, actual finding families, normalized findings, and whether the observed
+result matches the submitter's declaration. The command supports one bundle or
+a parent directory containing bundles. It is deliberately not a promotion
+command: a passing review record is evidence for human triage, not permission
+to add a case to the governed correctness matrix.
+
+The provider-neutral verification runs the checked-in review example through:
+
+```bash
+python scripts/ci.py review-reproductions
+```
+
+The review runner accepts one ecosystem at a time (`npm`, `python`, or `go`).
+`multiple` bundles remain validation-only until a maintainer splits them into
+separate, reproducible cases. Review execution is static and local: it does
+not run repository scripts, install dependencies, contact a registry, or
+modify the bundle.
+
 ## Maintainer review sequence
 
 1. Remove credentials, proprietary source, private registry details, customer
    names, and unneeded files before reviewing the behavior.
 2. Run the validator and inspect the complete bundle against its metadata.
-3. Reproduce with the exact command and pinned ImpactPrism commit or release.
-   Do not install or execute code from the submitted bundle as part of the
-   scanner test.
+3. Run `scripts/review_reproduction.py <bundle> --json` with the pinned
+   ImpactPrism commit or release. Do not install or execute code from the
+   submitted bundle as part of the scanner test.
 4. Compare the actual finding family, source location, manifest, lockfile, and
-   scope with the expected behavior.
+   scope with the expected behavior. A matching result is a triage signal, not
+   an accuracy claim.
 5. Decide whether the case is a regression, a documented limitation, or an
    unsupported shape. Add a governed correctness case only when the behavior
    and expected output are stable enough to become a public contract.
