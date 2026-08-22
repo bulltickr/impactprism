@@ -5,6 +5,7 @@
     "npm-pnpm-clean": {"findings": []},
     "npm-dynamic-generated-clean": {"findings": []},
     "npm-resolution-clean": {"findings": []},
+    "npm-tsconfig-extends-clean": {"findings": []},
     "npm-resolution-boundary": {
       "findings": [
         {

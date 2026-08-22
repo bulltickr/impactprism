@@ -10,6 +10,8 @@ the boundary that remains intentionally visible.
 - pnpm workspaces declared in `pnpm-workspace.yaml`, including exclusion globs;
 - npm workspace package `exports` and package-local `imports` aliases;
 - static TypeScript `paths`/`baseUrl` aliases, including JSONC comments;
+- repository-local relative TypeScript `extends` chains whose inherited
+  `paths`/`baseUrl` values remain relative to their declaring config;
 - literal Vite and webpack-style `resolve.alias` objects/arrays, including
   simple `path.resolve(__dirname, ...)` targets;
 - a Vite alias array in a standalone app and a webpack alias wildcard inside
@@ -49,6 +51,12 @@ logic remains outside the supported resolution boundary. The supported bundler
 subset is deliberately limited to literal alias data; plugin-provided aliases,
 regular expressions, environment-dependent values, and function-generated
 configuration remain unresolved evidence gaps.
+
+TypeScript config inheritance is limited to relative JSON/JSONC files inside the
+checkout. Node-style package-based `extends` resolution, circular or malformed
+chains, and project-reference build outputs remain outside the static resolver
+boundary; the scanner does not install packages or run `tsc` to reconstruct
+those paths.
 
 ## Generated-source boundary
 

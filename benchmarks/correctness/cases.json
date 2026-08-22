@@ -26,6 +26,12 @@
       "expected_counts": {}
     },
     {
+      "id": "npm-tsconfig-extends-clean",
+      "path": "tests/fixtures/correctness/npm_tsconfig_extends_clean",
+      "ecosystem": "npm",
+      "expected_counts": {}
+    },
+    {
       "id": "npm-resolution-boundary",
       "path": "tests/fixtures/correctness/npm_resolution_boundary",
       "ecosystem": "npm",
