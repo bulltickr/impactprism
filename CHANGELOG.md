@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.4.7 - 2026-08-22
+
 ### Go workspace scan roots
 
 - Added explicit Go module-root selection for CLI, local configuration, and
