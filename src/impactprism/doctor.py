@@ -25,7 +25,7 @@ def _check(check_id, status, message, **details):
 def _detect_ecosystem(repo_path):
     if (repo_path / "package.json").is_file():
         return "npm"
-    if (repo_path / "go.mod").is_file():
+    if (repo_path / "go.mod").is_file() or (repo_path / "go.work").is_file():
         return "go"
     if is_python_repo(repo_path):
         return "python"

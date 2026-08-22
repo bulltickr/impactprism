@@ -14,7 +14,7 @@ from pathlib import Path
 
 from . import budgets
 from . import go_mod
-from .scope import is_excluded_directory, normalize_excludes
+from .scope import is_excluded_directory, normalize_excludes, normalize_roots
 
 __all__ = [
     "GoImport",
@@ -79,6 +79,7 @@ class GoImportGraph:
     module_usage: dict
     unresolved: list
     stdlib_imports: list
+    selected_module_paths: tuple[str, ...] | None = None
 
     def directly_used_modules(self) -> list:
         """Return modules declared direct that are actually imported."""
@@ -229,6 +230,7 @@ def scan_go_imports(
     max_files=None,
     max_depth=None,
     max_seconds=None,
+    roots=None,
 ) -> dict:
     """Walk ``repo_dir`` for ``*.go`` files and map each path to its imports.
 
@@ -264,7 +266,18 @@ def scan_go_imports(
         max_depth=max_depth,
         max_seconds=max_seconds,
     )
-    stack = [(repo, 1)]
+    selected_roots = normalize_roots(roots) if roots is not None else (".",)
+    stack = []
+    for root in reversed(selected_roots):
+        candidate = (repo / root).resolve()
+        if not candidate.is_dir() or is_excluded_directory(repo, candidate, exclude):
+            continue
+        try:
+            candidate.relative_to(repo)
+        except ValueError as error:
+            raise ValueError("scan root escapes the repository: " + root) from error
+        depth = len(candidate.relative_to(repo).parts) + 1
+        stack.append((candidate, depth))
     while stack:
         directory, depth = stack.pop()
         walk.dir_depth = depth
@@ -309,13 +322,17 @@ def _is_stdlib(import_path: str) -> bool:
 
 
 def _is_main_module_import(manifest, import_path: str) -> bool:
+    main_modules = set(getattr(manifest, "main_modules", ()) or ())
     main_module = getattr(manifest, "main_module", None)
-    if not main_module:
-        return False
-    return import_path == main_module or import_path.startswith(main_module + "/")
+    if main_module:
+        main_modules.add(main_module)
+    return any(
+        import_path == module or import_path.startswith(module + "/")
+        for module in main_modules
+    )
 
 
-def build_import_graph(repo_dir, manifest=None, *, exclude=None) -> GoImportGraph:
+def build_import_graph(repo_dir, manifest=None, *, exclude=None, roots=None) -> GoImportGraph:
     """Build the package import graph and module-usage classification.
 
     If ``manifest`` is omitted the repo manifest is loaded via
@@ -324,8 +341,8 @@ def build_import_graph(repo_dir, manifest=None, *, exclude=None) -> GoImportGrap
     """
     repo = Path(repo_dir)
     if manifest is None:
-        manifest = go_mod.parse_go_manifest(repo)
-    sources = scan_go_imports(repo, exclude=exclude)
+        manifest = go_mod.parse_go_manifest(repo, roots=roots)
+    sources = scan_go_imports(repo, exclude=exclude, roots=roots)
 
     module_usage = {}
     for entry in getattr(manifest, "modules", []):
@@ -353,8 +370,16 @@ def build_import_graph(repo_dir, manifest=None, *, exclude=None) -> GoImportGrap
             except Exception:
                 resolved = None
             if resolved is None and _is_main_module_import(manifest, import_path):
+                main_module = next(
+                    (
+                        module
+                        for module in getattr(manifest, "main_modules", ()) or ()
+                        if import_path == module or import_path.startswith(module + "/")
+                    ),
+                    getattr(manifest, "main_module", None),
+                )
                 resolved = go_mod.ResolvedImport(
-                    module_path=manifest.main_module,
+                    module_path=main_module,
                     version=None,
                     kind="module",
                     root_dir=Path(repo),
@@ -382,6 +407,7 @@ def build_import_graph(repo_dir, manifest=None, *, exclude=None) -> GoImportGrap
             if package_dir not in usage.importing_packages:
                 usage.importing_packages.append(package_dir)
 
+    selected_module_paths = getattr(manifest, "scope_modules", None)
     return GoImportGraph(
         manifest=manifest,
         sources=sources,
@@ -389,4 +415,5 @@ def build_import_graph(repo_dir, manifest=None, *, exclude=None) -> GoImportGrap
         module_usage=module_usage,
         unresolved=unresolved,
         stdlib_imports=stdlib_imports,
+        selected_module_paths=selected_module_paths,
     )

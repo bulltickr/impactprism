@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Go workspace scan roots
+
+- Added explicit Go module-root selection for CLI, local configuration, and
+  GitHub Action scans, including repositories that use `go.work` without a
+  root `go.mod`.
+- Preserved the repository as Go workspace and dependency-resolution context
+  while limiting source traversal, declarations, findings, report scope, and
+  SBOM components to the selected modules.
+- Added validation for missing, overlapping, excluded, escaped, non-module,
+  and duplicate-module root selections.
+
 ## 0.4.6 - 2026-08-22
 
 ### npm/pnpm scan roots

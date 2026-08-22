@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Optional
+
+from .scope import is_excluded_directory, normalize_roots
 
 __all__ = (
     "GoRequire",
@@ -20,6 +22,7 @@ __all__ = (
     "parse_go_work",
     "parse_vendor_modules",
     "parse_go_manifest",
+    "validate_go_module_roots",
 )
 
 
@@ -91,6 +94,19 @@ class GoManifest:
     replaces: list
     sums: dict
     versions: dict
+    module_roots: dict[str, Path] = field(default_factory=dict)
+    main_modules: tuple[str, ...] = ()
+    scope_modules: tuple[str, ...] | None = None
+    scope_dependencies: list[tuple[str, bool]] | None = None
+    scope_dependency_paths: dict[str, Path] = field(default_factory=dict)
+    scope_sum_paths: dict[str, Path] = field(default_factory=dict)
+
+    def is_main_module(self, module_path: str | None) -> bool:
+        """Return whether ``module_path`` is a workspace main module."""
+
+        if not module_path:
+            return False
+        return module_path in set(self.main_modules or ()) or module_path == self.main_module
 
     def resolve_import_path(self, import_path: str) -> Optional[ResolvedImport]:
         matches = [
@@ -405,14 +421,63 @@ def _add_entry(entries: dict, entry: GoModuleEntry) -> None:
         existing.direct = True
 
 
-def parse_go_manifest(repo_dir) -> GoManifest:
+def validate_go_module_roots(
+    repo_dir,
+    roots,
+    *,
+    exclude: set[str] | None = None,
+) -> tuple[str, ...]:
+    """Validate explicit Go module roots and return normalized paths.
+
+    Go roots are module directories, not arbitrary source directories. Each
+    selected directory must contain a ``go.mod``. The repository remains the
+    workspace and dependency-resolution context; selection only controls the
+    modules whose source and declarations are in scope for classification.
+    """
+
+    repo = Path(repo_dir).resolve()
+    normalized = normalize_roots(roots)
+    excluded = exclude or set()
+    module_paths: dict[str, str] = {}
+    for root in normalized:
+        candidate = (repo / root).resolve()
+        try:
+            candidate.relative_to(repo)
+        except ValueError as error:
+            raise ValueError("scan root escapes the repository: " + root) from error
+        if not candidate.is_dir():
+            raise ValueError("scan root directory not found: " + root)
+        if is_excluded_directory(repo, candidate, excluded):
+            raise ValueError("scan root is excluded by scan.exclude: " + root)
+        go_mod_path = candidate / "go.mod"
+        if not go_mod_path.is_file():
+            raise ValueError("Go scan root must contain go.mod: " + root)
+        try:
+            module_path = parse_go_mod(go_mod_path).module_path
+        except (OSError, ValueError) as error:
+            raise ValueError("unable to parse Go scan root: " + root) from error
+        if not module_path:
+            raise ValueError("Go scan root go.mod must declare module: " + root)
+        previous = module_paths.get(module_path)
+        if previous is not None and previous != root:
+            raise ValueError(
+                "Go scan roots select the same module twice: "
+                + previous
+                + " and "
+                + root
+            )
+        module_paths[module_path] = root
+    return normalized
+
+
+def parse_go_manifest(repo_dir, roots=None) -> GoManifest:
     """Parse Go module, workspace, checksum, and vendor metadata for a repository."""
     repository = Path(repo_dir).resolve()
     go_mod_path = repository / "go.mod"
-    if not go_mod_path.is_file():
-        raise FileNotFoundError(go_mod_path)
-    main_go_mod = parse_go_mod(go_mod_path)
     work_path = repository / "go.work"
+    if not go_mod_path.is_file() and not work_path.is_file():
+        raise FileNotFoundError(go_mod_path)
+    main_go_mod = parse_go_mod(go_mod_path) if go_mod_path.is_file() else GoMod(None, None, [], [])
     work = parse_go_work(work_path) if work_path.is_file() else None
     sum_path = repository / "go.sum"
     sums = parse_go_sum(sum_path) if sum_path.is_file() else {}
@@ -422,8 +487,14 @@ def parse_go_manifest(repo_dir) -> GoManifest:
     all_requires = list(main_go_mod.requires)
     module_replaces = list(main_go_mod.replaces)
     entries = {}
+    module_roots: dict[str, Path] = {}
+    module_requires: dict[str, list[GoRequire]] = {}
+    main_modules: list[str] = []
     if main_go_mod.module_path is not None:
         _add_entry(entries, GoModuleEntry(main_go_mod.module_path, None, True, "go.mod", None))
+        module_roots[main_go_mod.module_path] = repository
+        module_requires[main_go_mod.module_path] = list(main_go_mod.requires)
+        main_modules.append(main_go_mod.module_path)
     for requirement in main_go_mod.requires:
         _add_entry(
             entries,
@@ -461,6 +532,9 @@ def parse_go_manifest(repo_dir) -> GoManifest:
                     entries,
                     GoModuleEntry(use_mod.module_path, None, True, "go.work", None),
                 )
+                module_roots[use_mod.module_path] = use_dir
+                module_requires[use_mod.module_path] = list(use_mod.requires)
+                main_modules.append(use_mod.module_path)
             all_requires.extend(use_mod.requires)
             module_replaces.extend(use_mod.replaces)
             for requirement in use_mod.requires:
@@ -474,6 +548,37 @@ def parse_go_manifest(repo_dir) -> GoManifest:
                         None,
                     ),
                 )
+
+    selected_roots = None
+    selected_module_paths: list[str] | None = None
+    if roots is not None:
+        selected_roots = validate_go_module_roots(repository, roots)
+        selected_module_paths = []
+        for root in selected_roots:
+            module_root = (repository / root).resolve()
+            selected_mod = parse_go_mod(module_root / "go.mod")
+            if selected_mod.module_path not in module_roots:
+                module_roots[selected_mod.module_path] = module_root
+                module_requires[selected_mod.module_path] = list(selected_mod.requires)
+                main_modules.append(selected_mod.module_path)
+                _add_entry(
+                    entries,
+                    GoModuleEntry(selected_mod.module_path, None, True, "go.work", None),
+                )
+                all_requires.extend(selected_mod.requires)
+                module_replaces.extend(selected_mod.replaces)
+                for requirement in selected_mod.requires:
+                    _add_entry(
+                        entries,
+                        GoModuleEntry(
+                            requirement.module_path,
+                            requirement.version,
+                            not requirement.indirect,
+                            "go.mod",
+                            None,
+                        ),
+                    )
+            selected_module_paths.append(selected_mod.module_path)
 
     effective_replaces = _effective_replaces(
         module_replaces,
@@ -505,9 +610,26 @@ def parse_go_manifest(repo_dir) -> GoManifest:
             versions[entry.module_path] = replacement.new_version
         else:
             versions[entry.module_path] = entry.version
+    scope_dependencies = None
+    scope_dependency_paths: dict[str, Path] = {}
+    scope_sum_paths: dict[str, Path] = {}
+    if selected_module_paths is not None:
+        scoped: dict[str, bool] = {}
+        for module_path in selected_module_paths:
+            for requirement in module_requires.get(module_path, []):
+                scoped[requirement.module_path] = scoped.get(requirement.module_path, False) or not requirement.indirect
+                scope_dependency_paths.setdefault(
+                    requirement.module_path,
+                    module_roots[module_path] / "go.mod",
+                )
+                module_sum_path = module_roots[module_path] / "go.sum"
+                if module_sum_path.is_file():
+                    scope_sum_paths.setdefault(requirement.module_path, module_sum_path)
+        scope_dependencies = sorted(scoped.items())
+
     return GoManifest(
         repository,
-        main_go_mod.module_path,
+        main_go_mod.module_path or (main_modules[0] if main_modules else None),
         main_go_mod.go_version or (work.go_version if work is not None else None),
         vendor is not None,
         modules,
@@ -515,4 +637,10 @@ def parse_go_manifest(repo_dir) -> GoManifest:
         effective_replaces,
         sums,
         versions,
+        module_roots=module_roots,
+        main_modules=tuple(dict.fromkeys(main_modules)),
+        scope_modules=tuple(selected_module_paths) if selected_module_paths is not None else None,
+        scope_dependencies=scope_dependencies,
+        scope_dependency_paths=scope_dependency_paths,
+        scope_sum_paths=scope_sum_paths,
     )

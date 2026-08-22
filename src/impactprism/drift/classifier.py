@@ -125,7 +125,8 @@ def analyze_repo(
 ) -> DriftReport:
     """Classify dependency drift for a whole repository.
 
-    The ecosystem is auto-detected from ``package.json`` (npm), ``go.mod``
+    The ecosystem is auto-detected from ``package.json`` (npm), ``go.mod`` or
+    ``go.work``
     (Go), or a supported Python manifest
     (go) unless given explicitly; a missing ecosystem raises ``ValueError``.
     ``commit_sha`` is stamped onto every finding.
@@ -134,15 +135,15 @@ def analyze_repo(
     if ecosystem == "auto":
         if (repo / "package.json").is_file():
             ecosystem = "npm"
-        elif (repo / "go.mod").is_file():
+        elif (repo / "go.mod").is_file() or (repo / "go.work").is_file():
             ecosystem = "go"
         elif is_python_repo(repo):
             ecosystem = "python"
         else:
             raise ValueError("unsupported or missing ecosystem")
 
-    if roots is not None and ecosystem != "npm":
-        raise ValueError("scan roots are currently supported only for npm")
+    if roots is not None and ecosystem not in ("npm", "go"):
+        raise ValueError("scan roots are currently supported only for npm and go")
 
     if ecosystem == "npm":
         try:
@@ -173,14 +174,21 @@ def analyze_repo(
         )
     elif ecosystem == "go":
         try:
-            graph = go_imports.build_import_graph(repo_dir, exclude=exclude)
+            graph = go_imports.build_import_graph(
+                repo_dir,
+                exclude=exclude,
+                roots=roots,
+            )
         except Exception as exc:
             findings = [_finding_for_manifest_parse_error(repo_dir, "go", exc, commit_sha=commit_sha)]
             return _finalize_report(findings, repo, commit_sha)
-        try:
-            go_sum = go_manifest_module.parse_go_sum(repo_dir)
-        except Exception:
-            go_sum = []
+        if roots is not None:
+            go_sum = None
+        else:
+            try:
+                go_sum = go_manifest_module.parse_go_sum(repo_dir)
+            except Exception:
+                go_sum = []
         findings = classify_go(
             graph,
             repo_dir=repo_dir,
@@ -956,6 +964,9 @@ def classify_go(
     repo = Path(repo_dir).resolve() if repo_dir is not None else None
     graph_manifest = getattr(graph, "manifest", None)
     main_module = getattr(graph_manifest, "main_module", None)
+    main_modules = set(getattr(graph_manifest, "main_modules", ()) or ())
+    if main_module:
+        main_modules.add(main_module)
 
     go_mod_path = None
     if go_manifest is not None and getattr(go_manifest, "go_mod_path", None) is not None:
@@ -976,18 +987,24 @@ def classify_go(
             declared_deps.append((module, direct))
             declared_names.add(module)
     else:
-        for entry in getattr(graph_manifest, "modules", []) or []:
-            module = getattr(entry, "module_path", None)
-            if not module:
-                continue
-            if main_module and module == main_module:
-                continue
-            source = getattr(entry, "source", None)
-            if source not in (None, "go.mod", "go.work"):
-                continue
-            direct = bool(getattr(entry, "direct", False))
-            declared_deps.append((module, direct))
-            declared_names.add(module)
+        scoped_dependencies = getattr(graph_manifest, "scope_dependencies", None)
+        if scoped_dependencies is not None:
+            for module, direct in scoped_dependencies:
+                if module in main_modules:
+                    continue
+                declared_deps.append((module, bool(direct)))
+                declared_names.add(module)
+        else:
+            for entry in getattr(graph_manifest, "modules", []) or []:
+                module = getattr(entry, "module_path", None)
+                if not module or module in main_modules:
+                    continue
+                source = getattr(entry, "source", None)
+                if source not in (None, "go.mod", "go.work"):
+                    continue
+                direct = bool(getattr(entry, "direct", False))
+                declared_deps.append((module, direct))
+                declared_names.add(module)
 
     target_for = {}
     replacement_targets = set()
@@ -1018,7 +1035,7 @@ def classify_go(
             module = getattr(entry, "module_path", None)
             if not module:
                 continue
-            if main_module and module == main_module:
+            if module in main_modules:
                 continue
             source = getattr(entry, "source", None)
             if source not in (None, "go.mod", "go.work"):
@@ -1034,11 +1051,32 @@ def classify_go(
 
     declared_names.update(replacement_targets)
 
+    scope_sum_paths = getattr(graph_manifest, "scope_sum_paths", {}) or {}
     if go_sum is None and repo is not None:
-        try:
-            go_sum = go_manifest_module.parse_go_sum(repo_dir)
-        except Exception:
-            go_sum = []
+        selected_modules = getattr(graph_manifest, "scope_modules", None)
+        if selected_modules is None:
+            sum_roots = {repo}
+        else:
+            module_roots = getattr(graph_manifest, "module_roots", {}) or {}
+            sum_roots = {
+                Path(module_roots[module])
+                for module in selected_modules
+                if module in module_roots
+                and (Path(module_roots[module]) / "go.sum").is_file()
+            }
+        entries = []
+        seen_entries = set()
+        for sum_root in sorted(sum_roots, key=str):
+            try:
+                parsed_entries = go_manifest_module.parse_go_sum(sum_root)
+            except Exception:
+                parsed_entries = []
+            for entry in parsed_entries:
+                key = (entry.module, entry.version, entry.is_mod_hash, entry.hash)
+                if key not in seen_entries:
+                    seen_entries.add(key)
+                    entries.append(entry)
+        go_sum = entries
     go_sum_entries = go_sum or []
     go_sum_modules = {entry.module for entry in go_sum_entries if getattr(entry, "module", None)}
 
@@ -1078,7 +1116,7 @@ def classify_go(
             continue
         if module_path in declared_names:
             continue
-        if main_module and module_path == main_module:
+        if module_path in main_modules:
             continue
         findings.append(
             Finding(
@@ -1119,6 +1157,7 @@ def classify_go(
         for module, _direct in declared_deps:
             if target_for.get(module, module) in go_sum_modules:
                 continue
+            lockfile_path = scope_sum_paths.get(module, go_sum_path)
             findings.append(
                 Finding(
                     finding_type=FindingType.LOCKFILE_MANIFEST_MISMATCH,
@@ -1127,8 +1166,18 @@ def classify_go(
                     status=Status.OPEN,
                     ecosystem="go",
                     package=module,
-                    manifest=str(go_mod_path.resolve()) if go_mod_path is not None else None,
-                    lockfile=str(go_sum_path.resolve()) if go_sum_path is not None else None,
+                    manifest=str(
+                        getattr(graph_manifest, "scope_dependency_paths", {}).get(
+                            module,
+                            go_mod_path,
+                        ).resolve()
+                    )
+                    if getattr(graph_manifest, "scope_dependency_paths", {}).get(
+                        module,
+                        go_mod_path,
+                    ) is not None
+                    else None,
+                    lockfile=str(lockfile_path.resolve()) if lockfile_path is not None else None,
                     commit_sha=commit_sha,
                     scope=None,
                     explanation=f"Declared module {module!r} has no go.sum entry.",

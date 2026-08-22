@@ -268,19 +268,22 @@ impactprism clauses [path]
 | Subcommand | Arguments | Flags |
 |------------|-----------|-------|
 | `doctor` | `[repo]` — repository to diagnose (default: current directory) | `--json` |
-| `scan` | `<repo>` — repository to scan | `--exclude PAT` (repeatable), `--root PATH` (repeatable for npm/pnpm package roots), `--sbom PATH`, `--report PATH`, `--evidence PATH`, `--json` |
+| `scan` | `<repo>` — repository to scan | `--exclude PAT` (repeatable), `--root PATH` (repeatable for npm/pnpm package or Go module roots), `--sbom PATH`, `--report PATH`, `--evidence PATH`, `--json` |
 | `diff` | `<current_report> <baseline_report>` | `--json` |
-| `analyze` | `<repo_dir>` — repository to analyze | `--exclude PAT` (repeatable), `--root PATH` (repeatable for npm/pnpm package roots), `--sbom PATH`, `--report PATH`, `--json` |
+| `analyze` | `<repo_dir>` — repository to analyze | `--exclude PAT` (repeatable), `--root PATH` (repeatable for npm/pnpm package or Go module roots), `--sbom PATH`, `--report PATH`, `--json` |
 | `evidence` | `<scan_report>` — report JSON | `--markdown PATH` (default `evidence.md`), `--json PATH` (default `evidence.json`), `--stdout` |
 | `clauses` | `[path]` — optional clause-map YAML | — |
 
 `--exclude` skips directories by name or repository-relative prefix (defaults: `tests`, `fixtures`, `demo`, `node_modules`, `build`, `dist`, `.git`, `.cache`, `coverage`, `public`). A basename such as `testdata` matches everywhere; a prefix such as `cmd/fiximports/testdata` matches only that tree. `impactprism scan` runs analyze + evidence in one shot; `python -m impactprism` is equivalent.
 
-For npm/pnpm monorepos, `--root apps/web --root packages/shared` (or
-`[scan].roots` / the Action's newline-separated `roots` input) selects literal
-package directories containing `package.json`. Root selection is explicit and
-reportable; it does not accept globs and does not currently apply to Python or
-Go scans. The canonical report records selected roots under `scope.roots`.
+For npm/pnpm monorepos, `--root apps/web --root packages/shared` selects literal
+package directories containing `package.json`. For Go workspaces or
+multi-module repositories, `--root apps/app --root libs/shared` selects literal
+module directories containing `go.mod`. The same values can be supplied through
+`[scan].roots` or the Action's newline-separated `roots` input. Root selection
+is explicit and reportable; it does not accept globs, does not apply to Python,
+and keeps the repository as the dependency-resolution context. The canonical
+report records selected roots under `scope.roots`.
 
 ## Scope and limitations
 
