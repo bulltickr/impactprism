@@ -4,6 +4,6 @@
   "description": "Fixture app with no dependency drift for ImpactPrism clean demos",
   "license": "MIT",
   "dependencies": {
-    "lodash": "4.17.21"
+    "lodash": "4.18.1"
   }
 }
