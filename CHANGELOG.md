@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.4.6 - 2026-08-22
+
 ### npm/pnpm scan roots
 
 - Added explicit, repeatable package-root selection for npm/pnpm scans through

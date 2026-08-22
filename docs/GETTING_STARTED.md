@@ -7,18 +7,18 @@ installation; it does not require an account, API key, or hosted service.
 ## 1. Install a verified release
 
 ImpactPrism publishes its official wheel and source archive on GitHub Releases.
-Download the files from [v0.4.5](https://github.com/bulltickr/impactprism/releases/tag/v0.4.5),
+Download the files from [v0.4.6](https://github.com/bulltickr/impactprism/releases/tag/v0.4.6),
 download `SHA256SUMS`, and verify the artifacts before installing:
 
 ```bash
 sha256sum -c SHA256SUMS
-python -m pip install ./impactprism-0.4.5-py3-none-any.whl
+python -m pip install ./impactprism-0.4.6-py3-none-any.whl
 ```
 
 On Windows PowerShell, the equivalent checksum command is:
 
 ```powershell
-Get-FileHash .\impactprism-0.4.5-py3-none-any.whl -Algorithm SHA256
+Get-FileHash .\impactprism-0.4.6-py3-none-any.whl -Algorithm SHA256
 ```
 
 Compare the displayed digest with the matching line in `SHA256SUMS`.
