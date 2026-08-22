@@ -39,7 +39,7 @@ with different Git versions and operating systems.
 The manifest records license identifiers and pinned license-file URLs for
 selection traceability. It does not redistribute repository source or license
 files. Changes to the corpus require a reviewed manifest and golden-digest
-update. The current selection covers three npm, five Python, and three Go
+update. The current selection covers three npm, four Python, and three Go
 shapes across single-package, lockfile-mismatch, development-heavy, and
 lockfile-absent layouts; results must not be presented as precision, recall, or
 broad accuracy.
