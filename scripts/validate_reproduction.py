@@ -46,6 +46,33 @@ REQUIRED_SANITIZATION_FLAGS = {
 }
 
 
+def display_bundle_path(bundle: Path) -> str:
+    """Return a useful bundle label without disclosing the local path."""
+
+    return bundle.name or "."
+
+
+def redact_error_paths(errors: list[str], bundle: Path) -> list[str]:
+    """Remove local bundle paths before errors are serialized publicly."""
+
+    candidates = {str(bundle)}
+    try:
+        candidates.add(str(bundle.resolve()))
+    except OSError:
+        pass
+    safe_candidates = sorted(
+        (candidate for candidate in candidates if candidate not in {"", "."}),
+        key=len,
+        reverse=True,
+    )
+    redacted: list[str] = []
+    for message in errors:
+        for candidate in safe_candidates:
+            message = message.replace(candidate, "<bundle>")
+        redacted.append(message)
+    return redacted
+
+
 def _normalise_relative_path(value: object) -> str | None:
     if not isinstance(value, str) or not value.strip():
         return None
@@ -204,7 +231,13 @@ def main(argv: list[str] | None = None) -> int:
     bundles = [root] if (root / METADATA_NAME).is_file() else sorted(
         candidate for candidate in root.iterdir() if candidate.is_dir()
     )
-    results = [{"path": str(bundle), "errors": validate_bundle(bundle)} for bundle in bundles]
+    results = [
+        {
+            "path": display_bundle_path(bundle),
+            "errors": redact_error_paths(validate_bundle(bundle), bundle),
+        }
+        for bundle in bundles
+    ]
     passed = all(not result["errors"] for result in results)
     if args.json:
         json.dump({"passed": passed, "bundle_count": len(results), "bundles": results}, sys.stdout, indent=2)

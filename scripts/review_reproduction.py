@@ -21,7 +21,12 @@ sys.path.insert(0, str(REPOSITORY_ROOT / "src"))
 from impactprism import __version__
 from impactprism.drift.classifier import analyze_repo
 from impactprism.drift.models import FindingType
-from scripts.validate_reproduction import METADATA_NAME, validate_bundle
+from scripts.validate_reproduction import (
+    METADATA_NAME,
+    display_bundle_path,
+    redact_error_paths,
+    validate_bundle,
+)
 
 
 SUPPORTED_ECOSYSTEMS = {"npm", "python", "go"}
@@ -69,8 +74,8 @@ def review_bundle(bundle_path: str | Path) -> dict:
         "schema_version": 1,
         "reviewer": "impactprism-reproduction-review",
         "scanner_version": __version__,
-        "path": str(bundle),
-        "validation_errors": validation_errors,
+        "path": display_bundle_path(bundle),
+        "validation_errors": redact_error_paths(validation_errors, bundle),
         "passed": False,
     }
     if validation_errors:
