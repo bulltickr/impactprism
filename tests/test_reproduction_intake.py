@@ -1,7 +1,9 @@
 import json
+import shutil
 from pathlib import Path
 
 from impactprism.drift.classifier import analyze_repo
+from scripts.review_reproduction import review_bundle
 from scripts.validate_reproduction import validate_bundle
 
 
@@ -30,6 +32,67 @@ def test_checked_in_reproduction_matches_its_expected_finding_family():
         "UNDECLARED_DIRECT_USE"
     ]
     assert report.findings[0].package == "missingpkg"
+
+
+def test_review_runner_matches_checked_in_reproduction_contract():
+    result = review_bundle(BUNDLE)
+
+    assert result["passed"] is True
+    assert result["bundle_id"] == "npm-undeclared-direct-use"
+    assert result["provenance"] == "synthetic"
+    assert result["actual"]["result"] == "findings"
+    assert result["actual"]["finding_types"] == ["UNDECLARED_DIRECT_USE"]
+    assert result["actual"]["findings"][0]["package"] == "missingpkg"
+
+
+def test_review_runner_rejects_multiple_ecosystem_bundles(tmp_path):
+    bundle = tmp_path / "multiple"
+    bundle.mkdir()
+    metadata = {
+        "schema_version": 1,
+        "id": "multiple-ecosystem",
+        "provenance": "synthetic",
+        "ecosystem": "multiple",
+        "package_manager": "mixed",
+        "scan": {
+            "command": "impactprism scan . --json",
+            "expected_result": "clean",
+            "expected_finding_types": [],
+        },
+        "sanitization": {
+            "secrets_removed": True,
+            "proprietary_source_removed": True,
+            "private_urls_removed": True,
+            "customer_identifiers_removed": True,
+        },
+        "files": [{"path": "package.json", "role": "manifest"}],
+    }
+    (bundle / "impactprism-reproduction.json").write_text(
+        json.dumps(metadata), encoding="utf-8"
+    )
+    (bundle / "package.json").write_text("{}", encoding="utf-8")
+
+    result = review_bundle(bundle)
+
+    assert result["passed"] is False
+    assert "one supported ecosystem" in result["validation_errors"][0]
+
+
+def test_review_runner_marks_an_expectation_mismatch_for_human_triage(tmp_path):
+    bundle = tmp_path / "mismatch"
+    shutil.copytree(BUNDLE, bundle)
+    metadata_path = bundle / "impactprism-reproduction.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["scan"]["expected_result"] = "clean"
+    metadata["scan"]["expected_finding_types"] = []
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+
+    result = review_bundle(bundle)
+
+    assert result["passed"] is False
+    assert result["matches_expectation"] is False
+    assert result["actual"]["result"] == "findings"
+    assert result["actual"]["finding_types"] == ["UNDECLARED_DIRECT_USE"]
 
 
 def test_validator_rejects_undeclared_files_and_non_review_commands(tmp_path):

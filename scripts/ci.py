@@ -64,6 +64,14 @@ def validate_reproductions() -> None:
     )
 
 
+def review_reproductions() -> None:
+    _run(
+        "sanitized reproduction review",
+        "scripts/review_reproduction.py",
+        "tests/fixtures/reproduction_intake",
+    )
+
+
 def verify() -> None:
     test()
     conformance()
@@ -73,6 +81,7 @@ def verify() -> None:
     action_smoke()
     validate_ci_examples()
     validate_reproductions()
+    review_reproductions()
 
 
 COMMANDS = {
@@ -85,6 +94,7 @@ COMMANDS = {
     "action-smoke": action_smoke,
     "validate-ci-examples": validate_ci_examples,
     "validate-reproductions": validate_reproductions,
+    "review-reproductions": review_reproductions,
     "verify": verify,
 }
 
