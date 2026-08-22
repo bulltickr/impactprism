@@ -54,6 +54,14 @@
       "expected_counts": {}
     },
     {
+      "id": "npm-dynamic-bundler-boundary",
+      "path": "tests/fixtures/correctness/npm_dynamic_bundler_boundary",
+      "ecosystem": "npm",
+      "expected_counts": {
+        "UNDECLARED_DIRECT_USE": 1
+      }
+    },
+    {
       "id": "npm-webpack-monorepo-clean",
       "path": "tests/fixtures/correctness/npm_webpack_monorepo_clean",
       "ecosystem": "npm",

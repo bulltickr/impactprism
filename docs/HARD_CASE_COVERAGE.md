@@ -16,6 +16,8 @@ the boundary that remains intentionally visible.
   simple `path.resolve(__dirname, ...)` targets;
 - a Vite alias array in a standalone app and a webpack alias wildcard inside
   an npm workspace with nested `apps/` and `packages/` roots;
+- a governed dynamic-bundler boundary case proving function-generated alias
+  configuration is neither executed nor guessed as a local target;
 - a clean Go `go.work` repository with two independently managed modules and a
   local workspace dependency;
 - npm workspaces containing literal dynamic imports;
@@ -50,7 +52,9 @@ Bundler configuration files are not executed, and arbitrary JavaScript alias
 logic remains outside the supported resolution boundary. The supported bundler
 subset is deliberately limited to literal alias data; plugin-provided aliases,
 regular expressions, environment-dependent values, and function-generated
-configuration remain unresolved evidence gaps.
+configuration remain unresolved evidence gaps. The correctness matrix includes
+an intentionally throwing function-generated alias to keep this non-execution
+boundary regression-tested.
 
 TypeScript config inheritance is limited to relative JSON/JSONC files inside the
 checkout. Node-style package-based `extends` resolution, circular or malformed

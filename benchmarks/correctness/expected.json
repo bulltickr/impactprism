@@ -43,6 +43,24 @@
       ]
     },
     "npm-vite-alias-clean": {"findings": []},
+    "npm-dynamic-bundler-boundary": {
+      "findings": [
+        {
+          "finding_id": "4d05a180d8759256",
+          "finding_type": "UNDECLARED_DIRECT_USE",
+          "package": "@dynamic/value",
+          "file": "src/index.js",
+          "line": 1,
+          "column": 1,
+          "manifest": null,
+          "lockfile": null,
+          "scope": "dependencies",
+          "severity": "HIGH",
+          "confidence": "HIGH",
+          "status": "OPEN"
+        }
+      ]
+    },
     "npm-webpack-monorepo-clean": {"findings": []},
     "python-requirements-clean": {"findings": []},
     "python-pipenv-clean": {"findings": []},
