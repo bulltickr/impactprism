@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.4.8 - 2026-08-22
+
 ### Policy contract
 
 - Centralized severity-threshold, baseline-gating, unsupported-ecosystem, and

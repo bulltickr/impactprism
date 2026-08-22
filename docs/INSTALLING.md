@@ -9,7 +9,7 @@ GitHub Release. Install the wheel for the exact version you want:
 
 ```bash
 python -m pip install \
-  https://github.com/bulltickr/impactprism/releases/download/v0.4.7/impactprism-0.4.7-py3-none-any.whl
+  https://github.com/bulltickr/impactprism/releases/download/v0.4.8/impactprism-0.4.8-py3-none-any.whl
 impactprism scan .
 ```
 
@@ -31,7 +31,7 @@ commit reference, for example:
 
 ```bash
 python -m pip install \
-  "git+https://github.com/bulltickr/impactprism.git@v0.4.7"
+  "git+https://github.com/bulltickr/impactprism.git@v0.4.8"
 ```
 
 ## Use the GitHub Action
