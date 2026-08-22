@@ -38,6 +38,26 @@ def test_action_readme_tracks_the_current_published_release():
     assert "current synchronized release is `v0.4.7`" not in raw
 
 
+def test_contributor_path_is_public_and_actionable():
+    raw = (ROOT / "docs" / "CONTRIBUTOR_QUICKSTART.md").read_text(
+        encoding="utf-8"
+    )
+    contributing = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    pr_template = (ROOT / ".github" / "PULL_REQUEST_TEMPLATE.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "python -m pip install -e \".[test]\"" in raw
+    assert "python scripts/ci.py verify" in raw
+    assert "docs/ADDING_FIXTURES.md" in raw
+    assert "docs/REPRODUCTION_INTAKE.md" in raw
+    assert "docs/CI_PORTABILITY.md" in raw
+    assert "Security concerns belong in the private security-reporting path" in raw
+    assert "docs/CONTRIBUTOR_QUICKSTART.md" in contributing
+    assert "Public-data review completed" in pr_template
+    assert "Compatibility, limitation, and migration impact" in pr_template
+
+
 def test_expanded_compatibility_coverage_links_the_durable_release_result():
     raw = (ROOT / "docs" / "COMPATIBILITY_COVERAGE.md").read_text(encoding="utf-8")
 
