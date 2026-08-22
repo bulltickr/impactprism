@@ -19,6 +19,8 @@ Current matrix:
 - Python Poetry findings;
 - npm pnpm lockfiles;
 - repository-local TypeScript `tsconfig` inheritance for static aliases;
+- literal Vite/webpack aliases plus a function-generated bundler-alias
+  non-execution boundary;
 - Go vendoring through `vendor/modules.txt`; and
 - Go workspace/replacement findings, including explicit module-root scope.
 

@@ -5,7 +5,7 @@ def test_governed_correctness_matrix_passes_and_has_explicit_case_count():
     result = run_cases()
 
     assert result["passed"] is True
-    assert result["case_count"] == 20
+    assert result["case_count"] == 21
     cases = {case["id"]: case for case in result["cases"]}
     assert set(cases) >= {
         "npm-pnpm-clean",
@@ -14,6 +14,7 @@ def test_governed_correctness_matrix_passes_and_has_explicit_case_count():
         "python-dynamic-generated-clean",
         "npm-pnpm-resolution-boundary",
         "npm-vite-alias-clean",
+        "npm-dynamic-bundler-boundary",
         "npm-tsconfig-extends-clean",
         "npm-webpack-monorepo-clean",
         "go-workspace-clean",
