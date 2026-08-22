@@ -3,7 +3,9 @@ import shutil
 from pathlib import Path
 
 from impactprism.drift.classifier import analyze_repo
+from scripts.review_reproduction import main as review_main
 from scripts.review_reproduction import review_bundle
+from scripts.validate_reproduction import main as validate_main
 from scripts.validate_reproduction import validate_bundle
 
 
@@ -43,6 +45,26 @@ def test_review_runner_matches_checked_in_reproduction_contract():
     assert result["actual"]["result"] == "findings"
     assert result["actual"]["finding_types"] == ["UNDECLARED_DIRECT_USE"]
     assert result["actual"]["findings"][0]["package"] == "missingpkg"
+
+
+def test_review_json_uses_a_safe_bundle_label(capsys):
+    assert review_main([str(BUNDLE), "--json"]) == 0
+
+    output = capsys.readouterr().out
+    payload = json.loads(output)
+
+    assert payload["bundles"][0]["path"] == BUNDLE.name
+    assert str(BUNDLE) not in output
+
+
+def test_validation_json_uses_a_safe_bundle_label(capsys):
+    assert validate_main([str(BUNDLE), "--json"]) == 0
+
+    output = capsys.readouterr().out
+    payload = json.loads(output)
+
+    assert payload["bundles"][0]["path"] == BUNDLE.name
+    assert str(BUNDLE) not in output
 
 
 def test_review_runner_rejects_multiple_ecosystem_bundles(tmp_path):
