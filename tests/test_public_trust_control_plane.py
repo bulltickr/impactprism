@@ -28,6 +28,15 @@ def test_compatibility_report_tracks_the_published_release_baseline():
     assert "not yet attached to a versioned" not in raw
 
 
+def test_action_readme_tracks_the_current_published_release():
+    raw = (ROOT / "action" / "README.md").read_text(encoding="utf-8")
+
+    assert "bulltickr/impactprism@v0.4.7" in raw
+    assert "current synchronized release is `v0.4.7`" in raw
+    assert "bulltickr/impactprism@v0.4.6" not in raw
+    assert "current synchronized release is `v0.4.6`" not in raw
+
+
 def test_expanded_compatibility_coverage_links_the_durable_release_result():
     raw = (ROOT / "docs" / "COMPATIBILITY_COVERAGE.md").read_text(encoding="utf-8")
 

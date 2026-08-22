@@ -10,7 +10,7 @@ from .evidence import main as evidence_main
 from .doctor import main as doctor_main
 from .config import load_config, resolve_config_path
 from .cra_clauses import main as cra_clauses_main
-from .reporting import policy_exit_code
+from .policy import evaluate_policy
 from .remediation.models import RemediationError
 from .remediation.remediate import remediate
 from .scan_service import DEFAULT_SCAN_EXCLUDES, detect_ecosystem, scan_repository
@@ -77,6 +77,12 @@ def _run_analyze(args):
             roots=args.root,
         )
         report = result.report
+        decision = evaluate_policy(
+            result.findings,
+            fail_on="finding",
+            severity_threshold=args.severity_threshold,
+        )
+        report["policy"] = decision.as_dict()
 
         if args.report is not None:
             _write_json(args.report, report)
@@ -93,12 +99,7 @@ def _run_analyze(args):
                 print("Repository: " + report["repo"])
                 print("Package: " + report["package_name"] + "@" + report["package_version"])
                 print("Findings: " + str(report["counts"]["total"]))
-        return policy_exit_code(
-            report,
-            result.findings,
-            fail_on="finding",
-            severity_threshold=args.severity_threshold,
-        )
+        return decision.exit_code
     except Exception as error:
         return _emit_cli_error(str(error), json_mode=args.json, kind="scanner-error")
 
@@ -274,6 +275,15 @@ def _run_scan(args):
             if delta_arg is not None:
                 _write_json(delta_arg, delta)
 
+        gated_findings = delta["new_findings"] if delta is not None else result.findings
+        decision = evaluate_policy(
+            gated_findings,
+            fail_on=fail_on,
+            severity_threshold=args.severity_threshold,
+            error_kind="scanner_error" if result.scanner_error else "none",
+            gate_source="baseline-new-findings" if delta is not None else "findings",
+        )
+        report["policy"] = decision.as_dict()
         _write_json(report_path, report)
 
         evidence_argv = [report_path]
@@ -300,23 +310,9 @@ def _run_scan(args):
                     + str(delta["counts"]["resolved"])
                     + " resolved"
                 )
-            code = (
-                2
-                if result.scanner_error
-                else policy_exit_code(
-                    report,
-                    delta["new_findings"],
-                    fail_on=fail_on,
-                    severity_threshold=args.severity_threshold,
-                )
-            )
+            code = decision.exit_code
         else:
-            code = policy_exit_code(
-                report,
-                result.findings,
-                fail_on=fail_on,
-                severity_threshold=args.severity_threshold,
-            )
+            code = decision.exit_code
         return code
     except Exception as error:
         return _emit_cli_error(str(error), json_mode=args.json, kind="scanner-error")

@@ -51,6 +51,28 @@
       },
       "additionalProperties": false
     },
+    "policy": {
+      "type": "object",
+      "required": [
+        "fail_on",
+        "severity_threshold",
+        "gate_source",
+        "outcome",
+        "exit_code",
+        "finding_count",
+        "triggered_count"
+      ],
+      "properties": {
+        "fail_on": {"type": "string", "enum": ["never", "finding", "all"]},
+        "severity_threshold": {"type": "string", "enum": ["info", "low", "medium", "high", "critical"]},
+        "gate_source": {"type": "string", "enum": ["findings", "baseline-new-findings"]},
+        "outcome": {"type": "string", "enum": ["clean", "finding", "policy-failure", "unsupported-ecosystem", "scanner-error"]},
+        "exit_code": {"type": "integer", "enum": [0, 1, 2]},
+        "finding_count": {"type": "integer", "minimum": 0},
+        "triggered_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
     "counts": {
       "type": "object",
       "required": ["total", "by_type", "by_severity"],

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Policy contract
+
+- Centralized severity-threshold, baseline-gating, unsupported-ecosystem, and
+  scanner-error decisions for the CLI and reusable Action.
+- Added machine-readable policy metadata to scan reports so consumers can see
+  which finding set was gated and why the reported exit code was selected.
+
 ## 0.4.7 - 2026-08-22
 
 ### Go workspace scan roots

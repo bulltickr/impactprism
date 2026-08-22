@@ -105,6 +105,7 @@ def _canonical_fields(report):
         "unresolved",
         "findings",
         "counts",
+        "policy",
     )
     return {name: report.get(name) for name in names}
 
@@ -128,10 +129,13 @@ def test_cli_and_action_share_canonical_report_and_evidence_contract(tmp_path, m
 
     scan_schema = _load(ROOT / "docs" / "schemas" / "scan-report.schema.json")
     evidence_schema = _load(ROOT / "docs" / "schemas" / "evidence-pack.schema.json")
+    validate(cli, scan_schema)
     validate(action, scan_schema)
     validate(_load(action_workspace / "reports" / "evidence.json"), evidence_schema)
     assert action["generator"] == "impactprism-action"
     assert action["bom_validated"] is True
+    assert action["policy"]["gate_source"] == "findings"
+    assert action["policy"]["outcome"] == "clean"
 
 
 def test_action_exposes_remediation_guidance_in_all_finding_outputs(tmp_path, monkeypatch):
@@ -177,6 +181,11 @@ def test_action_baseline_gates_only_new_findings(tmp_path, monkeypatch):
     delta = _load(repo / "delta.json")
     assert report["delta"]["counts"]["new"] == delta["counts"]["new"]
     assert delta["counts"]["new"] >= 1
+    assert report["policy"]["gate_source"] == "baseline-new-findings"
+    assert report["policy"]["triggered_count"] == report["delta"]["counts"]["new"]
+    summary = (workspace / "reports" / "summary.md").read_text(encoding="utf-8")
+    assert "Gate source: baseline-new-findings" in summary
+    assert "Findings considered by policy: 1" in summary
 
     # A repeat against the current report has no new findings, even though the
     # report still contains the finding for consumers that want full context.
@@ -191,6 +200,54 @@ def test_action_baseline_gates_only_new_findings(tmp_path, monkeypatch):
         == 0
     )
     assert _load(repo / "delta.json")["counts"]["new"] == 0
+
+
+def test_cli_and_action_share_baseline_policy_decision(tmp_path, monkeypatch):
+    repo = _write_npm_repo(tmp_path, 'import React from "react";\n')
+    baseline_path = tmp_path / "baseline.json"
+    assert cli_main(["scan", str(repo), "--report", str(baseline_path)]) == 0
+
+    (repo / "src" / "app.js").write_text(
+        'import React from "react";\nimport missingPackage from "missing-package";\n',
+        encoding="utf-8",
+    )
+    cli_report_path = tmp_path / "cli-current.json"
+    cli_delta_path = tmp_path / "cli-delta.json"
+    assert (
+        cli_main(
+            [
+                "scan",
+                str(repo),
+                "--baseline",
+                str(baseline_path),
+                "--delta",
+                str(cli_delta_path),
+                "--report",
+                str(cli_report_path),
+            ]
+        )
+        == 1
+    )
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    assert (
+        _run_action(
+            repo,
+            workspace,
+            monkeypatch,
+            INPUT_BASELINE_PATH=str(baseline_path),
+            INPUT_DELTA_PATH="action-delta.json",
+        )
+        == 1
+    )
+
+    cli = _load(cli_report_path)
+    action = _load(workspace / "reports" / "findings.json")
+    assert cli["policy"] == action["policy"]
+    assert cli["policy"]["gate_source"] == "baseline-new-findings"
+    assert cli["policy"]["outcome"] == "policy-failure"
+    assert cli["policy"]["triggered_count"] == 1
 
 
 def test_action_config_and_explicit_exclude_are_applied(tmp_path, monkeypatch):
