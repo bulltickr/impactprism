@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .scope import normalize_excludes
+from .scope import normalize_excludes, normalize_roots
 
 try:
     import tomllib
@@ -14,7 +14,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 fallback
 
 CONFIG_NAME = ".impactprism.toml"
 _ALLOWED = {
-    "scan": {"exclude", "baseline", "delta"},
+    "scan": {"exclude", "roots", "baseline", "delta"},
     "outputs": {"report", "evidence", "sbom"},
     "policy": {"fail_on"},
 }
@@ -63,12 +63,21 @@ def load_config(repo_path, explicit_path=None):
         normalize_excludes(scan.get("exclude", []))
     except ValueError as error:
         raise ValueError("[scan].exclude contains an unsafe path: " + str(error)) from error
+    if not isinstance(scan.get("roots", []), list) or any(
+        not isinstance(value, str) or not value for value in scan.get("roots", [])
+    ):
+        raise ValueError("[scan].roots must be a list of non-empty strings")
+    if scan.get("roots", []):
+        try:
+            normalize_roots(scan.get("roots", []))
+        except ValueError as error:
+            raise ValueError("[scan].roots contains an unsafe path: " + str(error)) from error
     policy = data.get("policy", {})
     if policy.get("fail_on", "finding") not in ("finding", "never"):
         raise ValueError("[policy].fail_on must be 'finding' or 'never'")
     for section in ("scan", "outputs"):
         for key, value in data.get(section, {}).items():
-            if key != "exclude" and (not isinstance(value, str) or not value):
+            if key not in ("exclude", "roots") and (not isinstance(value, str) or not value):
                 raise ValueError(f"[{section}].{key} must be a non-empty string")
     data["path"] = str(path)
     return data

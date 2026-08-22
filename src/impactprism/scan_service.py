@@ -19,6 +19,8 @@ from pathlib import Path
 from . import go_imports
 from .analysis import generate_sbom, main as analysis_main
 from .drift import FindingType, analyze_repo
+from .imports import scan_imports as scan_javascript_imports
+from .manifest import parse_manifests, validate_package_roots
 from .python_manifest import is_python_repo
 from .reporting import build_scan_report
 from .scope import normalize_excludes
@@ -92,7 +94,12 @@ def resolve_ecosystem(repo_path: Path, requested: str = "auto") -> str | None:
     return requested
 
 
-def _legacy_metadata(repo_path: Path, ecosystem: str, excludes: set[str]) -> dict:
+def _legacy_metadata(
+    repo_path: Path,
+    ecosystem: str,
+    excludes: set[str],
+    roots=None,
+) -> dict:
     """Read package metadata from the established analysis adapter.
 
     The dependency-drift classifier is authoritative for findings.  The
@@ -118,6 +125,35 @@ def _legacy_metadata(repo_path: Path, ecosystem: str, excludes: set[str]) -> dic
         }
     if ecosystem != "npm":
         return {}
+    if roots is not None:
+        manifests = parse_manifests(repo_path, exclude=excludes, roots=roots)
+        imported = scan_javascript_imports(repo_path, exclude=excludes, roots=roots)
+        imported_names = set()
+        from .analysis import _normalize_name
+
+        for records in imported.values():
+            for record in records:
+                name = _normalize_name(getattr(record, "specifier", ""))
+                if name is not None:
+                    imported_names.add(name)
+        declared = {
+            dependency.name
+            for manifest in manifests
+            for dependency in manifest.dependencies
+        }
+        if len(manifests) == 1:
+            manifest = manifests[0]
+            package_name = manifest.name or "unknown"
+            package_version = manifest.version or "0.0.0"
+        else:
+            package_name = "multiple"
+            package_version = "0.0.0"
+        return {
+            "package_name": package_name,
+            "package_version": package_version,
+            "declared": sorted(declared),
+            "imported": sorted(imported_names),
+        }
     fd, report_path = tempfile.mkstemp(suffix=".json")
     os.close(fd)
     try:
@@ -175,6 +211,7 @@ def scan_repository(
     ecosystem: str = "auto",
     excludes: set[str] | None = None,
     commit_sha: str | None = None,
+    roots=None,
 ) -> ScanResult:
     """Run the canonical offline scan used by every integration surface."""
 
@@ -186,21 +223,56 @@ def scan_repository(
         raise ValueError("unsupported or missing ecosystem")
 
     selected_excludes = normalize_excludes(excludes or ())
+    selected_roots = None
+    if roots is not None:
+        if resolved != "npm":
+            raise ValueError("scan roots are currently supported only for npm")
+        selected_roots = validate_package_roots(
+            repo, roots, exclude=selected_excludes
+        )
     classifier = analyze_repo(
-        str(repo), ecosystem=resolved, commit_sha=commit_sha, exclude=selected_excludes
+        str(repo),
+        ecosystem=resolved,
+        commit_sha=commit_sha,
+        exclude=selected_excludes,
+        roots=selected_roots,
     )
     findings = classifier.as_dicts()
     scanner_error = any(
         finding.get("finding_type") == FindingType.SCANNER_ERROR.name
         for finding in findings
     )
-    sbom = None if scanner_error else generate_sbom(str(repo), ecosystem=resolved)
+    sbom = (
+        None
+        if scanner_error
+        else generate_sbom(
+            str(repo),
+            ecosystem=resolved,
+            roots=selected_roots,
+            excludes=selected_excludes,
+        )
+    )
 
     if resolved == "go" and not scanner_error:
         metadata = _go_metadata(repo, selected_excludes)
     else:
-        metadata = _legacy_metadata(repo, resolved, selected_excludes)
+        metadata = _legacy_metadata(
+            repo, resolved, selected_excludes, roots=selected_roots
+        )
 
+    scope = {
+        "mode": "repository",
+        "root": ".",
+        "exclude": sorted(selected_excludes),
+        "exclude_matching": "directory-name-or-relative-prefix",
+    }
+    if roots is not None:
+        scope.update(
+            {
+                "roots": list(selected_roots or ()),
+                "root_selection": "explicit",
+            }
+        )
     report = build_scan_report(
         repo=str(repo),
         ecosystem=resolved,
@@ -210,11 +282,6 @@ def scan_repository(
         declared=metadata.get("declared", []),
         imported=metadata.get("imported", []),
         sbom=sbom,
-        scope={
-            "mode": "repository",
-            "root": ".",
-            "exclude": sorted(selected_excludes),
-            "exclude_matching": "directory-name-or-relative-prefix",
-        },
+        scope=scope,
     )
     return ScanResult(report=report, ecosystem=resolved, findings=findings, sbom=sbom)

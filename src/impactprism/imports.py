@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import budgets, js_ast
-from .scope import is_excluded_directory, normalize_excludes
+from .scope import is_excluded_directory, normalize_excludes, normalize_roots
 
 SOURCE_EXTENSIONS = {".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"}
 SKIPPED_DIRECTORIES = {"node_modules", "build", "dist", "coverage", "public"}
@@ -91,6 +91,7 @@ def scan_imports(
     max_files=None,
     max_depth=None,
     max_seconds=None,
+    roots=None,
 ) -> dict:
     """Walk ``repo_dir`` and return a mapping of source file -> import records.
 
@@ -130,7 +131,27 @@ def scan_imports(
         max_depth=max_depth,
         max_seconds=max_seconds,
     )
-    stack = [(repo, 1)]
+    selected_paths = None
+    if roots is not None:
+        selected_paths = []
+        for root in normalize_roots(roots):
+            candidate = (repo / root).resolve()
+            try:
+                candidate.relative_to(repo.resolve())
+            except ValueError as error:
+                raise ValueError("scan root escapes the repository: " + root) from error
+            if not candidate.is_dir():
+                raise ValueError("scan root directory not found: " + root)
+            selected_paths.append(candidate)
+        selected_paths = tuple(selected_paths)
+    stack = (
+        [
+            (path, len(path.relative_to(repo.resolve()).parts) + 1)
+            for path in selected_paths
+        ]
+        if selected_paths is not None
+        else [(repo, 1)]
+    )
     while stack:
         directory, depth = stack.pop()
         walk.dir_depth = depth

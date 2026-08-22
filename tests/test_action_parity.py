@@ -47,6 +47,7 @@ def _run_action(repo, workspace, monkeypatch, **inputs):
         "INPUT_BASELINE_PATH": "",
         "INPUT_DELTA_PATH": "",
         "INPUT_EXCLUDE": "",
+        "INPUT_ROOTS": "",
     }
     values.update(inputs)
     for key, value in values.items():
@@ -174,6 +175,42 @@ def test_action_config_and_explicit_exclude_are_applied(tmp_path, monkeypatch):
     assert _run_action(repo, workspace, monkeypatch) == 0
     report = _load(workspace / "reports" / "findings.json")
     assert all(finding.get("package") != "missing-package" for finding in report["findings"])
+
+
+def test_cli_and_action_apply_explicit_npm_root_selection(tmp_path, monkeypatch):
+    repo = _write_npm_repo(tmp_path, 'import rootLeak from "root-only";\n')
+    package_root = repo / "packages" / "app"
+    package_root.mkdir(parents=True)
+    (package_root / "package.json").write_text(
+        json.dumps(
+            {
+                "name": "selected-app",
+                "version": "1.0.0",
+                "dependencies": {"react": "18.2.0"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (package_root / "app.js").write_text(
+        'import React from "react";\n', encoding="utf-8"
+    )
+    cli_report = tmp_path / "cli-root-report.json"
+    assert (
+        cli_main(
+            ["scan", str(repo), "--root", "packages/app", "--report", str(cli_report)]
+        )
+        == 0
+    )
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    assert _run_action(repo, workspace, monkeypatch, INPUT_ROOTS="packages/app") == 0
+    cli = _load(cli_report)
+    action = _load(workspace / "reports" / "findings.json")
+    assert cli["scope"]["roots"] == ["packages/app"]
+    assert action["scope"]["roots"] == ["packages/app"]
+    assert cli["findings"] == action["findings"]
+    assert all(finding.get("package") != "root-only" for finding in action["findings"])
 
 
 def test_action_rejects_invalid_policy_inputs(tmp_path, monkeypatch):

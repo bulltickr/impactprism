@@ -52,6 +52,10 @@ inputs:
     description: Newline-separated directory names or repository-relative directory prefixes to exclude in addition to repository defaults.
     required: false
     default: ""
+  roots:
+    description: Newline-separated repository-relative npm package roots to scan; roots must contain package.json and globs are not accepted.
+    required: false
+    default: ""
   config-path:
     description: Optional ImpactPrism TOML configuration path; otherwise .impactprism.toml is auto-detected.
     required: false
@@ -137,6 +141,7 @@ runs:
         INPUT_ARTIFACT_NAME: ${{ inputs.artifact-name }}
         INPUT_INSTALL_MODE: ${{ inputs.install-mode }}
         INPUT_EXCLUDE: ${{ inputs.exclude }}
+        INPUT_ROOTS: ${{ inputs.roots }}
         INPUT_CONFIG_PATH: ${{ inputs.config-path }}
         INPUT_BASELINE_PATH: ${{ inputs.baseline-path }}
         INPUT_DELTA_PATH: ${{ inputs.delta-path }}

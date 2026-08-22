@@ -121,6 +121,7 @@ def analyze_repo(
     ecosystem: str = "auto",
     commit_sha: str | None = None,
     exclude: set[str] | None = None,
+    roots=None,
 ) -> DriftReport:
     """Classify dependency drift for a whole repository.
 
@@ -140,18 +141,35 @@ def analyze_repo(
         else:
             raise ValueError("unsupported or missing ecosystem")
 
+    if roots is not None and ecosystem != "npm":
+        raise ValueError("scan roots are currently supported only for npm")
+
     if ecosystem == "npm":
         try:
-            manifests = manifest_module.parse_manifests(repo_dir, exclude=exclude)
+            manifests = manifest_module.parse_manifests(
+                repo_dir, exclude=exclude, roots=roots
+            )
         except Exception as exc:
             findings = [_finding_for_manifest_parse_error(repo_dir, "npm", exc, commit_sha=commit_sha)]
             return _finalize_report(findings, repo, commit_sha)
         try:
-            imported = imports.scan_imports(repo_dir, exclude=exclude)
+            imported = imports.scan_imports(repo_dir, exclude=exclude, roots=roots)
         except Exception:
             imported = {}
+        resolution_manifests = manifests
+        if roots is not None:
+            try:
+                resolution_manifests = manifest_module.parse_manifests(
+                    repo_dir, exclude=exclude
+                )
+            except Exception:
+                resolution_manifests = manifests
         findings = _classify_npm_manifests(
-            manifests, imported, repo_dir=repo_dir, commit_sha=commit_sha
+            manifests,
+            imported,
+            repo_dir=repo_dir,
+            commit_sha=commit_sha,
+            resolution_manifests=resolution_manifests,
         )
     elif ecosystem == "go":
         try:
@@ -233,8 +251,16 @@ def _finding_for_manifest_parse_error(repo_dir, ecosystem, exc, *, commit_sha=No
     )
 
 
-def _classify_npm_manifests(manifests, imported, *, repo_dir, commit_sha):
+def _classify_npm_manifests(
+    manifests,
+    imported,
+    *,
+    repo_dir,
+    commit_sha,
+    resolution_manifests=None,
+):
     repo = Path(repo_dir)
+    resolution_manifests = resolution_manifests or manifests
     partitions = {str(manifest.package_path): (manifest, {}) for manifest in manifests}
     for path, records in imported.items():
         owner = manifest_module._manifest_for_path(manifests, path)
@@ -266,7 +292,7 @@ def _classify_npm_manifests(manifests, imported, *, repo_dir, commit_sha):
                 partition_imports,
                 repo_dir=repo_dir,
                 lockfile=lockfile,
-                resolution_manifests=manifests,
+                resolution_manifests=resolution_manifests,
                 commit_sha=commit_sha,
             )
         )

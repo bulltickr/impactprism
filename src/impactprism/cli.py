@@ -70,7 +70,12 @@ def _run_analyze(args):
 
     excludes = set(args.exclude or [])
     try:
-        result = scan_repository(repo_path, ecosystem=ecosystem, excludes=excludes)
+        result = scan_repository(
+            repo_path,
+            ecosystem=ecosystem,
+            excludes=excludes,
+            roots=args.root,
+        )
         report = result.report
 
         if args.report is not None:
@@ -221,6 +226,8 @@ def _run_scan(args):
         | set(scan_config.get("exclude", []))
         | set(args.exclude or [])
     )
+    roots = args.root if args.root is not None else scan_config.get("roots")
+    roots = roots or None
     report_arg = args.report or output_config.get("report")
     sbom_arg = args.sbom or output_config.get("sbom")
     evidence_arg = args.evidence or output_config.get("evidence")
@@ -250,6 +257,7 @@ def _run_scan(args):
             repo_path,
             ecosystem=ecosystem,
             excludes=set(excludes),
+            roots=roots,
         )
         report = result.report
         if sbom_arg is not None and result.sbom is not None:
@@ -330,6 +338,13 @@ def main(argv=None) -> int:
     analyze.add_argument("--ecosystem", choices=("auto", "npm", "python", "go"), default="auto")
     analyze.add_argument("--severity-threshold", choices=("info", "low", "medium", "high", "critical"), default="low")
     analyze.add_argument("--exclude", action="append", metavar="PAT", default=None)
+    analyze.add_argument(
+        "--root",
+        action="append",
+        metavar="PATH",
+        default=None,
+        help="select an npm package root (repeatable; repository-relative, no globs)",
+    )
     analyze.add_argument("--sbom", metavar="PATH")
     analyze.add_argument("--report", metavar="PATH")
     analyze.add_argument("--json", action="store_true")
@@ -412,6 +427,13 @@ def main(argv=None) -> int:
     scan.add_argument("repo")
     scan.add_argument("--ecosystem", choices=("auto", "npm", "python", "go"), default="auto")
     scan.add_argument("--exclude", action="append", metavar="PAT", default=None)
+    scan.add_argument(
+        "--root",
+        action="append",
+        metavar="PATH",
+        default=None,
+        help="select an npm package root (repeatable; repository-relative, no globs)",
+    )
     scan.add_argument("--sbom", metavar="PATH")
     scan.add_argument("--report", metavar="PATH")
     scan.add_argument("--evidence", metavar="PATH")

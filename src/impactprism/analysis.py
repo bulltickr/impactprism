@@ -9,7 +9,12 @@ from .version import __version__
 from . import go_imports
 from .imports import scan_imports as _ast_scan_imports
 from .go_manifest import parse_go_manifest
-from .manifest import LockfileParseError, parse_lockfile, parse_python_manifest
+from .manifest import (
+    LockfileParseError,
+    parse_lockfile,
+    parse_manifests,
+    parse_python_manifest,
+)
 from .python_imports import scan_imports as _python_scan_imports
 from .scope import normalize_excludes
 from .python_manifest import canonical_name, is_python_repo
@@ -176,7 +181,13 @@ def _normalized_components(package_json, lockfile):
     return components
 
 
-def generate_sbom(repo_dir: str, ecosystem: str | None = None) -> dict:
+def generate_sbom(
+    repo_dir: str,
+    ecosystem: str | None = None,
+    *,
+    roots=None,
+    excludes=None,
+) -> dict:
     """Generate the SBOM for the requested or detected ecosystem.
 
     An explicit ecosystem matters for repositories that intentionally contain
@@ -197,6 +208,52 @@ def generate_sbom(repo_dir: str, ecosystem: str | None = None) -> dict:
         and is_python_repo(repo_path)
     ):
         return _generate_python_sbom(repo_path)
+    if roots is not None:
+        manifests = parse_manifests(
+            repo_path, exclude=excludes, roots=roots
+        )
+        components = []
+        seen = set()
+        for manifest in manifests:
+            for dependency in manifest.dependencies:
+                if dependency.name in seen:
+                    continue
+                seen.add(dependency.name)
+                version = dependency.locked_version or dependency.version or "0.0.0"
+                components.append(
+                    {
+                        "name": dependency.name,
+                        "version": version,
+                        "purl": "pkg:npm/"
+                        + _encode_npm_purl_name(dependency.name)
+                        + "@"
+                        + version,
+                        "scope": "required"
+                        if dependency.kind == "dependencies"
+                        else "optional",
+                        "direct": True,
+                        "transitive": False,
+                        "hashes": [],
+                        "ecosystem": "npm",
+                    }
+                )
+        if len(manifests) == 1:
+            name = manifests[0].name or "unknown"
+            version = manifests[0].version or "0.0.0"
+        else:
+            name = "multiple"
+            version = "0.0.0"
+        return build_cyclonedx_sbom(
+            components,
+            metadata={
+                "name": name,
+                "version": version,
+                "tool_name": "impactprism-cyclonedx",
+                "tool_version": __version__,
+                "timestamp": _utc_timestamp(),
+            },
+        )
+
     package_json = _load_json(repo_path / "package.json")
     lockfile = None
     for lockfile_name in ("package-lock.json", "npm-shrinkwrap.json"):
@@ -319,7 +376,7 @@ def _normalize_name(specifier):
     return name
 
 
-def scan_imports(repo_dir: str, excludes=None, ecosystem="npm") -> set:
+def scan_imports(repo_dir: str, excludes=None, ecosystem="npm", roots=None) -> set:
     if ecosystem == "python":
         imported = set()
         for records in _python_scan_imports(repo_dir, exclude=excludes).values():
@@ -335,7 +392,7 @@ def scan_imports(repo_dir: str, excludes=None, ecosystem="npm") -> set:
                     imported.add(name)
         return imported
     imported = set()
-    for records in _ast_scan_imports(repo_dir, exclude=excludes).values():
+    for records in _ast_scan_imports(repo_dir, exclude=excludes, roots=roots).values():
         for record in records:
             name = _normalize_name(record.specifier)
             if name is not None:
