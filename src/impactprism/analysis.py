@@ -7,8 +7,8 @@ from pathlib import Path
 from .sbom.cyclonedx_builder import build_cyclonedx_sbom
 from .version import __version__
 from . import go_imports
+from . import go_mod
 from .imports import scan_imports as _ast_scan_imports
-from .go_manifest import parse_go_manifest
 from .manifest import (
     LockfileParseError,
     parse_lockfile,
@@ -198,10 +198,13 @@ def generate_sbom(
     repo_path = Path(repo_dir).resolve()
     if ecosystem == "go" or (
         ecosystem is None
-        and (repo_path / "go.mod").is_file()
+        and (
+            (repo_path / "go.mod").is_file()
+            or (repo_path / "go.work").is_file()
+        )
         and not (repo_path / "package.json").is_file()
     ):
-        return _generate_go_sbom(repo_path)
+        return _generate_go_sbom(repo_path, roots=roots, excludes=excludes)
     if ecosystem == "python" or (
         ecosystem is None
         and not (repo_path / "package.json").is_file()
@@ -280,12 +283,16 @@ def generate_sbom(
     return build_cyclonedx_sbom(components, metadata=metadata)
 
 
-def _generate_go_sbom(repo_path: Path) -> dict:
+def _generate_go_sbom(repo_path: Path, *, roots=None, excludes=None) -> dict:
     """Generate the canonical Go SBOM from the normalized Go manifest model."""
 
-    manifest = parse_go_manifest(repo_path)
+    manifest = go_mod.parse_go_manifest(repo_path, roots=roots)
     try:
-        import_graph = go_imports.build_import_graph(repo_path)
+        import_graph = go_imports.build_import_graph(
+            repo_path,
+            exclude=excludes,
+            roots=roots,
+        )
         used_modules = {
             module_path
             for module_path, usage in import_graph.module_usage.items()
@@ -295,28 +302,60 @@ def _generate_go_sbom(repo_path: Path) -> dict:
         # SBOM generation remains useful when source graph extraction cannot
         # complete; manifest directness is still preserved in that case.
         used_modules = set()
+    main_modules = set(manifest.main_modules or ())
+    dependency_entries = [
+        entry
+        for entry in manifest.modules
+        if entry.module_path not in main_modules
+        and entry.source in (None, "go.mod", "go.work")
+    ]
+    scoped_directness = dict(manifest.scope_dependencies or ())
+    if manifest.scope_dependencies is not None:
+        dependency_entries = [
+            entry for entry in dependency_entries if entry.module_path in scoped_directness
+        ]
     components = []
-    for dependency in manifest.dependencies:
-        module = dependency.replacement or dependency.module
-        version = dependency.version or "0.0.0"
-        if dependency.replacement and not dependency.replacement_local:
-            replacement_parts = dependency.replacement.rsplit(" ", 1)
-            if len(replacement_parts) == 2 and replacement_parts[1].startswith("v"):
-                module, version = replacement_parts
+    seen = set()
+    for entry in dependency_entries:
+        if entry.module_path in seen:
+            continue
+        seen.add(entry.module_path)
+        replacement = entry.replaced_by
+        module = (
+            replacement.new_path
+            if replacement is not None and replacement.new_path
+            else entry.module_path
+        )
+        version = (
+            replacement.new_version
+            if replacement is not None and replacement.new_version
+            else entry.version or "0.0.0"
+        )
+        direct = (
+            scoped_directness.get(entry.module_path, entry.direct)
+            if manifest.scope_dependencies is not None
+            else entry.direct
+        )
         components.append(
             {
                 "name": module,
                 "version": version,
                 "purl": "pkg:golang/" + module + "@" + version,
                 "scope": "required",
-                "direct": dependency.direct,
-                "transitive": not dependency.direct,
-                "root_dependency": dependency.direct or module in used_modules,
+                "direct": direct,
+                "transitive": not direct,
+                "root_dependency": direct or module in used_modules or entry.module_path in used_modules,
                 "ecosystem": "go",
             }
         )
     metadata = {
-        "name": manifest.module_path or "unknown",
+        "name": (
+            manifest.scope_modules[0]
+            if manifest.scope_modules and len(manifest.scope_modules) == 1
+            else "multiple"
+            if manifest.scope_modules
+            else manifest.main_module or "unknown"
+        ),
         "version": "0.0.0",
         "tool_name": "impactprism-cyclonedx",
         "tool_version": __version__,

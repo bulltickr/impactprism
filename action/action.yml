@@ -53,7 +53,7 @@ inputs:
     required: false
     default: ""
   roots:
-    description: Newline-separated repository-relative npm package roots to scan; roots must contain package.json and globs are not accepted.
+    description: Newline-separated repository-relative npm package or Go module roots to scan; npm roots must contain package.json, Go roots must contain go.mod, and globs are not accepted.
     required: false
     default: ""
   config-path:

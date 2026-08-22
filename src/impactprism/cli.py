@@ -343,7 +343,7 @@ def main(argv=None) -> int:
         action="append",
         metavar="PATH",
         default=None,
-        help="select an npm package root (repeatable; repository-relative, no globs)",
+        help="select an npm package or Go module root (repeatable; repository-relative, no globs)",
     )
     analyze.add_argument("--sbom", metavar="PATH")
     analyze.add_argument("--report", metavar="PATH")
@@ -432,7 +432,7 @@ def main(argv=None) -> int:
         action="append",
         metavar="PATH",
         default=None,
-        help="select an npm package root (repeatable; repository-relative, no globs)",
+        help="select an npm package or Go module root (repeatable; repository-relative, no globs)",
     )
     scan.add_argument("--sbom", metavar="PATH")
     scan.add_argument("--report", metavar="PATH")

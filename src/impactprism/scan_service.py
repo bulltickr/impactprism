@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import go_imports
+from . import go_mod
 from .analysis import generate_sbom, main as analysis_main
 from .drift import FindingType, analyze_repo
 from .imports import scan_imports as scan_javascript_imports
@@ -71,7 +72,7 @@ def detect_ecosystem(repo_path: Path) -> str | None:
 
     if (repo_path / "package.json").is_file():
         return "npm"
-    if (repo_path / "go.mod").is_file():
+    if (repo_path / "go.mod").is_file() or (repo_path / "go.work").is_file():
         return "go"
     if is_python_repo(repo_path):
         return "python"
@@ -87,7 +88,9 @@ def resolve_ecosystem(repo_path: Path, requested: str = "auto") -> str | None:
         return None
     if requested == "npm" and not (repo_path / "package.json").is_file():
         return None
-    if requested == "go" and not (repo_path / "go.mod").is_file():
+    if requested == "go" and not (
+        (repo_path / "go.mod").is_file() or (repo_path / "go.work").is_file()
+    ):
         return None
     if requested == "python" and not is_python_repo(repo_path):
         return None
@@ -179,17 +182,26 @@ def _legacy_metadata(
             pass
 
 
-def _go_metadata(repo_path: Path, excludes: set[str]) -> dict:
-    graph = go_imports.build_import_graph(repo_path, exclude=excludes)
+def _go_metadata(repo_path: Path, excludes: set[str], roots=None) -> dict:
+    graph = go_imports.build_import_graph(repo_path, exclude=excludes, roots=roots)
     main_module = getattr(graph.manifest, "main_module", None)
-    declared = sorted(
-        {
-            entry.module_path
-            for entry in getattr(graph.manifest, "modules", [])
-            if entry.module_path != main_module
-            and getattr(entry, "source", None) in (None, "go.mod", "go.work")
-        }
-    )
+    scoped_dependencies = getattr(graph.manifest, "scope_dependencies", None)
+    main_modules = set(getattr(graph.manifest, "main_modules", ()) or ())
+    if main_module:
+        main_modules.add(main_module)
+    if scoped_dependencies is not None:
+        declared = sorted(
+            {module for module, _direct in scoped_dependencies if module not in main_modules}
+        )
+    else:
+        declared = sorted(
+            {
+                entry.module_path
+                for entry in getattr(graph.manifest, "modules", [])
+                if entry.module_path not in main_modules
+                and getattr(entry, "source", None) in (None, "go.mod", "go.work")
+            }
+        )
     imported = sorted(
         {
             module_path
@@ -225,11 +237,16 @@ def scan_repository(
     selected_excludes = normalize_excludes(excludes or ())
     selected_roots = None
     if roots is not None:
-        if resolved != "npm":
-            raise ValueError("scan roots are currently supported only for npm")
-        selected_roots = validate_package_roots(
-            repo, roots, exclude=selected_excludes
-        )
+        if resolved == "npm":
+            selected_roots = validate_package_roots(
+                repo, roots, exclude=selected_excludes
+            )
+        elif resolved == "go":
+            selected_roots = go_mod.validate_go_module_roots(
+                repo, roots, exclude=selected_excludes
+            )
+        else:
+            raise ValueError("scan roots are currently supported only for npm and go")
     classifier = analyze_repo(
         str(repo),
         ecosystem=resolved,
@@ -254,7 +271,7 @@ def scan_repository(
     )
 
     if resolved == "go" and not scanner_error:
-        metadata = _go_metadata(repo, selected_excludes)
+        metadata = _go_metadata(repo, selected_excludes, roots=selected_roots)
     else:
         metadata = _legacy_metadata(
             repo, resolved, selected_excludes, roots=selected_roots

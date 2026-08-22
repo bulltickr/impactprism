@@ -27,13 +27,14 @@ Supported keys are deliberately limited:
   exclude nested workspace manifests before workspace-discovery limits are
   applied. For example, `cmd/fiximports/testdata` excludes only that tree,
   while `testdata` excludes every directory with that basename.
-- `scan.roots` is optional and currently applies to npm/pnpm scans. Each value
-  is one repository-relative package directory containing `package.json`; it
-  is a literal path, not a glob. Multiple roots are supported, and only their
-  manifests and source trees are classified. The repository root still
-  provides workspace and lockfile resolution context. If omitted, the scan
-  retains the historical whole-repository scope. An explicit root that is
-  covered by `scan.exclude` is rejected.
+- `scan.roots` is optional. For npm/pnpm, each value is one repository-relative
+  package directory containing `package.json`. For Go, each value is one
+  repository-relative module directory containing `go.mod`. Roots are literal
+  paths, not globs. Multiple roots are supported, and only their manifests and
+  source trees are classified. The repository still provides workspace,
+  replacement, vendor, lockfile, and checksum resolution context. If omitted,
+  the scan retains the historical whole-repository scope. An explicit root that
+  is covered by `scan.exclude` is rejected.
 - `scan.baseline` and `scan.delta` enable incremental comparison.
 - `outputs.report`, `outputs.evidence`, and `outputs.sbom` select default output
   paths.

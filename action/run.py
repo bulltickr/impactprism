@@ -146,7 +146,7 @@ def _resolve_ecosystem(repo_path, ecosystem):
     if ecosystem == "auto":
         if (repo_path / "package.json").is_file():
             return "npm"
-        if (repo_path / "go.mod").is_file():
+        if (repo_path / "go.mod").is_file() or (repo_path / "go.work").is_file():
             return "go"
         _ensure_import_paths()
         from impactprism.python_manifest import is_python_repo
@@ -158,7 +158,9 @@ def _resolve_ecosystem(repo_path, ecosystem):
         return None
     if ecosystem == "npm" and not (repo_path / "package.json").is_file():
         return None
-    if ecosystem == "go" and not (repo_path / "go.mod").is_file():
+    if ecosystem == "go" and not (
+        (repo_path / "go.mod").is_file() or (repo_path / "go.work").is_file()
+    ):
         return None
     if ecosystem == "python":
         _ensure_import_paths()
@@ -182,7 +184,7 @@ def _run_analysis(repo_path, ecosystem, commit_sha, excludes=None, roots=None):
     )
 
 
-def _build_sbom(repo_path, ecosystem):
+def _build_sbom(repo_path, ecosystem, roots=None):
     """Use the package's canonical SBOM service for Action output."""
 
     _ensure_import_paths()
@@ -190,7 +192,7 @@ def _build_sbom(repo_path, ecosystem):
 
     if ecosystem not in ("npm", "python", "go"):
         raise ValueError("unsupported ecosystem for bom: " + str(ecosystem))
-    return generate_sbom(str(repo_path))
+    return generate_sbom(str(repo_path), ecosystem=ecosystem, roots=roots)
 
 
 def _relative_file(repo_path, file_path):

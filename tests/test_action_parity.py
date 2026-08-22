@@ -34,6 +34,40 @@ def _write_npm_repo(root: Path, source: str) -> Path:
     return repo
 
 
+def _write_go_workspace_repo(root: Path) -> Path:
+    repo = root / "go-repo"
+    (repo / "apps" / "app").mkdir(parents=True)
+    (repo / "libs" / "shared").mkdir(parents=True)
+    (repo / "go.work").write_text(
+        "go 1.22\n\nuse (\n\t./apps/app\n\t./libs/shared\n)\n",
+        encoding="utf-8",
+    )
+    (repo / "apps" / "app" / "go.mod").write_text(
+        "module example.com/app\n\ngo 1.22\n\n"
+        "require (\n"
+        "\texample.com/shared v0.0.0\n"
+        "\texample.com/appdep v1.2.3\n"
+        ")\n",
+        encoding="utf-8",
+    )
+    (repo / "apps" / "app" / "main.go").write_text(
+        'package main\n\nimport (\n'
+        '\t"example.com/shared/pkg"\n'
+        '\t"example.com/appdep/api"\n'
+        ')\n\nvar _ = pkg.Value\nvar _ = api.Value\n',
+        encoding="utf-8",
+    )
+    (repo / "libs" / "shared" / "go.mod").write_text(
+        "module example.com/shared\n\ngo 1.22\n",
+        encoding="utf-8",
+    )
+    (repo / "libs" / "shared" / "pkg.go").write_text(
+        "package pkg\n\nconst Value = 1\n",
+        encoding="utf-8",
+    )
+    return repo
+
+
 def _run_action(repo, workspace, monkeypatch, **inputs):
     values = {
         "GITHUB_WORKSPACE": str(workspace),
@@ -211,6 +245,48 @@ def test_cli_and_action_apply_explicit_npm_root_selection(tmp_path, monkeypatch)
     assert action["scope"]["roots"] == ["packages/app"]
     assert cli["findings"] == action["findings"]
     assert all(finding.get("package") != "root-only" for finding in action["findings"])
+
+
+def test_cli_and_action_apply_explicit_go_module_root_selection(tmp_path, monkeypatch):
+    repo = _write_go_workspace_repo(tmp_path)
+    cli_report = tmp_path / "cli-go-root-report.json"
+    cli_bom = tmp_path / "cli-go-root-bom.json"
+    assert (
+        cli_main(
+            [
+                "scan",
+                str(repo),
+                "--ecosystem",
+                "go",
+                "--root",
+                "apps/app",
+                "--report",
+                str(cli_report),
+                "--sbom",
+                str(cli_bom),
+            ]
+        )
+        == 0
+    )
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    assert (
+        _run_action(
+            repo,
+            workspace,
+            monkeypatch,
+            INPUT_ECOSYSTEM="go",
+            INPUT_ROOTS="apps/app",
+        )
+        == 0
+    )
+    cli = _load(cli_report)
+    action = _load(workspace / "reports" / "findings.json")
+    assert cli["scope"]["roots"] == ["apps/app"]
+    assert action["scope"]["roots"] == ["apps/app"]
+    assert cli["findings"] == action["findings"]
+    assert _load(workspace / "reports" / "bom.json")["components"] == _load(cli_bom)["components"]
 
 
 def test_action_rejects_invalid_policy_inputs(tmp_path, monkeypatch):

@@ -95,7 +95,7 @@ following, all set before the step that invokes it:
 | `install-mode`       | `managed` installs the local package; `offline` uses caller-provided Python dependencies and performs no package installation. | false | `managed` |
 | `python-command`     | Python executable used by `offline` mode.                                  | false    | `python`               |
 | `exclude`            | Newline-separated directory names or repository-relative directory prefixes added to the built-in exclusions. | false    | empty                  |
-| `roots`              | Newline-separated repository-relative npm/pnpm package roots; each must contain `package.json` and globs are not accepted. | false | empty |
+| `roots`              | Newline-separated repository-relative npm/pnpm package or Go module roots; npm roots contain `package.json`, Go roots contain `go.mod`, and globs are not accepted. | false | empty |
 | `config-path`        | Optional TOML configuration path; otherwise `.impactprism.toml` is used.   | false    | empty                  |
 | `baseline-path`      | Previous canonical report, resolved relative to the scanned repository.     | false    | empty                  |
 | `delta-path`         | Baseline delta output path, resolved relative to the scanned repository.    | false    | empty                  |
@@ -103,7 +103,7 @@ following, all set before the step that invokes it:
 Notes on the defaults, as implemented:
 
 - `repo-path` resolves to the workspace when unset.
-- `ecosystem: auto` detects `package.json` (npm), `go.mod` (Go), or a supported
+- `ecosystem: auto` detects `package.json` (npm), `go.mod`/`go.work` (Go), or a supported
   Python manifest; if none is present the outcome is `unsupported-ecosystem`.
 - `output-dir` is resolved relative to the workspace; a value that escapes the
   workspace (or contains a NUL byte) falls back to `impactprism-reports`.
@@ -116,10 +116,10 @@ Notes on the defaults, as implemented:
   Action verifies them with `PIP_NO_INDEX=1` before scanning.
 - In either mode, repository analysis itself does not contact a registry or
   upload source contents.
-- `roots` is an opt-in npm/pnpm package selection. The repository remains the
-  workspace and lockfile resolution context, while only the selected package
-  manifests and source trees are classified. Omit it for the historical
-  whole-repository scan.
+- `roots` is an opt-in npm/pnpm package or Go module selection. The repository
+  remains the workspace and dependency-resolution context, while only the
+  selected package/module manifests and source trees are classified. Omit it
+  for the historical whole-repository scan.
 - Configuration and explicit Action inputs follow this precedence: input value,
   then `.impactprism.toml`, then the built-in default. The Action's generated
   `findings.json` contains the canonical scan-report fields plus Action outcome
