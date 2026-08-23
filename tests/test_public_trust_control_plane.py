@@ -116,6 +116,13 @@ def test_feedback_routes_do_not_point_to_disabled_discussions():
     assert "compatibility_report.yml" in support
 
 
+def test_private_workspace_is_explicitly_excluded_from_public_history():
+    raw = (ROOT / ".gitignore").read_text(encoding="utf-8")
+
+    assert "\n.private/\n" in raw
+    assert "commercial planning" in raw
+
+
 def test_compatibility_intake_routes_external_reports_through_the_review_contract():
     raw = (ROOT / ".github" / "ISSUE_TEMPLATE" / "compatibility_report.yml").read_text(
         encoding="utf-8"

@@ -11,4 +11,8 @@ scan-report.json
 report.json
 demo/reports/
 .ops_work/
+# Local-only strategy, research, repository snapshots, and commercial planning.
+# Keep this boundary explicit in the repository so a fresh clone cannot add it
+# accidentally to the public OSS history.
+.private/
 evidence.md

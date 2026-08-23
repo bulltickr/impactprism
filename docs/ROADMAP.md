@@ -4,6 +4,9 @@ This roadmap covers the repository’s public open-source engineering work. It
 is deliberately focused on the local scanner, its output contracts, and
 portable automation.
 
+For the prioritized execution sequence, evidence gaps, release gates, and
+repository-boundary rules, see the [OSS next-phase plan](OSS_NEXT_PHASE_PLAN.md).
+
 ## In progress
 
 - Stabilize versioned report, evidence, delta, diagnostic, SARIF, and SBOM
