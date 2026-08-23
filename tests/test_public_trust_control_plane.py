@@ -29,6 +29,30 @@ def test_compatibility_report_tracks_the_published_release_baseline():
     assert "not yet attached to a versioned" not in raw
 
 
+def test_trust_document_tracks_the_current_release_and_labels_history():
+    raw = (ROOT / "docs" / "TRUST_AND_VERIFICATION.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "v0.4.8 release" in raw
+    assert "releases/tag/v0.4.8" in raw
+    assert "impactprism-0.4.8-py3-none-any.whl" in raw
+    assert "the v0.4.3 release asset contains" not in raw
+
+
+def test_release_metadata_surfaces_are_explicit_and_synchronized():
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    version = (ROOT / "src" / "impactprism" / "version.py").read_text(
+        encoding="utf-8"
+    )
+    npm_marker = (ROOT / "package.json").read_text(encoding="utf-8")
+
+    assert 'dynamic = ["version"]' in pyproject
+    assert '__version__ = "0.4.8"' in version
+    assert '"version": "0.4.8"' in npm_marker
+    assert '"private": true' in npm_marker
+
+
 def test_action_readme_tracks_the_current_published_release():
     raw = (ROOT / "action" / "README.md").read_text(encoding="utf-8")
 

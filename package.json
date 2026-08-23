@@ -1,1 +1,8 @@
-{"name": "impactprism", "version": "0.4.0", "dependencies": {}, "devDependencies": {}}
+{
+  "name": "impactprism",
+  "version": "0.4.8",
+  "private": true,
+  "description": "Repository marker for ImpactPrism's npm ecosystem scan examples",
+  "dependencies": {},
+  "devDependencies": {}
+}

@@ -51,10 +51,9 @@ describes the provenance model already used by the release workflow.
 
 - `main` still needs repository-owner rulesets for pull requests, required
   checks, review approval, and protected `v*` tags.
-- A public-documentation consistency pass is still needed: the trust and
-  verification guide contains older release references, and the root
-  `package.json` still advertises an obsolete `0.4.0` JavaScript package
-  version even though ImpactPrism is currently released as Python `0.4.8`.
+- A public-documentation consistency pass is still needed: historical benchmark
+  versions should be clearly labeled, and the root `package.json` must remain a
+  clearly private repository marker rather than a second publishable package.
 - The next release needs one end-to-end draft-first rehearsal on the current
   release workflow, including attestation verification and non-overwrite
   behavior.
@@ -88,9 +87,9 @@ and release tags cannot be silently rewritten.
 Before the next release, reconcile every public version and release URL in
 `README.md`, `action/README.md`, `docs/INSTALLING.md`,
 `docs/RELEASING.md`, `docs/TRUST_AND_VERIFICATION.md`, compatibility reports,
-the changelog, and package metadata. Decide whether the root `package.json` is
-still part of the project surface; if it is not, remove it, and if it is,
-define its role and keep its version synchronized. Add a consistency test so a
+the changelog, and package metadata. The root `package.json` is retained only
+as a private npm ecosystem marker, is synchronized to the current version, and
+must never be treated as a publishable Node package. Add a consistency test so a
 future release cannot silently publish mixed version claims.
 
 Exit gate: a clean search of tracked public files finds one intentional current

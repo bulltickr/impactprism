@@ -33,12 +33,14 @@ The required inputs and runner were not available:
 | Canonical G2 runner/harness | Runner capable of clone, detached-SHA verification, scan, normalization, and scoring | Partial; `benchmarks/g2/validate.py` validates the required package but does not provide the missing repository input set |
 | Result bundle | Raw outputs, hashes, normalized predictions, metric inputs/outputs | Missing |
 
-The project-supported environment was checked and is usable:
+The project-supported environment was checked and is usable. The following
+version is a historical record of the checkout used for this incomplete
+preflight, not the current release identity:
 
 ```text
 the project-supported Python executable
 Python 3.11.x
-impactprism 0.4.0 (editable install from this checkout)
+impactprism 0.4.0 (editable install from this historical checkout)
 ```
 
 That environment is not sufficient to claim methodology compliance: the frozen

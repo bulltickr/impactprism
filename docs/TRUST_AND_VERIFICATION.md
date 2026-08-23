@@ -12,9 +12,9 @@ The project has:
 - cross-platform GitHub Action smoke coverage;
 - a Python compatibility matrix and CodeQL workflow;
 - a pinned public compatibility corpus with ten reviewed repository shapes; the
-  v0.4.3 release asset contains the ten-case result, the v0.4.2 asset remains
-  the prior ten-case result, and the v0.4.1 asset remains the historical
-  seven-case baseline;
+  v0.4.8 release asset contains the ten-case result, while v0.4.7, v0.4.6,
+  v0.4.4, and v0.4.3 remain historical ten-case results and v0.4.1 remains the
+  historical seven-case baseline;
 - release checks for metadata, wheel/sdist contents, installed-wheel behavior,
   checksums, artifact attestation, dependency review, and Scorecard analysis;
   and
@@ -30,10 +30,10 @@ The project does not currently claim:
 - legal compliance, CRA certification, or an audit opinion.
 
 The public compatibility corpus is a regression contract for ten pinned
-repository shapes, not an accuracy score. Its ten-case machine-readable result
-is attached to the [v0.4.3 release](https://github.com/bulltickr/impactprism/releases/tag/v0.4.3),
-produced from that exact tag. The v0.4.1 result remains attached as the
-historical seven-case baseline.
+repository shapes, not an accuracy score. Its current ten-case machine-readable
+result is attached to the [v0.4.8 release](https://github.com/bulltickr/impactprism/releases/tag/v0.4.8),
+produced from that exact tag. Earlier results remain available as historical
+release assets; the v0.4.1 result is the seven-case baseline.
 The governed real-repository G2 benchmark is intentionally incomplete. Its
 blocker report is public in [BENCHMARK_REPORT.md](BENCHMARK_REPORT.md); local
 demos and fixtures are not presented as external accuracy evidence.
@@ -41,8 +41,8 @@ demos and fixtures are not presented as external accuracy evidence.
 ## Verify a GitHub Release
 
 Download the wheel, source archive, and `SHA256SUMS` from the same release. The
-expected v0.4.3 files are available at the
-[v0.4.3 release page](https://github.com/bulltickr/impactprism/releases/tag/v0.4.3).
+current example files are available at the
+[v0.4.8 release page](https://github.com/bulltickr/impactprism/releases/tag/v0.4.8).
 
 Verify the downloaded files before installation:
 
@@ -57,7 +57,7 @@ sidecar separately:
 sha256sum -c compatibility-result.json.sha256
 ```
 
-The v0.4.3 release includes this sidecar as a durable release asset.
+The v0.4.8 release includes this sidecar as a durable release asset.
 
 On Windows PowerShell, compare each file’s `Get-FileHash -Algorithm SHA256`
 value with the corresponding line in `SHA256SUMS`.
@@ -66,7 +66,7 @@ When the GitHub CLI and attestations are available, verify the wheel’s build
 provenance:
 
 ```bash
-gh attestation verify impactprism-0.4.3-py3-none-any.whl \
+gh attestation verify impactprism-0.4.8-py3-none-any.whl \
   -R bulltickr/impactprism
 ```
 
